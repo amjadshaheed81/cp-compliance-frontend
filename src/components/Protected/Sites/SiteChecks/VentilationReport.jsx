@@ -18,6 +18,9 @@ import axios from 'axios';
 import pdfTemplate from './pdf/VentilationTemplate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -60,12 +63,13 @@ const VentilationReport = ({
                              getUsers,
                              siteSelectedForGlobal,
                              loggedInUserData,
+                             siteCheck = {},
                            }) => {
   const [formData, setFormData] = useState({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     manufacturer: "",
@@ -83,7 +87,7 @@ const VentilationReport = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
@@ -113,6 +117,42 @@ const VentilationReport = ({
 
     const navigate = useNavigate();
 
+  // NEW: same authoritative site/status and Engineer behaviour as Air Conditioning.
+  const authoritativeSiteId = siteCheck?.siteId
+      ? Number(siteCheck.siteId)
+      : Number(siteSelectedForGlobal?.siteId) || null;
+  const [lastEngineerId, setLastEngineerId] = useState(null);
+  const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
+
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: effectiveCheckStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
+  useEffect(() => {
+    if (effectiveCheckStatus !== "Open") return;
+
+    setFormData((prev) => ({
+      ...prev,
+      inspectionDate: getUkLocalDate(),
+      signedDate: getUkLocalDate(),
+      engineer: prev.engineer || loggedInUserData?.id || "",
+      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+    }));
+  }, [effectiveCheckStatus, loggedInUserData?.id]);
+
   const isInternalUserTaggedWithSite = true;
 
   const selectedAsset = siteAssets.find(
@@ -138,11 +178,17 @@ const VentilationReport = ({
             (user) => user.id === mostRecentItem.client
         );
         const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
+            (user) => String(user.id) === String(mostRecentItem.engineer)
         );
         const siteContactUser = users.find(
             (user) => user.id === mostRecentItem.siteContact
         );
+
+        const savedEngineerId = mostRecentItem.engineer || null;
+        setLastEngineerId(savedEngineerId);
+        const isCurrentOpenInspection =
+            effectiveCheckStatus === "Open" &&
+            isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
 
         // Fetch action data if actionId exists
         let existingAction = null;
@@ -159,7 +205,7 @@ const VentilationReport = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          inspectionDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           jobNo: mostRecentItem.jobNo || prev.jobNo,
           manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
@@ -174,10 +220,16 @@ const VentilationReport = ({
           param3: mostRecentItem.param2 || prev.param2,
           param4: mostRecentItem.param4 || prev.param4,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD: engineer/user always preferred the saved record, even while Open.
+          // NEW: same Open/Done behaviour as Air Conditioning.
+          engineer: effectiveCheckStatus === "Open"
+              ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+              : (savedEngineerId || prev.engineer || ""),
+          user: effectiveCheckStatus === "Open"
+              ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+              : (engineerUser || prev.user || {}),
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
@@ -216,9 +268,9 @@ const VentilationReport = ({
       }
 
       // Now look for other actions specifically for this checkId
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
@@ -332,9 +384,9 @@ const VentilationReport = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
+        if (!authoritativeSiteId) return;
 
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
         if (response && response.length > 0) {
           let ventilationCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -377,10 +429,10 @@ const VentilationReport = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
           await fetchSiteCheckData();
           await fetchInspectionData();
 
@@ -397,7 +449,7 @@ const VentilationReport = ({
           }
 
           const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
+              (site) => Number(site.siteId) === Number(authoritativeSiteId)
           );
           const siteData = currentSite || siteSelectedForGlobal;
 
@@ -500,7 +552,7 @@ const VentilationReport = ({
           siteContactUser: formData.siteContactUser,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Ventilation',
           category: 'Ventilation',
@@ -556,7 +608,7 @@ const VentilationReport = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) return 1;
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -591,7 +643,7 @@ const VentilationReport = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -615,7 +667,7 @@ const VentilationReport = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
     try {
       setIsUploading(true);
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
@@ -631,10 +683,10 @@ const VentilationReport = ({
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -642,20 +694,20 @@ const VentilationReport = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `VENT-${new Date().getTime()}`
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -668,18 +720,18 @@ const VentilationReport = ({
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
+        uploadFormData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               note: 'Ventilation System Certificate',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -687,11 +739,11 @@ const VentilationReport = ({
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -713,7 +765,7 @@ const VentilationReport = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -767,7 +819,7 @@ const VentilationReport = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
       setTextField('Job No', formData.job || '', smallFont);
@@ -807,12 +859,12 @@ const VentilationReport = ({
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
-      const engineerName = formData.user?.name || '';
+      const engineerName = selectedEngineer?.name || formData.user?.name || '';
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(formData.signedDate), mediumFont);
-      setTextField('on_2', dateFormat(formData.signedDate), mediumFont);
+      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), mediumFont);
+      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), mediumFont);
 
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
@@ -823,7 +875,7 @@ const VentilationReport = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, inspectionDateOverride);
       }
 
       toast.success('PDF generated successfully!');
@@ -836,6 +888,15 @@ const VentilationReport = ({
     } finally {
       setIsGeneratingPDF(false);
     }
+  };
+
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -869,6 +930,9 @@ const VentilationReport = ({
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
     if (!formData.param4) errors.param4 = "Please select one option";
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -879,6 +943,10 @@ const VentilationReport = ({
     setIsLoading(true);
 
     try {
+      const submissionInspectionDate = effectiveCheckStatus === "Open"
+          ? getUkLocalDate()
+          : formData.inspectionDate;
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -892,13 +960,15 @@ const VentilationReport = ({
 
       // First update the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Plant and Equipment Inspection',
-        category: 'Ventilation',
+        siteId: authoritativeSiteId,
+        type: siteCheck?.type || 'Inspection',
+        // OLD: subType/category used internal inspection values and broke the UI route after Done.
+        // NEW: preserve the original Site Check route.
+        subType: siteCheck?.subType || subType || 'Plant and Equipment Inspection',
+        category: siteCheck?.category || category || 'Ventilation System(s) Servicing',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -932,7 +1002,9 @@ const VentilationReport = ({
       // Then update the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
@@ -963,7 +1035,7 @@ const VentilationReport = ({
       }
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -990,7 +1062,7 @@ const VentilationReport = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => site.id === authoritativeSiteId
               )
           ) || [];
 
@@ -1064,7 +1136,7 @@ const VentilationReport = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => site.id === authoritativeSiteId
               )
           ) || [];
 
@@ -1593,7 +1665,7 @@ const VentilationReport = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Plant and Equipment Inspection - Ventilation Report Service`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1632,6 +1704,9 @@ const VentilationReport = ({
               </div>
             </div>
             <div className="col-md-6">
+              {/* =========================================================
+                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
                 <input
@@ -1644,6 +1719,19 @@ const VentilationReport = ({
                     disabled
                 />
               </div>
+
+              ========================================================= */}
+
+              {/* NEW: shared Engineer dropdown - same behaviour as Air Conditioning. */}
+              <SiteCheckEngineerSelector
+                  options={engineerOptions}
+                  value={selectedEngineer}
+                  onChange={handleEngineerSelect}
+                  isOpen={effectiveCheckStatus === "Open"}
+                  disabled={isSubmitted || !isFormEditable}
+                  loading={isLoadingEngineers}
+                  error={validationErrors.engineer || engineerLoadError}
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input

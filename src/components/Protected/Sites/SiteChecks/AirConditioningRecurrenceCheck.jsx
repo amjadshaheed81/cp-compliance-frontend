@@ -8,6 +8,9 @@ import { Autocomplete, TextField, Card, CardContent, Typography, Table, TableBod
 import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
 import moment from "moment";
 import pdfTemplate from './pdf/airConditionRecurrencCheck.pdf';
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -49,6 +52,7 @@ const AirConditioningRecurrenceCheck = ({
     getUsers,
     siteSelectedForGlobal,
     loggedInUserData,
+    siteCheck = {},
 }) => {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [relatedAssets, setRelatedAssets] = useState([]);
@@ -64,7 +68,9 @@ const AirConditioningRecurrenceCheck = ({
         siteContactNo: "",
         job: "",
         report: "",
-        signedDate: new Date().toISOString().split("T")[0],
+        signedDate: getUkLocalDate(),
+        engineer: loggedInUserData?.id || "",
+        user: loggedInUserData || {},
         client: "",
         clientUser: null,
         siteContactUser: null,
@@ -108,6 +114,39 @@ const AirConditioningRecurrenceCheck = ({
     const isInternalUserTaggedWithSite = true;
     const license = JSON.parse(localStorage.getItem("license"));
 
+    // NEW: same authoritative site/status and Engineer behaviour as Air Conditioning.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const [lastEngineerId, setLastEngineerId] = useState(null);
+    const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
+
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: effectiveCheckStatus,
+        selectedEngineerId: formData.engineer,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    useEffect(() => {
+        if (effectiveCheckStatus !== "Open") return;
+
+        setFormData((prev) => ({
+            ...prev,
+            signedDate: getUkLocalDate(),
+            engineer: prev.engineer || loggedInUserData?.id || "",
+            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+        }));
+    }, [effectiveCheckStatus, loggedInUserData?.id]);
 
     // Refrigerant data from the provided table
     const refrigerantOptions = [
@@ -126,16 +165,16 @@ const AirConditioningRecurrenceCheck = ({
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                if (siteSelectedForGlobal?.siteId) {
-                    await getSiteAssets(siteSelectedForGlobal?.siteId);
-                    await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+                if (authoritativeSiteId) {
+                    await getSiteAssets(authoritativeSiteId);
+                    await getSiteDetailsById(authoritativeSiteId);
 
                     if (isInternalUserTaggedWithSite && users.length === 0) {
                         await getUsers();
                     }
 
                     const currentSite = sites.find(
-                        (site) => site.siteId === siteSelectedForGlobal.siteId
+                        (site) => site.siteId === authoritativeSiteId
                     );
                     const siteData = currentSite || siteSelectedForGlobal;
                     if (siteData) {
@@ -211,7 +250,7 @@ const AirConditioningRecurrenceCheck = ({
     // Function to fetch related asset by ID
     const fetchRelatedAsset = useCallback(async (relatedAssetId) => {
         try {
-            if (!relatedAssetId || !siteSelectedForGlobal?.siteId) {
+            if (!relatedAssetId || !authoritativeSiteId) {
                 return null;
             }
 
@@ -222,7 +261,7 @@ const AirConditioningRecurrenceCheck = ({
             console.error('Error fetching related asset:', error);
             return null;
         }
-    }, [siteSelectedForGlobal?.siteId]);
+    }, [authoritativeSiteId]);
 
     useEffect(() => {
         // When an asset is selected, find related assets using relatedAssetId
@@ -247,12 +286,12 @@ const AirConditioningRecurrenceCheck = ({
         };
 
         fetchRelatedAssets();
-    }, [selectedAsset, siteSelectedForGlobal?.siteId, fetchRelatedAsset]);
+    }, [selectedAsset, authoritativeSiteId, fetchRelatedAsset]);
 
     const fetchSiteChecks = async (assetIdParam) => {
         try {
             const assetIdToUse = assetIdParam ?? selectedAsset?.assetId;
-            const siteIdToUse = siteSelectedForGlobal?.siteId;
+            const siteIdToUse = authoritativeSiteId;
             if (!siteIdToUse || !assetIdToUse) return;
 
             // Fetch all generic inspections for this site (new endpoint)
@@ -378,7 +417,7 @@ const AirConditioningRecurrenceCheck = ({
     // Build a map keyed by issueDate (normalized to seconds) => latest file info for that timestamp
     const fetchSupportDocuments = useCallback(async () => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             const assetName = selectedAsset?.assetName;
             if (!siteId || !assetName) {
                 setSupportDocsByTimestamp({});
@@ -452,7 +491,7 @@ const AirConditioningRecurrenceCheck = ({
             setSupportDocsByTimestamp({});
             setSupportDocsList([]);
         }
-    }, [folderIds.airConditioning, selectedAsset?.assetName, siteSelectedForGlobal?.siteId]);
+    }, [folderIds.airConditioning, selectedAsset?.assetName, authoritativeSiteId]);
 
     // When site checks, asset, or folder changes, fetch support docs
     useEffect(() => {
@@ -467,19 +506,19 @@ const AirConditioningRecurrenceCheck = ({
 
     // Ensure we fetch when selectedAsset or site changes (covers programmatic selection as well)
     useEffect(() => {
-        const siteIdToUse = siteSelectedForGlobal?.siteId;
+        const siteIdToUse = authoritativeSiteId;
         if (selectedAsset?.assetId && siteIdToUse) {
             fetchSiteChecks(selectedAsset.assetId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedAsset?.assetId, siteSelectedForGlobal?.siteId]);
+    }, [selectedAsset?.assetId, authoritativeSiteId]);
 
     const fetchSiteCheckData = async () => {
         try {
-            if (!siteSelectedForGlobal?.siteId) return;
+            if (!authoritativeSiteId) return;
 
             // Use the provided get function
-            const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
             if (response && response.length > 0) {
                 // First try to find the exact checkId from URL
                 let airConditioningCheck = checkId
@@ -496,6 +535,51 @@ const AirConditioningRecurrenceCheck = ({
                     setIsFormEditable(!isDone);
                     setIsSubmitted(isDone);
                     setShowPdfButton(isDone);
+
+                    // NEW: the original form did not restore its saved recurrence record.
+                    // Restore the saved Engineer/date (and recurrence values) when reopening Done.
+                    if (isDone && checkId) {
+                        try {
+                            const savedRecurrence = await get(`/api/site-check/air-conditioning-recurrence/${checkId}`);
+                            if (savedRecurrence) {
+                                const savedEngineerId = savedRecurrence.engineer || null;
+                                setLastEngineerId(savedEngineerId);
+                                const engineerUser = users.find(
+                                    (user) => String(user.id) === String(savedEngineerId)
+                                );
+                                const savedAsset = siteAssets.find(
+                                    (asset) => String(asset.assetId) === String(savedRecurrence.assetId)
+                                );
+
+                                if (savedAsset) {
+                                    setSelectedAsset(savedAsset);
+                                }
+
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    systemOwner: savedRecurrence.systemOwner || prev.systemOwner,
+                                    address: savedRecurrence.siteAddress || savedRecurrence.address || prev.address,
+                                    refrigerantType: savedRecurrence.refrigerantType || prev.refrigerantType,
+                                    gwpLevel: savedRecurrence.gwpLevel ?? prev.gwpLevel,
+                                    chargeWeight: savedRecurrence.chargeWeight ?? prev.chargeWeight,
+                                    co2eq: savedRecurrence.co2eq ?? prev.co2eq,
+                                    schematicDrawing: savedRecurrence.schematicDrawing || prev.schematicDrawing,
+                                    siteContact: savedRecurrence.siteContact || prev.siteContact,
+                                    siteContactNo: savedRecurrence.siteContactNo || prev.siteContactNo,
+                                    job: savedRecurrence.job || prev.job,
+                                    report: savedRecurrence.report || prev.report,
+                                    signedDate: savedRecurrence.signedDate || prev.signedDate,
+                                    client: savedRecurrence.client || prev.client,
+                                    engineerCertificateNo: savedRecurrence.engineerCertificateNo || prev.engineerCertificateNo,
+                                    actionId: savedRecurrence.actionId || prev.actionId,
+                                    engineer: savedEngineerId || prev.engineer || "",
+                                    user: engineerUser || prev.user || {},
+                                }));
+                            }
+                        } catch (savedRecurrenceError) {
+                            console.warn('Unable to restore saved F-Gas recurrence record:', savedRecurrenceError);
+                        }
+                    }
                 } else {
                     // If no matching check found, default to editable
                     setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
@@ -720,7 +804,7 @@ const AirConditioningRecurrenceCheck = ({
 
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId) {
                 console.warn('No site ID available for file version check');
                 return 1;
@@ -751,7 +835,7 @@ const AirConditioningRecurrenceCheck = ({
 
     const checkFileExists = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             // Use the provided get function
@@ -794,7 +878,7 @@ const AirConditioningRecurrenceCheck = ({
         return date;
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, signedDateOverride) => {
         try {
             setIsUploading(true);
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
@@ -811,10 +895,10 @@ const AirConditioningRecurrenceCheck = ({
             }
 
             const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-            const formData = new FormData();
+            const uploadFormData = new FormData();
 
             if (exists && existingFile) {
-                formData.append('file', pdfFile);
+                uploadFormData.append('file', pdfFile);
                 const documentRequestString = {
                     folderId: targetFolderId,
                     files: [{
@@ -822,21 +906,21 @@ const AirConditioningRecurrenceCheck = ({
                         name: fileName,
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
-                        siteId: siteSelectedForGlobal?.siteId || 0,
-                        issueDate: formatDateForBackend(formData.signedDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId || 0,
+                        issueDate: formatDateForBackend(signedDateOverride || formData.signedDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `AC-${new Date().getTime()}`
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequestString));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
 
                 // Use the standard put function with FormData
                 const response = await put(
                     '/api/document/file/newVersion/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -849,18 +933,18 @@ const AirConditioningRecurrenceCheck = ({
                     return true;
                 }
             } else {
-                formData.append('files', pdfFile);
+                uploadFormData.append('files', pdfFile);
                 const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
                 const documentRequestString = {
                     folderId: targetFolderId,
                     files: [{
                         name: fileName.split('.')[0],
-                        issueDate: formatDateForBackend(formData.signedDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                        issueDate: formatDateForBackend(signedDateOverride || formData.signedDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
                         note: 'Air Conditioning F-Gas Report',
                         fileVersion: fileVersion,
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
@@ -868,12 +952,12 @@ const AirConditioningRecurrenceCheck = ({
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequestString));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
 
                 // Use the standard post function with FormData
                 const response = await post(
                     '/api/document/files/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -898,13 +982,13 @@ const AirConditioningRecurrenceCheck = ({
 
     // Ensure upload folder structure is available when site changes
     useEffect(() => {
-        const siteId = siteSelectedForGlobal?.siteId;
+        const siteId = authoritativeSiteId;
         if (siteId) {
             fetchFolderStructure(siteId);
         }
-    }, [siteSelectedForGlobal?.siteId]);
+    }, [authoritativeSiteId]);
 
-    const generatePDF = async (uploadToServer = true) => {
+    const generatePDF = async (uploadToServer = true, signedDateOverride) => {
         try {
             setIsGeneratingPDF(true);
 
@@ -1022,7 +1106,7 @@ const AirConditioningRecurrenceCheck = ({
             setShowPdfButton(true);
 
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName);
+                await uploadPdfToServer(blob, fileName, signedDateOverride);
             }
 
             toast.success('PDF generated successfully!');
@@ -1035,6 +1119,15 @@ const AirConditioningRecurrenceCheck = ({
         } finally {
             setIsGeneratingPDF(false);
         }
+    };
+
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            engineer: newValue?.id || "",
+            user: newValue || {},
+        }));
+        setValidationErrors((prev) => ({ ...prev, engineer: "" }));
     };
 
     const handleSubmit = async (e) => {
@@ -1057,6 +1150,9 @@ const AirConditioningRecurrenceCheck = ({
         if (!formData.gwpLevel) errors.gwpLevel = "Please enter GWP level";
         if (!formData.chargeWeight) errors.chargeWeight = "Please enter charge weight";
         if (!formData.schematicDrawing) errors.schematicDrawing = "Please select Schematic Drawing";
+        if (!formData.engineer || !selectedEngineer) {
+            errors.engineer = "Please select an active engineer for this Site Check.";
+        }
 
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors);
@@ -1067,15 +1163,21 @@ const AirConditioningRecurrenceCheck = ({
         setIsLoading(true);
 
         try {
+            const submissionSignedDate = effectiveCheckStatus === "Open"
+                ? getUkLocalDate()
+                : formData.signedDate;
+
             // First update or create the site check status
             const statusPayload = {
-                siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-                type: 'Inspection',
-                subType: 'Recurrence Check',
-                category: 'Air Conditioning',
+                siteId: authoritativeSiteId,
+                type: siteCheck?.type || 'Inspection',
+                // OLD: Recurrence Check / Air Conditioning broke the UI route after Done.
+                // NEW: preserve the original F-Gas Site Check route.
+                subType: siteCheck?.subType || subType || 'Plant and Equipment Inspection',
+                category: siteCheck?.category || category || 'Air Conditioning F-Gas Report',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                startDate: `${submissionSignedDate}T00:00:00`,
+                dueDate: formatLocalDateTime(calculateExpiryDate(submissionSignedDate, siteCheckDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };
@@ -1125,10 +1227,11 @@ const AirConditioningRecurrenceCheck = ({
             // Then create the recurrence check record using the provided post function
             const recurrencePayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
+                signedDate: submissionSignedDate,
                 assetId: selectedAsset?.assetId,
                 client: formData.clientUser?.id || formData.client,
-                engineer: loggedInUserData?.id,
+                engineer: formData.engineer,
                 siteContact: formData.siteContactUser?.id || formData.siteContact,
                 type: 'Inspection',
                 subType: 'Recurrence Check',
@@ -1151,7 +1254,7 @@ const AirConditioningRecurrenceCheck = ({
             console.log('Recurrence check data saved successfully:', saveResponse.data);
 
             // Generate PDF
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionSignedDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
@@ -1429,6 +1532,9 @@ const AirConditioningRecurrenceCheck = ({
 
                 <div className="row mt-4">
                     <div className="col-md-12">
+                        {/* =========================================================
+                            OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
                         <div className="mb-3">
                             <label className="form-label fw-bold">Engineer's Name</label>
                             <input
@@ -1441,6 +1547,17 @@ const AirConditioningRecurrenceCheck = ({
                                 disabled
                             />
                         </div>
+
+                        ========================================================= */}
+                        <SiteCheckEngineerSelector
+                            options={engineerOptions}
+                            value={selectedEngineer}
+                            onChange={handleEngineerSelect}
+                            isOpen={effectiveCheckStatus === "Open"}
+                            disabled={isSubmitted || !isFormEditable}
+                            loading={isLoadingEngineers}
+                            error={validationErrors.engineer || engineerLoadError}
+                        />
                         <div className="mb-3">
                             <label className="form-label">Date</label>
                             <input

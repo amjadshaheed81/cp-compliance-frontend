@@ -18,6 +18,9 @@ import pdfTemplate from './pdf/Sounder Audibilty Certificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -52,6 +55,7 @@ const SounderAudibilityForm = ({
                                  checkId,
                                  subType,
                                  category,
+                                 siteCheck,
                                  getSiteDetailsById,
                                  siteDetailsById,
                                  siteAssets,
@@ -65,7 +69,7 @@ const SounderAudibilityForm = ({
     address: "",
     assetId: "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     manufacturer: "",
@@ -80,8 +84,8 @@ const SounderAudibilityForm = ({
     clientName: "",
     engineerName: loggedInUserData?.name || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    clientDate: getUkLocalDate(),
+    engineerDate: getUkLocalDate(),
     client: "",
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
@@ -89,6 +93,11 @@ const SounderAudibilityForm = ({
     siteContactUser: null,
     actionId: null,
   });
+
+  // NEW: Use the Site Check's own site, matching Air Conditioning.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,19 +116,49 @@ const SounderAudibilityForm = ({
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
     const [inspectionDetails, setInspectionDetails] = useState(null);
 
+  // NEW: Shared engineer behaviour copied from Air Conditioning.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: checkStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  useEffect(() => {
+    setLastEngineerId(null);
+    setFormData((prev) => ({
+      ...prev,
+      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
+      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
+      engineerName: siteCheck?.status === "Done" ? "" : (loggedInUserData?.name || ""),
+      date: siteCheck?.status === "Open" ? getUkLocalDate() : prev.date,
+      clientDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.clientDate,
+      engineerDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.engineerDate,
+    }));
+  }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
 
     // Check if user is internal and tagged with selected site
   const isInternalUserTaggedWithSite =
       loggedInUserData?.taggedSites?.some(
-          (site) => site.id === siteSelectedForGlobal?.siteId
+          (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
       );
 
-  const fetchInspectionData = async () => {
+  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
     try {
       if (!checkId) return;
 
@@ -130,6 +169,10 @@ const SounderAudibilityForm = ({
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        setLastEngineerId(mostRecentItem.engineer || null);
+        const isCurrentOpenInspection =
+          siteCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.date);
         const selectedAsset = siteAssets.find(
             (asset) => asset.assetId === mostRecentItem.assetId
         );
@@ -159,16 +202,45 @@ const SounderAudibilityForm = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          date: mostRecentItem.date || prev.date,
+          // OLD: date: mostRecentItem.date || prev.date,
+          // NEW: Open = current UK date; Done = saved date.
+          date: siteCheckStatus === "Open"
+            ? getUkLocalDate()
+            : (mostRecentItem.date || prev.date),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           locations: mostRecentItem.locations || prev.locations,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD engineer/user mapping retained for review.
+          // engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          // user: engineerUser || loggedInUserData || prev.user,
+          // NEW: same Open/Done engineer behaviour as Air Conditioning.
+          engineer: siteCheckStatus === "Open"
+            ? (isCurrentOpenInspection
+                ? (mostRecentItem.engineer || loggedInUserData?.id || "")
+                : (loggedInUserData?.id || ""))
+            : (mostRecentItem.engineer || prev.engineer || ""),
+          user: siteCheckStatus === "Open"
+            ? (isCurrentOpenInspection
+                ? (engineerUser || loggedInUserData || {})
+                : (loggedInUserData || {}))
+            : (engineerUser || prev.user || {}),
+          engineerName: siteCheckStatus === "Open"
+            ? (isCurrentOpenInspection
+                ? (engineerUser?.name || loggedInUserData?.name || "")
+                : (loggedInUserData?.name || ""))
+            : (engineerUser?.name || prev.engineerName || ""),
           selectedAsset: selectedAsset || prev.selectedAsset,
-          clientDate: mostRecentItem.clientDate || prev.clientDate,
-          engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
+          // OLD:
+          // clientDate: mostRecentItem.clientDate || prev.clientDate,
+          // engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
+          // NEW: Open = current UK date; Done = saved dates.
+          clientDate: siteCheckStatus === "Open"
+            ? getUkLocalDate()
+            : (mostRecentItem.clientDate || prev.clientDate),
+          engineerDate: siteCheckStatus === "Open"
+            ? getUkLocalDate()
+            : (mostRecentItem.engineerDate || prev.engineerDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
@@ -206,9 +278,9 @@ const SounderAudibilityForm = ({
         setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
             action.checkId === currentCheckId
@@ -296,9 +368,19 @@ const SounderAudibilityForm = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
+        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
+          setCurrentCheckId(siteCheck.checkId);
+          setCheckStatus(siteCheck.status);
+          setInspectionDetails(siteCheck);
+          const isDone = siteCheck.status === "Done";
+          setIsFormEditable(!isDone);
+          setIsSubmitted(isDone);
+          setShowPdfButton(isDone);
+          return siteCheck;
+        }
+        if (!authoritativeSiteId) return null;
 
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
         if (response && response.length > 0) {
           let sounderAudibilityCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -312,6 +394,7 @@ const SounderAudibilityForm = ({
             setIsFormEditable(!isDone);
             setIsSubmitted(isDone);
             setShowPdfButton(isDone);
+            return sounderAudibilityCheck;
           }
           else {
             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
@@ -334,12 +417,12 @@ const SounderAudibilityForm = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
+          const loadedSiteCheck = await fetchSiteCheckData();
+          await fetchInspectionData(loadedSiteCheck?.status || siteCheck?.status || checkStatus);
 
           if (formData.actionId) {
             const action = await fetchActionById(formData.actionId);
@@ -431,7 +514,7 @@ const SounderAudibilityForm = ({
       if (currentCheckId) {
         const inspectionPayload = {
           ...formData,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           assetId: formData.selectedAsset?.assetId || formData.assetId,
           client: formData.clientUser?.id || formData.client,
           engineer: formData.engineer,
@@ -482,7 +565,7 @@ const SounderAudibilityForm = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -512,7 +595,7 @@ const SounderAudibilityForm = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -550,9 +633,10 @@ const SounderAudibilityForm = ({
         return date;
     };
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, dateOverride) => {
     try {
       setIsUploading(true);
+      const dateForUpload = dateOverride || formData.date;
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -566,10 +650,12 @@ const SounderAudibilityForm = ({
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      // OLD: const formData = new FormData();
+      // NEW: avoid hiding React formData state.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -577,20 +663,20 @@ const SounderAudibilityForm = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.date),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(dateForUpload),
+            expiryDate: formatDateForBackend(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -603,18 +689,18 @@ const SounderAudibilityForm = ({
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
+        uploadFormData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.date),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(dateForUpload),
+            expiryDate: formatDateForBackend(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
               note: 'Sounder Audibility Report',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -622,11 +708,11 @@ const SounderAudibilityForm = ({
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -648,7 +734,7 @@ const SounderAudibilityForm = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, submissionDateOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -692,6 +778,7 @@ const SounderAudibilityForm = ({
       };
 
       const smallFont = 8;
+      const effectiveDate = submissionDateOverride || formData.date;
 
       // Address and contact information
       const addressLines = (formData.address || '').split(',');
@@ -700,7 +787,9 @@ const SounderAudibilityForm = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', moment(formData.date).format('DD/MM/YYYY'), smallFont);
+      // OLD: formData.date
+      // NEW: exact UK submission date.
+      setTextField('Date', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
       setTextField('Job No', formData.job || '', smallFont);
@@ -728,8 +817,10 @@ const SounderAudibilityForm = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', moment(formData.clientDate).format('DD/MM/YYYY'), smallFont);
-      setTextField('on_2', moment(formData.engineerDate).format('DD/MM/YYYY'), smallFont);
+      // OLD: clientDate / engineerDate saved separately from the submission date.
+      // NEW: Open completion uses the same current UK date.
+      setTextField('on', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
+      setTextField('on_2', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -741,7 +832,7 @@ const SounderAudibilityForm = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, effectiveDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -762,6 +853,17 @@ const SounderAudibilityForm = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+      engineerName: newValue?.name || "",
+    }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
   const handleAssetSelect = (event, newValue) => {
@@ -834,9 +936,13 @@ const SounderAudibilityForm = ({
 
     // Form validation
     const errors = {};
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.engineer) toast.error(errors.engineer);
       return;
     }
 
@@ -844,6 +950,16 @@ const SounderAudibilityForm = ({
     setIsLoading(true);
 
     try {
+      const submissionDate = checkStatus === "Open" ? getUkLocalDate() : formData.date;
+      if (checkStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          date: submissionDate,
+          clientDate: submissionDate,
+          engineerDate: submissionDate,
+        }));
+      }
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -857,13 +973,15 @@ const SounderAudibilityForm = ({
 
       // First update or create the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Sounder Audibility',
-        category: 'Sounder Audibility Report',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+        // OLD: subType/category used internal values and broke UI routing.
+        // NEW: preserve the original Site Check routing values.
+        subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
+        category: siteCheck?.category || 'Fire Alarm Sounder Audibilty',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+        startDate: `${submissionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -898,10 +1016,13 @@ const SounderAudibilityForm = ({
       // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        date: submissionDate,
+        clientDate: submissionDate,
+        engineerDate: submissionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Sounder Audibility',
@@ -932,7 +1053,7 @@ const SounderAudibilityForm = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -956,7 +1077,7 @@ const SounderAudibilityForm = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1021,7 +1142,7 @@ const SounderAudibilityForm = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1400,7 +1521,7 @@ const SounderAudibilityForm = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Fire Alarm to meet BS5839 - Fire Alarm Sounder Audibilty`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1439,6 +1560,9 @@ const SounderAudibilityForm = ({
               </div>
             </div>
             <div className="col-md-6">
+              {/* =========================================================
+                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
                 <input
@@ -1451,6 +1575,19 @@ const SounderAudibilityForm = ({
                     disabled
                 />
               </div>
+
+              ========================================================= */}
+
+              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+              <SiteCheckEngineerSelector
+                options={engineerOptions}
+                value={selectedEngineer}
+                onChange={handleEngineerSelect}
+                isOpen={checkStatus === "Open"}
+                disabled={isSubmitted || !isFormEditable}
+                loading={isLoadingEngineers}
+                error={validationErrors.engineer || engineerLoadError}
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input

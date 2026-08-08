@@ -18,6 +18,9 @@ import axios from 'axios';
 import pdfTemplate from './pdf/ExtractFan.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -60,12 +63,13 @@ const FanExtract = ({
                       getUsers,
                       siteSelectedForGlobal,
                       loggedInUserData,
+                      siteCheck = {},
                     }) => {
   const [formData, setFormData] = useState({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     manufacturer: "",
@@ -83,7 +87,7 @@ const FanExtract = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
@@ -112,6 +116,42 @@ const FanExtract = ({
     const [inspectionDetails, setInspectionDetails] = useState(null);
 
     const navigate = useNavigate();
+
+  // NEW: Use the Site Check itself as the authoritative site/status source.
+  const authoritativeSiteId = siteCheck?.siteId
+      ? Number(siteCheck.siteId)
+      : Number(siteSelectedForGlobal?.siteId) || null;
+  const [lastEngineerId, setLastEngineerId] = useState(null);
+  const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
+
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: effectiveCheckStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
+  useEffect(() => {
+    if (effectiveCheckStatus !== "Open") return;
+
+    setFormData((prev) => ({
+      ...prev,
+      inspectionDate: getUkLocalDate(),
+      signedDate: getUkLocalDate(),
+      engineer: prev.engineer || loggedInUserData?.id || "",
+      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+    }));
+  }, [effectiveCheckStatus, loggedInUserData?.id]);
 
   const isInternalUserTaggedWithSite = true;
 
@@ -144,6 +184,12 @@ const FanExtract = ({
             (user) => user.id === mostRecentItem.siteContact
         );
 
+        const savedEngineerId = mostRecentItem.engineer || null;
+        setLastEngineerId(savedEngineerId);
+        const isCurrentOpenInspection =
+            effectiveCheckStatus === "Open" &&
+            isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
         // Fetch action data if actionId exists
         let existingAction = null;
         if (mostRecentItem.actionId) {
@@ -159,7 +205,7 @@ const FanExtract = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          inspectionDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
@@ -175,10 +221,16 @@ const FanExtract = ({
           param5: mostRecentItem.param5 || prev.param5,
           param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD: engineer/user always preferred the saved record, even while Open.
+          // NEW: same Open/Done behaviour as Air Conditioning.
+          engineer: effectiveCheckStatus === "Open"
+              ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+              : (savedEngineerId || prev.engineer || ""),
+          user: effectiveCheckStatus === "Open"
+              ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+              : (engineerUser || prev.user || {}),
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
@@ -217,9 +269,9 @@ const FanExtract = ({
       }
 
       // Now look for other actions specifically for this checkId
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
@@ -333,9 +385,9 @@ const FanExtract = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
+        if (!authoritativeSiteId) return;
 
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
         if (response && response.length > 0) {
           let extractFanCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -378,10 +430,10 @@ const FanExtract = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
           await fetchSiteCheckData();
           await fetchInspectionData();
 
@@ -398,9 +450,12 @@ const FanExtract = ({
           }
 
           const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
+              (site) => Number(site.siteId) === Number(authoritativeSiteId)
           );
-          const siteData = currentSite || siteSelectedForGlobal;
+          const siteData = currentSite ||
+              (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
+                  ? siteSelectedForGlobal
+                  : siteDetailsById);
 
           if (siteData) {
             const addressParts = [
@@ -416,11 +471,11 @@ const FanExtract = ({
             setFormData((prev) => ({ ...prev, address: fullAddress }));
           }
 
-          if (siteSelectedForGlobal.siteContact) {
+          if (siteData?.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
         }
@@ -504,7 +559,7 @@ const FanExtract = ({
           siteContactUser: formData.siteContactUser,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Extract Fan',
           category: 'Extract Fan',
@@ -559,7 +614,7 @@ const FanExtract = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) return 1;
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -594,7 +649,7 @@ const FanExtract = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -618,7 +673,7 @@ const FanExtract = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
     try {
       setIsUploading(true);
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
@@ -645,9 +700,9 @@ const FanExtract = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `EF-${new Date().getTime()}`
@@ -678,11 +733,11 @@ const FanExtract = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               note: 'Extract Fan Certificate',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -716,7 +771,7 @@ const FanExtract = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -770,7 +825,7 @@ const FanExtract = ({
       setTextField('address2', addressLines[2] || '', smallFont);
       setTextField('address3', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
       setTextField('siteContact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('contactNo', formData.siteContactNo || '', smallFont);
       setTextField('jobNo', formData.job || '', smallFont);
@@ -810,12 +865,12 @@ const FanExtract = ({
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
-      const engineerName = formData.user?.name || '';
+      const engineerName = selectedEngineer?.name || formData.user?.name || '';
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
 
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
@@ -826,7 +881,7 @@ const FanExtract = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -873,6 +928,9 @@ const FanExtract = ({
     if (!formData.param3) errors.param3 = "Please select one option";
     if (!formData.param4) errors.param4 = "Please select one option";
     if (!formData.param5) errors.param5 = "Please select one option";
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -883,6 +941,18 @@ const FanExtract = ({
     setIsLoading(true);
 
     try {
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate =
+          effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
+
+      if (effectiveCheckStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -896,13 +966,14 @@ const FanExtract = ({
 
       // First update the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Plant and Equipment Inspection',
-        category: 'Extract Fan',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+        subType: siteCheck?.subType || 'Plant and Equipment Inspection',
+        // OLD category: 'Extract Fan' broke the UI route after completion.
+        category: siteCheck?.category || 'Extract Fan Cleaning',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -937,10 +1008,12 @@ const FanExtract = ({
       // Then update the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Extract Fan',
@@ -972,7 +1045,7 @@ const FanExtract = ({
 
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -999,7 +1072,7 @@ const FanExtract = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
               )
           ) || [];
 
@@ -1073,7 +1146,7 @@ const FanExtract = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
               )
           ) || [];
 
@@ -1140,6 +1213,16 @@ const FanExtract = ({
             disabled={isSubmitted}
         />
     );
+  };
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
   const filteredAssets =
@@ -1622,7 +1705,7 @@ const FanExtract = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Plant and Equipment Inspection - Extract Fan Inspection`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1661,6 +1744,9 @@ const FanExtract = ({
               </div>
             </div>
             <div className="col-md-6">
+              {/* =========================================================
+                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
                 <input
@@ -1673,6 +1759,19 @@ const FanExtract = ({
                     disabled
                 />
               </div>
+
+              ========================================================= */}
+
+              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+              <SiteCheckEngineerSelector
+                  options={engineerOptions}
+                  value={selectedEngineer}
+                  onChange={handleEngineerSelect}
+                  isOpen={effectiveCheckStatus === "Open"}
+                  disabled={isSubmitted || !isFormEditable}
+                  loading={isLoadingEngineers}
+                  error={validationErrors.engineer || engineerLoadError}
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input
@@ -1722,7 +1821,7 @@ const FanExtract = ({
             ) : (
                 <div className="text-center">
                   <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                    Report submitted successfully on {getUkLocalDate()}
                   </div>
                 </div>
             )}

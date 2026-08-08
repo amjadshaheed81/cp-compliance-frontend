@@ -17,6 +17,12 @@ import pdfTemplate from './pdf/Intruder Alarm.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import {
+  getUkLocalDate,
+  isCurrentUkInspectionDate,
+} from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -51,6 +57,7 @@ const IntruderAlarmCertificate = ({
                                     checkId,
                                     subType,
                                     category,
+                                    siteCheck,
                                     siteDetailsById,
                                     getSiteDetailsById,
                                     siteAssets,
@@ -64,7 +71,7 @@ const IntruderAlarmCertificate = ({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     report: "",
@@ -81,13 +88,18 @@ const IntruderAlarmCertificate = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
   });
 
   const sites = useSelector((state) => state.site.sites);
+
+  // NEW: Use the exact Site Check site, matching Air Conditioning.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -105,11 +117,42 @@ const IntruderAlarmCertificate = ({
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
   const [siteCheckDetails, setSiteCheckDetails] = useState(null);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
   const navigate = useNavigate();
+
+  // NEW: Shared engineer behaviour copied from the approved Air Conditioning form.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: checkStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Open checks start with the logged-in engineer and current UK date.
+  // Done checks are restored from the saved inspection record.
+  useEffect(() => {
+    setLastEngineerId(null);
+    setFormData((prev) => ({
+      ...prev,
+      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
+      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
+      inspectionDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.inspectionDate,
+      signedDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.signedDate,
+    }));
+  }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
 
   const [popup, setPopup] = useState({
     show: false,
@@ -137,14 +180,14 @@ const IntruderAlarmCertificate = ({
   const isInternalUserTaggedWithSite =
       (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
       loggedInUserData?.taggedSites?.some(
-          (site) => site.id === siteSelectedForGlobal?.siteId
+          (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
       );
 
   const selectedAsset = siteAssets.find(
       (asset) => asset.assetId === formData.assetId
   );
 
-  const fetchInspectionData = async () => {
+  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
     try {
       if (!checkId) return;
 
@@ -155,6 +198,11 @@ const IntruderAlarmCertificate = ({
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        setLastEngineerId(mostRecentItem.engineer || null);
+
+        const isCurrentOpenInspection =
+          siteCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
         const selectedAsset = siteAssets.find(
             (asset) => asset.assetId === mostRecentItem.assetId
         );
@@ -184,7 +232,12 @@ const IntruderAlarmCertificate = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          // OLD: inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          // NEW: Open = current UK date; Done = saved historical date.
+          inspectionDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
@@ -198,10 +251,29 @@ const IntruderAlarmCertificate = ({
           param8: mostRecentItem.param8 || prev.param8,
 
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD:
+          // engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          // user: engineerUser || loggedInUserData || prev.user,
+          // NEW: same Open/Done engineer behaviour as Air Conditioning.
+          engineer:
+            siteCheckStatus === "Open"
+              ? (isCurrentOpenInspection
+                  ? (mostRecentItem.engineer || loggedInUserData?.id || "")
+                  : (loggedInUserData?.id || ""))
+              : (mostRecentItem.engineer || prev.engineer || ""),
+          user:
+            siteCheckStatus === "Open"
+              ? (isCurrentOpenInspection
+                  ? (engineerUser || loggedInUserData || {})
+                  : (loggedInUserData || {}))
+              : (engineerUser || prev.user || {}),
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          // OLD: signedDate: mostRecentItem.signedDate || prev.signedDate,
+          // NEW: Open = current UK date; Done = saved historical date.
+          signedDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
@@ -236,9 +308,9 @@ const IntruderAlarmCertificate = ({
         setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
             action.checkId === currentCheckId
@@ -326,9 +398,21 @@ const IntruderAlarmCertificate = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
+        // NEW: Prefer the exact check already loaded by UpdateSiteCheck.
+        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
+          setCurrentCheckId(siteCheck.checkId);
+          setCheckStatus(siteCheck.status);
+          setSiteCheckDetails(siteCheck);
+          const isDone = siteCheck.status === "Done";
+          setIsFormEditable(!isDone);
+          setIsSubmitted(isDone);
+          setShowPdfButton(isDone);
+          return siteCheck;
+        }
 
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        if (!authoritativeSiteId) return null;
+
+        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
         if (response && response.length > 0) {
           let intruderAlarmCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -343,6 +427,7 @@ const IntruderAlarmCertificate = ({
             setIsFormEditable(!isDone);
             setIsSubmitted(isDone);
             setShowPdfButton(isDone);
+            return intruderAlarmCheck;
           } else {
             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
             setIsFormEditable(true);
@@ -364,12 +449,14 @@ const IntruderAlarmCertificate = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
+          const loadedSiteCheck = await fetchSiteCheckData();
+          await fetchInspectionData(
+            loadedSiteCheck?.status || siteCheck?.status || checkStatus
+          );
 
           if (formData.actionId) {
             const action = await fetchActionById(formData.actionId);
@@ -481,7 +568,7 @@ const IntruderAlarmCertificate = ({
           siteContactUser: formData.siteContactUser,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Intruder Alarm',
           category: 'Intruder Alarm Service',
@@ -511,6 +598,16 @@ const IntruderAlarmCertificate = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
   const formatDateForBackend = (dateString) => {
@@ -552,7 +649,7 @@ const IntruderAlarmCertificate = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -590,7 +687,7 @@ const IntruderAlarmCertificate = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -614,9 +711,10 @@ const IntruderAlarmCertificate = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
     try {
       setIsUploading(true);
+      const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -630,10 +728,13 @@ const IntruderAlarmCertificate = ({
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+
+      // OLD: const formData = new FormData();
+      // NEW: avoid hiding the React formData state.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -641,20 +742,20 @@ const IntruderAlarmCertificate = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateForUpload),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `IntruderAlarm-${new Date().getTime()}`
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -667,18 +768,18 @@ const IntruderAlarmCertificate = ({
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
+        uploadFormData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(inspectionDateForUpload),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
             note: 'Intruder Alarm Service Certificate',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -686,11 +787,11 @@ const IntruderAlarmCertificate = ({
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -712,7 +813,7 @@ const IntruderAlarmCertificate = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -769,6 +870,7 @@ const IntruderAlarmCertificate = ({
 
       const smallFont = 8;
       const mediumFont = 10;
+      const effectiveInspectionDate = inspectionDateOverride || formData.inspectionDate;
 
       // Address and contact information
       const addressLines = (formData.address || '').split(',');
@@ -777,7 +879,9 @@ const IntruderAlarmCertificate = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      // OLD: setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      // NEW: exact UK submission date.
+      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
       setTextField('Job No', formData.job || '', smallFont);
@@ -814,8 +918,12 @@ const IntruderAlarmCertificate = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      // OLD signature-date mapping retained for review.
+      // setTextField('on', dateFormat(formData.signedDate), smallFont);
+      // setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      // NEW: exact UK submission date.
+      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
+      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -827,7 +935,7 @@ const IntruderAlarmCertificate = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -890,6 +998,9 @@ const IntruderAlarmCertificate = ({
 
     // Form validation
     const errors = {};
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -901,6 +1012,7 @@ const IntruderAlarmCertificate = ({
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.engineer) toast.error(errors.engineer);
       return;
     }
 
@@ -908,6 +1020,18 @@ const IntruderAlarmCertificate = ({
     setIsLoading(true);
 
     try {
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate =
+        checkStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
+
+      if (checkStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -921,13 +1045,15 @@ const IntruderAlarmCertificate = ({
 
       // First update or create the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Intruder Alarm',
-        category: 'Intruder Alarm Service',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+        // OLD: subType: 'Intruder Alarm', category: 'Intruder Alarm Service'
+        // NEW: preserve the routing values of the Site Check.
+        subType: siteCheck?.subType || 'Intruder Alarm',
+        category: siteCheck?.category || 'Intruder Alarm Servicing & Inspection',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -962,10 +1088,12 @@ const IntruderAlarmCertificate = ({
       // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Intruder Alarm',
@@ -996,7 +1124,7 @@ const IntruderAlarmCertificate = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1024,7 +1152,7 @@ const IntruderAlarmCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => site.id === authoritativeSiteId
               )
           ) || [];
 
@@ -1098,7 +1226,7 @@ const IntruderAlarmCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => site.id === authoritativeSiteId
               )
           ) || [];
 
@@ -1806,7 +1934,7 @@ const IntruderAlarmCertificate = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Intruder Alarm System Service`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1845,6 +1973,9 @@ const IntruderAlarmCertificate = ({
               </div>
             </div>
             <div className="col-md-6">
+              {/* =========================================================
+                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
                 <input
@@ -1857,6 +1988,19 @@ const IntruderAlarmCertificate = ({
                     disabled
                 />
               </div>
+
+              ========================================================= */}
+
+              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+              <SiteCheckEngineerSelector
+                options={engineerOptions}
+                value={selectedEngineer}
+                onChange={handleEngineerSelect}
+                isOpen={checkStatus === "Open"}
+                disabled={isSubmitted || !isFormEditable}
+                loading={isLoadingEngineers}
+                error={validationErrors.engineer || engineerLoadError}
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input
@@ -1906,7 +2050,7 @@ const IntruderAlarmCertificate = ({
             ) : (
                 <div className="text-center">
                   <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                    Report submitted successfully on {getUkLocalDate()}
                   </div>
                 </div>
             )}

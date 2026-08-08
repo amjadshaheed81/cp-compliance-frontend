@@ -630,12 +630,15 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                         )}
                         {step === "inspection-electrical-lightning" && (
                             <Item>
+                                {/* NEW: Pass the exact Site Check so the form
+                                    uses the same site/status rules as Air Conditioning. */}
                                 <ExternalLightningCertificate
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -646,6 +649,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
+                                    siteCheck={siteCheck}
                                     leadUserID={siteCheck?.leadUserID}
                                 />
                             </Item>
@@ -657,6 +661,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
+                                    siteCheck={siteCheck}
                                     leadUserID={siteCheck?.leadUserID}
                                 />
                             </Item>
@@ -669,6 +674,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -680,6 +686,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -691,6 +698,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -700,6 +708,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                 sasToken={sasToken}
                                 subType={siteCheck?.subType}
                                 category={siteCheck.category}
+                                siteCheck={siteCheck}
                                 leadUserID={siteCheck?.leadUserID}
                             />
                         )}
@@ -724,6 +733,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -734,6 +744,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
+                                    siteCheck={siteCheck}
                                     leadUserID={siteCheck?.leadUserID}
                                 />
                             </Item>
@@ -746,6 +757,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -757,6 +769,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -767,6 +780,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
+                                    siteCheck={siteCheck}
                                     leadUserID={siteCheck?.leadUserID}
                                 />
                             </Item>
@@ -779,6 +793,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -790,6 +805,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -813,6 +829,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -824,6 +841,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}
@@ -835,6 +853,7 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
                                     leadUserID={siteCheck?.leadUserID}
+                                    siteCheck={siteCheck}
                                 />
                             </Item>
                         )}

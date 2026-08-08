@@ -18,6 +18,12 @@ import pdfTemplate from './pdf/MicrowaveOvenCertificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import {
+  getUkLocalDate,
+  isCurrentUkInspectionDate,
+} from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -51,6 +57,7 @@ const MicroWaveOvenCertificate = ({
                                     checkId,
                                     subType,
                                     category,
+                                    siteCheck,
                                     getSiteDetailsById,
                                     siteAssets,
                                     getSiteAssets,
@@ -63,7 +70,7 @@ const MicroWaveOvenCertificate = ({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     report: "",
@@ -74,13 +81,20 @@ const MicroWaveOvenCertificate = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
   });
 
   const sites = useSelector((state) => state.site.sites);
+
+  // NEW: Use the Site Check's own site for engineers, assets and documents.
+  // The global site remains only as a temporary fallback while the parent loads.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -98,10 +112,101 @@ const MicroWaveOvenCertificate = ({
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
   const [siteCheckDetails, setSiteCheckDetails] = useState(null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
   const navigate = useNavigate();
+
+  // NEW: Shared engineer list/selection behaviour copied from Air Conditioning.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: checkStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Reset only the shared engineer/date fields when another Site Check opens.
+  // The inspection loader restores historical values when status is Done.
+  useEffect(() => {
+    setLastEngineerId(null);
+
+    setFormData((prev) => ({
+      ...prev,
+      engineer:
+        siteCheck?.status === "Done"
+          ? ""
+          : (loggedInUserData?.id || ""),
+      user:
+        siteCheck?.status === "Done"
+          ? {}
+          : (loggedInUserData || {}),
+      inspectionDate:
+        siteCheck?.status === "Open"
+          ? getUkLocalDate()
+          : prev.inspectionDate,
+      signedDate:
+        siteCheck?.status === "Open"
+          ? getUkLocalDate()
+          : prev.signedDate,
+    }));
+  }, [
+    checkId,
+    authoritativeSiteId,
+    siteCheck?.status,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+  ]);
+
+  // NEW: Open checks default to the logged-in engineer, matching Air Conditioning.
+  // A deliberate engineer selection is not overwritten while the form is open.
+  useEffect(() => {
+    if (checkStatus !== "Open" || !loggedInUserData?.id) {
+      return;
+    }
+
+    setFormData((prev) => {
+      if (
+        prev.engineer &&
+        String(prev.engineer) !== String(loggedInUserData.id)
+      ) {
+        return prev;
+      }
+
+      const loggedInEngineer =
+        engineerOptions.find(
+          (user) => String(user.id) === String(loggedInUserData.id)
+        ) || loggedInUserData;
+
+      if (
+        String(prev.engineer || "") === String(loggedInEngineer.id) &&
+        prev.user?.name === loggedInEngineer.name
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        engineer: loggedInEngineer.id,
+        user: loggedInEngineer,
+      };
+    });
+  }, [
+    checkId,
+    checkStatus,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+    engineerOptions,
+  ]);
 
   const isInternalUserTaggedWithSite = true;
 
@@ -132,9 +237,9 @@ const MicroWaveOvenCertificate = ({
       }
 
       // Now look for other actions specifically for this checkId
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
@@ -161,7 +266,7 @@ const MicroWaveOvenCertificate = ({
       console.error("Error fetching existing actions:", error);
     }
   };
-  const fetchInspectionData = async () => {
+  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
     try {
       if (!checkId) return;
 
@@ -169,53 +274,118 @@ const MicroWaveOvenCertificate = ({
         await getUsers();
       }
 
-      const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        setLastEngineerId(mostRecentItem.engineer || null);
+
         const selectedAsset = siteAssets.find(
-            (asset) => asset.assetId === mostRecentItem.assetId
+          (asset) =>
+            String(asset.assetId) === String(mostRecentItem.assetId)
         );
 
         const clientUser = users.find(
-            (user) => user.id === mostRecentItem.client
+          (user) => String(user.id) === String(mostRecentItem.client)
         );
         const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
+          (user) => String(user.id) === String(mostRecentItem.engineer)
         );
         const siteContactUser = users.find(
-            (user) => user.id === mostRecentItem.siteContact
+          (user) =>
+            String(user.id) === String(mostRecentItem.siteContact)
         );
 
-        let existingAction = null;
+        let existingInspectionAction = null;
         if (mostRecentItem.actionId) {
-          existingAction = await fetchActionById(mostRecentItem.actionId);
-          if (existingAction) {
-            setExistingAction(existingAction);
+          existingInspectionAction = await fetchActionById(
+            mostRecentItem.actionId
+          );
+          if (existingInspectionAction) {
+            setExistingAction(existingInspectionAction);
             setActionRaised(true);
           }
         }
+
+        const isCurrentOpenInspection =
+          siteCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
+        const openInspectionEngineer = isCurrentOpenInspection
+          ? (engineerUser || loggedInUserData || {})
+          : (loggedInUserData || {});
 
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
-          siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
-          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          siteContact:
+            mostRecentItem.siteContact || prev.siteContact,
+
+          // OLD:
+          // inspectionDate:
+          //   mostRecentItem.inspectionDate || prev.inspectionDate,
+
+          // NEW: Open uses today's UK date; Done uses the saved date.
+          inspectionDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.inspectionDate || prev.inspectionDate),
+
+          siteContactNo:
+            mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
           param1: mostRecentItem.param1 || prev.param1,
           param2: mostRecentItem.param2 || prev.param2,
           param3: mostRecentItem.param3 || prev.param3,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+
+          // OLD:
+          // engineer:
+          //   mostRecentItem.engineer ||
+          //   prev.engineer ||
+          //   loggedInUserData?.id,
+          // user: engineerUser || loggedInUserData || prev.user,
+
+          // NEW: Match Air Conditioning Open/Done engineer behaviour.
+          engineer:
+            siteCheckStatus === "Open"
+              ? (
+                  isCurrentOpenInspection
+                    ? (
+                        mostRecentItem.engineer ||
+                        loggedInUserData?.id ||
+                        ""
+                      )
+                    : (loggedInUserData?.id || "")
+                )
+              : (mostRecentItem.engineer || prev.engineer || ""),
+          user:
+            siteCheckStatus === "Open"
+              ? openInspectionEngineer
+              : (engineerUser || prev.user || {}),
+
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+
+          // OLD:
+          // signedDate:
+          //   mostRecentItem.signedDate || prev.signedDate,
+
+          // NEW: Open uses today's UK date; Done uses the saved date.
+          signedDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.signedDate || prev.signedDate),
+
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
         }));
+      } else {
+        setLastEngineerId(null);
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
@@ -271,99 +441,140 @@ const MicroWaveOvenCertificate = ({
   };
 
   useEffect(() => {
+    const applySiteCheckState = (loadedSiteCheck) => {
+      if (!loadedSiteCheck) {
+        return null;
+      }
+
+      setCurrentCheckId(loadedSiteCheck.checkId);
+      setCheckStatus(loadedSiteCheck.status);
+      setSiteCheckDetails(loadedSiteCheck);
+
+      const isDone = loadedSiteCheck.status === "Done";
+      setIsFormEditable(!isDone);
+      setIsSubmitted(isDone);
+      setShowPdfButton(isDone);
+
+      return loadedSiteCheck;
+    };
+
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
-
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
-        if (response && response.length > 0) {
-          let microwaveCheck = checkId
-              ? response.find(check => check.checkId === parseInt(checkId, 10))
-              : null;
-
-          // if (!microwaveCheck) {
-          //   microwaveCheck = response.find(check =>
-          //       check.type === 'Inspection' &&
-          //       check.subType === 'Plant and Equipment Inspection' &&
-          //       check.category === 'Microwave Oven Certificate'
-          //   );
-          // }
-
-          if (microwaveCheck) {
-            console.log('Found check:', {
-              checkId: microwaveCheck.checkId,
-              requestedCheckId: checkId,
-              matchType: microwaveCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
-            });
-
-            setCurrentCheckId(microwaveCheck.checkId);
-            setCheckStatus(microwaveCheck.status);
-            setSiteCheckDetails(microwaveCheck);
-            const isDone = microwaveCheck.status === 'Done';
-            setIsFormEditable(!isDone);
-            setIsSubmitted(isDone);
-            setShowPdfButton(isDone);
-          } else {
-            console.log('No matching check found, using checkId from URL:', checkId);
-            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
-            setIsFormEditable(true);
-            setIsSubmitted(false);
-            setShowPdfButton(false);
-          }
+        // NEW: Prefer the exact Site Check already loaded by UpdateSiteCheck.
+        if (
+          siteCheck &&
+          Number(siteCheck.checkId) === Number(checkId)
+        ) {
+          return applySiteCheckState(siteCheck);
         }
-      } catch (error) {
-        console.error('Error fetching site check data:', error);
-        toast.error('Failed to load site check status');
+
+        /*
+         * OLD BEHAVIOUR RETAINED AS A FALLBACK:
+         * The component used to retrieve every Site Check for the globally
+         * selected site and then search for checkId.
+         */
+        if (!authoritativeSiteId) return null;
+
+        const response = await get(
+          `/api/site-check/site/${authoritativeSiteId}`
+        );
+
+        const microwaveCheck = checkId
+          ? response?.find(
+              (check) => Number(check.checkId) === Number(checkId)
+            )
+          : null;
+
+        if (microwaveCheck) {
+          return applySiteCheckState(microwaveCheck);
+        }
+
+        setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
         setIsFormEditable(true);
+        setIsSubmitted(false);
+        setShowPdfButton(false);
+        return null;
+      } catch (error) {
+        console.error("Error fetching site check data:", error);
+        toast.error("Failed to load site check status");
+        setIsFormEditable(true);
+        return null;
       }
     };
 
     const fetchData = async () => {
       setIsLoading(true);
-      try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
 
-          if (formData.actionId) {
-            const action = await fetchActionById(formData.actionId);
-            if (action) {
-              setExistingAction(action);
-              setActionRaised(true);
-            } else {
-              await fetchExistingActions();
-            }
+      try {
+        if (!authoritativeSiteId) {
+          return;
+        }
+
+        // OLD:
+        // await getSiteAssets(siteSelectedForGlobal?.siteId);
+        // await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+        // await fetchFolderStructure(siteSelectedForGlobal.siteId);
+
+        // NEW: Use the Site Check's own site.
+        await getSiteAssets(authoritativeSiteId);
+        await getSiteDetailsById(authoritativeSiteId);
+        await fetchFolderStructure(authoritativeSiteId);
+
+        const loadedSiteCheck = await fetchSiteCheckData();
+        await fetchInspectionData(
+          loadedSiteCheck?.status || checkStatus
+        );
+
+        if (formData.actionId) {
+          const action = await fetchActionById(formData.actionId);
+          if (action) {
+            setExistingAction(action);
+            setActionRaised(true);
           } else {
             await fetchExistingActions();
           }
+        } else {
+          await fetchExistingActions();
+        }
 
-          const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
+        const currentSite = sites.find(
+          (site) =>
+            Number(site.siteId ?? site.id) === authoritativeSiteId
+        );
+
+        const selectedGlobalSiteId = Number(
+          siteSelectedForGlobal?.siteId ?? siteSelectedForGlobal?.id
+        );
+
+        const siteData =
+          currentSite ||
+          (
+            selectedGlobalSiteId === authoritativeSiteId
+              ? siteSelectedForGlobal
+              : null
           );
-          const siteData = currentSite || siteSelectedForGlobal;
 
-          if (siteData) {
-            const addressParts = [
-              siteData.address1,
-              siteData.address2,
-              siteData.city,
-              siteData.area,
-              siteData.postCode,
-              siteData.country,
-            ].filter((part) => part && part.trim() !== "");
+        if (siteData) {
+          const addressParts = [
+            siteData.address1,
+            siteData.address2,
+            siteData.city,
+            siteData.area,
+            siteData.postCode,
+            siteData.country,
+          ].filter((part) => part && part.trim() !== "");
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({
+            ...prev,
+            address: fullAddress,
+          }));
 
-          if (siteSelectedForGlobal.siteContact) {
+          if (siteData.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
         }
@@ -377,12 +588,15 @@ const MicroWaveOvenCertificate = ({
 
     fetchData();
   }, [
+    siteCheck,
+    checkId,
+    authoritativeSiteId,
     siteSelectedForGlobal,
     getSiteAssets,
+    getSiteDetailsById,
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
-    checkId,
   ]);
 
   useEffect(() => {
@@ -437,7 +651,7 @@ const MicroWaveOvenCertificate = ({
           siteContactUser: formData.siteContactUser,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Microwave Oven',
           category: 'Microwave Oven Certificate',
@@ -492,6 +706,21 @@ const MicroWaveOvenCertificate = ({
     }));
   };
 
+  // NEW: Save both the selected engineer ID and user object.
+  // This is the approved Air Conditioning behaviour.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+
+    setValidationErrors((prev) => ({
+      ...prev,
+      engineer: "",
+    }));
+  };
+
   const formatDateForBackend = (dateString) => {
     if (!dateString) return null;
     const date = new Date(dateString);
@@ -531,7 +760,7 @@ const MicroWaveOvenCertificate = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -561,7 +790,7 @@ const MicroWaveOvenCertificate = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -585,26 +814,55 @@ const MicroWaveOvenCertificate = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (
+    pdfBlob,
+    fileName,
+    inspectionDateOverride
+  ) => {
     try {
       setIsUploading(true);
+
+      const inspectionDateForUpload =
+        inspectionDateOverride || formData.inspectionDate;
+
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
       }
 
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const targetFolderId = folderIds.microwaveOvenTesting || folderIds.logBooks;
+      const pdfFile = new File([pdfBlob], fileName, {
+        type: 'application/pdf',
+      });
+
+      const targetFolderId =
+        folderIds.microwaveOvenTesting || folderIds.logBooks;
 
       if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
+        throw new Error(
+          'Could not determine target folder for PDF upload'
+        );
       }
 
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      const { exists, file: existingFile } =
+        await checkFileExists(targetFolderId, fileName);
+
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const formData = new FormData();
+       * issueDate: formatDateForBackend(formData.inspectionDate)
+       *
+       * The local FormData variable hid the React formData state, so the
+       * document issue and expiry dates could be created from undefined.
+       */
+
+      // NEW: Use a clearly named upload FormData object and the same UK date
+      // used by the Open-to-Done Site Check submission.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
+
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -612,64 +870,94 @@ const MicroWaveOvenCertificate = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(
+              inspectionDateForUpload
+            ),
+            expiryDate: formatDateForBackend(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                siteCheckDetails?.repeatFrequency
+              )
+            ),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `MOTC-${new Date().getTime()}`
-          }]
+            referenceNumber: `MOTC-${new Date().getTime()}`,
+          }],
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append(
+          'documentRequestString',
+          JSON.stringify(documentRequestString)
+        );
+
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
+            'Accept': 'application/json',
+          },
         });
 
         if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+          toast.success(
+            `PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`
+          );
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        uploadFormData.append('files', pdfFile);
+
+        const fileVersion = await getHighestFileVersion(
+          targetFolderId,
+          fileName
+        );
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(
+              inspectionDateForUpload
+            ),
+            expiryDate: formatDateForBackend(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                siteCheckDetails?.repeatFrequency
+              )
+            ),
             note: 'Microwave Oven Testing Certificate',
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            fileVersion,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `MOTC-${new Date().getTime()}`
-          }]
+            referenceNumber: `MOTC-${new Date().getTime()}`,
+          }],
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append(
+          'documentRequestString',
+          JSON.stringify(documentRequestString)
+        );
+
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
 
         if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          toast.success(
+            `PDF uploaded successfully as version ${fileVersion}!`
+          );
           return true;
         }
       }
@@ -683,7 +971,10 @@ const MicroWaveOvenCertificate = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (
+    uploadToServer = true,
+    inspectionDateOverride
+  ) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -760,6 +1051,8 @@ const MicroWaveOvenCertificate = ({
 
       const smallFont = 8;
       const mediumFont = 10;
+      const effectiveInspectionDate =
+        inspectionDateOverride || formData.inspectionDate;
 
       // Address and contact information
       const addressLines = (formData.address || '').split(',');
@@ -769,7 +1062,11 @@ const MicroWaveOvenCertificate = ({
       setTextField('postalCode', addressLines[3] || '', smallFont);
       setTextField('country', addressLines[4] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      // OLD:
+      // setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+
+      // NEW: Use the exact UK date used by the Open-to-Done submission.
+      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
       setTextField('SiteContractNo', formData.siteContactNo || '', smallFont);
       setTextField('JobNo', formData.job || '', smallFont);
@@ -789,12 +1086,21 @@ const MicroWaveOvenCertificate = ({
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
-      const engineerName = formData.user?.name || '';
+
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const engineerName = formData.user?.name || '';
+       */
+
+      // NEW: Use the engineer selected in the shared control.
+      const engineerName =
+        selectedEngineer?.name || formData.user?.name || '';
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
+      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -806,7 +1112,11 @@ const MicroWaveOvenCertificate = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(
+          blob,
+          fileName,
+          effectiveInspectionDate
+        );
       }
 
       toast.success('PDF generated successfully!');
@@ -850,6 +1160,13 @@ const MicroWaveOvenCertificate = ({
     // Form validation with detailed logging
     console.log('Running field validations...');
     const errors = {};
+
+    // NEW: Engineer must be a valid option from the Site Check site list.
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer =
+        "Please select an active engineer for this Site Check.";
+    }
+
     if (!formData.param1) {
       errors.param1 = "Please select emission level check result";
       console.log('Validation error: param1 missing');
@@ -866,6 +1183,11 @@ const MicroWaveOvenCertificate = ({
     if (Object.keys(errors).length > 0) {
       console.log('Validation errors found:', errors);
       setValidationErrors(errors);
+
+      if (errors.engineer) {
+        toast.error(errors.engineer);
+      }
+
       return;
     }
 
@@ -874,6 +1196,21 @@ const MicroWaveOvenCertificate = ({
     console.log('All validations passed, proceeding with submission...');
 
     try {
+      // NEW: Match Air Conditioning. An Open check is submitted using
+      // today's UK date instead of an older inspection record date.
+      const submissionInspectionDate =
+        checkStatus === "Open"
+          ? getUkLocalDate()
+          : formData.inspectionDate;
+
+      if (checkStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       // Debug: Log current form data
       console.log('Current form data:', JSON.stringify(formData, null, 2));
 
@@ -892,15 +1229,43 @@ const MicroWaveOvenCertificate = ({
 
       // Site check status payload
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Plant and Equipment Inspection',
-        category: 'Microwave Oven Certificate',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+
+        // OLD:
+        // subType: 'Plant and Equipment Inspection',
+        // category: 'Microwave Oven Certificate',
+
+        // NEW: Preserve the values that route this check to the Microwave UI.
+        subType: siteCheck?.subType || 'Electrical',
+        category: siteCheck?.category || 'Microwave Oven Testing',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
-        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
-        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+
+        // OLD:
+        // startDate:
+        //   new Date().toISOString().split('T')[0] + 'T00:00:00',
+        // dueDate:
+        //   formatLocalDateTime(
+        //     calculateExpiryDate(
+        //       formData.inspectionDate,
+        //       siteCheckDetails?.repeatFrequency
+        //     )
+        //   ),
+
+        // NEW: Use the same UK date throughout the completed check.
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(
+          calculateExpiryDate(
+            submissionInspectionDate,
+            siteCheckDetails?.repeatFrequency
+          )
+        ),
+        leadUserID: loggedInUserData?.id
+          ? String(loggedInUserData.id)
+          : '0',
+        assistantUserID: loggedInUserData?.id
+          ? String(loggedInUserData.id)
+          : '0',
       };
       console.log('Status payload:', statusPayload);
 
@@ -937,10 +1302,15 @@ const MicroWaveOvenCertificate = ({
       // Prepare inspection payload
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+
+        // NEW: Explicitly override stale React state with the submission date.
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
+
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Microwave Oven',
@@ -975,14 +1345,20 @@ const MicroWaveOvenCertificate = ({
 
       // Generate PDF - with test mode
       console.log('Generating PDF...');
-      const testPdfResult = await generatePDF(false); // First generate without upload for testing
+      const testPdfResult = await generatePDF(
+        false,
+        submissionInspectionDate
+      ); // First generate without upload for testing
       if (!testPdfResult.success) {
         console.error('PDF generation test failed:', testPdfResult.error);
         throw new Error(testPdfResult.error || "Failed to generate PDF");
       }
       console.log('PDF generation test successful, now uploading...');
 
-      const pdfResult = await generatePDF(true); // Now generate with upload
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate
+      ); // Now generate with upload
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate and upload PDF");
       }
@@ -1012,7 +1388,8 @@ const MicroWaveOvenCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) =>
+                    Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1086,7 +1463,8 @@ const MicroWaveOvenCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) =>
+                    Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1538,7 +1916,7 @@ const MicroWaveOvenCertificate = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Electrical - Microwave Oven Inspection`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1577,9 +1955,15 @@ const MicroWaveOvenCertificate = ({
               </div>
             </div>
             <div className="col-md-6">
-              <div className="mb-3">
-                <label className="form-label fw-bold">Engineer's Name</label>
-                <input
+              {/*
+                =========================================================
+                OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    Engineer's Name
+                  </label>
+                  <input
                     type="text"
                     className="form-control"
                     name="engineer name"
@@ -1587,8 +1971,28 @@ const MicroWaveOvenCertificate = ({
                     value={formData.user.name}
                     required
                     disabled
-                />
-              </div>
+                  />
+                </div>
+
+                =========================================================
+              */}
+
+              {/* ======================================================
+                  NEW SHARED ENGINEER CONTROL
+                  MATCHES AIR CONDITIONING BEHAVIOUR
+              ====================================================== */}
+              <SiteCheckEngineerSelector
+                options={engineerOptions}
+                value={selectedEngineer}
+                onChange={handleEngineerSelect}
+                isOpen={checkStatus === "Open"}
+                disabled={isSubmitted || !isFormEditable}
+                loading={isLoadingEngineers}
+                error={
+                  validationErrors.engineer ||
+                  engineerLoadError
+                }
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input
@@ -1638,7 +2042,7 @@ const MicroWaveOvenCertificate = ({
             ) : (
                 <div className="text-center">
                   <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                    Report submitted successfully on {getUkLocalDate()}
                   </div>
                 </div>
             )}

@@ -17,6 +17,9 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, getUkLocalDateTimeInput, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -157,6 +160,7 @@ const GasBoilerService = ({
                               getUsers,
                               siteSelectedForGlobal,
                               loggedInUserData,
+                              siteCheck = {},
                           }) => {
     const license = JSON.parse(localStorage.getItem("license"));
     const [sasToken, setSasToken] = useState('');
@@ -167,6 +171,7 @@ const GasBoilerService = ({
         rentedAccommodation: "",
         workDescription: "",
         engineer: loggedInUserData?.id || "",
+        user: loggedInUserData || {},
         assetId: "",
         selectedAsset: null,
         comments: "",
@@ -209,9 +214,9 @@ const GasBoilerService = ({
         siteContactUser: null,
         siteContact: "",
         engineerName: loggedInUserData?.name || "",
-        dateTimeOfIssue: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
-        customerSignatureDate: new Date().toISOString().split('T')[0],
-        engineerSignatureDate: new Date().toISOString().split('T')[0]
+        dateTimeOfIssue: getUkLocalDateTimeInput(),
+        customerSignatureDate: getUkLocalDate(),
+        engineerSignatureDate: getUkLocalDate()
     });
 
     const [isSubmitted, setIsSubmitted] = useState(false);
@@ -234,8 +239,48 @@ const GasBoilerService = ({
     const [installationAddress, setInstallationAddress] = useState(null);
     const [postCode, setPostCode] = useState(null);
 
+    // NEW: Site Check is authoritative for site/status and routing.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const checkStatus = siteCheck?.status || inspectionDetails?.status || "Open";
+    const [lastEngineerId, setLastEngineerId] = useState(null);
+
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: checkStatus,
+        selectedEngineerId: formData.engineer,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    const getPostCodeFromAddress = (address) =>
+        address?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0] || "";
+
+    // NEW: Open = current UK date/time and logged-in engineer by default.
+    useEffect(() => {
+        if (checkStatus !== "Open") return;
+        setFormData((prev) => ({
+            ...prev,
+            engineer: prev.engineer || loggedInUserData?.id || "",
+            engineerName: prev.user?.name || loggedInUserData?.name || "",
+            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+            dateTimeOfIssue: getUkLocalDateTimeInput(),
+            customerSignatureDate: getUkLocalDate(),
+            engineerSignatureDate: getUkLocalDate(),
+        }));
+    }, [checkStatus, loggedInUserData?.id]);
+
     const isInternalUserTaggedWithSite = loggedInUserData?.taggedSites?.some(
-        (site) => site.id === siteSelectedForGlobal?.siteId
+        (site) => Number(site.id) === Number(authoritativeSiteId)
     );
 
     const isgasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
@@ -270,8 +315,8 @@ const GasBoilerService = ({
                 }
 
                 // Load site assets if not already loaded
-                if (siteAssets.length === 0 && siteSelectedForGlobal?.siteId) {
-                    await getSiteAssets(siteSelectedForGlobal.siteId);
+                if (siteAssets.length === 0 && authoritativeSiteId) {
+                    await getSiteAssets(authoritativeSiteId);
                 }
 
                 let inspectionData;
@@ -331,19 +376,52 @@ const GasBoilerService = ({
                             checkId: checkId
                         }));
 
+                    const savedEngineerId = inspectionData.engineer || inspectionData.inspectionByUser?.id || null;
+                    setLastEngineerId(savedEngineerId);
+                    const savedEngineerUser = inspectionData.inspectionByUser ||
+                        users.find((user) => String(user.id) === String(savedEngineerId)) ||
+                        (savedEngineerId ? {
+                            id: savedEngineerId,
+                            name: inspectionData.engineerName || `Engineer ${savedEngineerId}`,
+                            gasSafetyRegNo: inspectionData.gasSafetyRegNo || "",
+                        } : null);
+                    const isCurrentOpenInspection =
+                        statusResponse?.status === "Open" &&
+                        isCurrentUkInspectionDate(inspectionData.dateTimeOfIssue);
+
                     // Transform the data to match our form structure
                     const transformedData = {
                         ...inspectionData,
                         id: inspectionData.id || null,
                         siteContactUser: siteContactUser || null,
                         siteContact: siteContactUser?.id || inspectionData.siteContact || "",
-                        dateTimeOfIssue: inspectionData.dateTimeOfIssue || new Date().toISOString().split('T')[0],
-                        customerSignatureDate: inspectionData.customerSignatureDate || new Date().toISOString().split('T')[0],
-                        engineerSignatureDate: inspectionData.engineerSignatureDate || new Date().toISOString().split('T')[0],
+                        dateTimeOfIssue: statusResponse?.status === "Open"
+                            ? getUkLocalDateTimeInput()
+                            : (inspectionData.dateTimeOfIssue || formData.dateTimeOfIssue),
+                        customerSignatureDate: statusResponse?.status === "Open"
+                            ? getUkLocalDate()
+                            : (inspectionData.customerSignatureDate || formData.customerSignatureDate),
+                        engineerSignatureDate: statusResponse?.status === "Open"
+                            ? getUkLocalDate()
+                            : (inspectionData.engineerSignatureDate || formData.engineerSignatureDate),
                         selectedAsset: selectedAsset || null,
                         assetId: inspectionData.assetId || (selectedAsset?.assetId || ""),
-                        engineer: inspectionData.engineer || loggedInUserData?.id || "",
-                        engineerName: inspectionData.engineerName || loggedInUserData?.name || "",
+                        // Engineer mapping is completed just below after resolving the saved user.
+                        engineer: statusResponse?.status === "Open"
+                            ? (isCurrentOpenInspection
+                                ? (savedEngineerId || loggedInUserData?.id || "")
+                                : (loggedInUserData?.id || ""))
+                            : (savedEngineerId || ""),
+                        engineerName: statusResponse?.status === "Open"
+                            ? (isCurrentOpenInspection
+                                ? (savedEngineerUser?.name || loggedInUserData?.name || "")
+                                : (loggedInUserData?.name || ""))
+                            : (inspectionData.engineerName || savedEngineerUser?.name || ""),
+                        user: statusResponse?.status === "Open"
+                            ? (isCurrentOpenInspection
+                                ? (savedEngineerUser || loggedInUserData || {})
+                                : (loggedInUserData || {}))
+                            : (savedEngineerUser || {}),
                         applianceChecks: inspectionData.applianceChecks?.length
                             ? inspectionData.applianceChecks.map(check => ({
                                 ...check,
@@ -389,7 +467,7 @@ const GasBoilerService = ({
             }
         };
         fetchInspectionData();
-    }, [checkId, siteAssets, users, sasToken, isInternalUserTaggedWithSite, siteSelectedForGlobal?.siteId]);
+    }, [checkId, siteAssets, users, sasToken, isInternalUserTaggedWithSite, authoritativeSiteId]);
 
 
 
@@ -461,7 +539,7 @@ const GasBoilerService = ({
             if (!currentCheckId) return;
 
             try {
-                const response = await get(`/api/site/actions/${siteSelectedForGlobal?.siteId}`);
+                const response = await get(`/api/site/actions/${authoritativeSiteId}`);
                 if (response && response.length > 0) {
                     const relevantActions = response.filter(
                         action => action.checkId === currentCheckId
@@ -486,7 +564,7 @@ const GasBoilerService = ({
         };
 
         fetchActions();
-    }, [currentCheckId, siteSelectedForGlobal?.siteId]);
+    }, [currentCheckId, authoritativeSiteId]);
 
     const fetchActionById = async (id) => {
         try {
@@ -558,7 +636,7 @@ const GasBoilerService = ({
 
     const checkFileExists = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -580,7 +658,7 @@ const GasBoilerService = ({
 
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return 1;
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -620,23 +698,23 @@ const GasBoilerService = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, dateTimeOverride = null) => {
         try {
             setIsUploading(true);
             await savePdfToLocal(pdfBlob, fileName);
 
-            const targetFolderId = folderIds.boilerService || await fetchFolderStructure(siteSelectedForGlobal?.siteId);
+            const targetFolderId = folderIds.boilerService || await fetchFolderStructure(authoritativeSiteId);
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
             }
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            const formData = new FormData();
+            const uploadFormData = new FormData();
 
             const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
 
             if (exists && existingFile) {
-                formData.append('file', pdfFile);
+                uploadFormData.append('file', pdfFile);
                 const documentRequest = {
                     folderId: targetFolderId,
                     files: [{
@@ -644,19 +722,19 @@ const GasBoilerService = ({
                         name: fileName,
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
-                        siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.dateTimeOfIssue),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId,
+                        issueDate: formatDateForBackend(dateTimeOverride || formData.dateTimeOfIssue),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequest));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
                 const response = await axios.put(
                     '/api/document/file/newVersion/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -670,7 +748,7 @@ const GasBoilerService = ({
                     return true;
                 }
             } else {
-                formData.append('files', pdfFile);
+                uploadFormData.append('files', pdfFile);
                 const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
                 const documentRequest = {
@@ -679,19 +757,19 @@ const GasBoilerService = ({
                         name: fileName.split('.')[0],
                         originalFileName: fileName,
                         fileVersion: fileVersion,
-                        siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.dateTimeOfIssue),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId,
+                        issueDate: formatDateForBackend(dateTimeOverride || formData.dateTimeOfIssue),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequest));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
                 const response = await axios.post(
                     '/api/document/files/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -715,11 +793,10 @@ const GasBoilerService = ({
         }
     };
 
-    const gasEngineerPostCode = loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0]
 
 
 
-    const generatePDF = async (uploadToServer = true) => {
+    const generatePDF = async (uploadToServer = true, dateTimeOverride = null) => {
         try {
             setIsGeneratingPDF(true);
             if (!PDFLib) {
@@ -760,6 +837,11 @@ const GasBoilerService = ({
                     console.warn(`Error setting checkbox ${fieldName}:`, error.message);
                 }
             };
+            // NEW: Use the selected/saved engineer and exact submission date.
+            const effectiveEngineer = selectedEngineer || (formData.user?.id ? formData.user : null) || loggedInUserData || {};
+            const effectiveDateTimeOfIssue = dateTimeOverride || formData.dateTimeOfIssue;
+            const effectiveEngineerPostCode = getPostCodeFromAddress(effectiveEngineer?.companyAddress);
+
             // Set form data in PDF
 
             const addressLines = (installationAddress || '').split(',');
@@ -770,14 +852,16 @@ const GasBoilerService = ({
 
             setTextField('Name', license?.companyName || '');
             setTextField('Reg No', formData.registeredBusinessRegNo || '');
-            setTextField('Gas Engineer', loggedInUserData?.name || '');
-            setTextField('gasSafeNo', loggedInUserData?.gasSafetyRegNo || '');
-            setTextField('Company', loggedInUserData.companyName || '');
-            setTextField('Address', loggedInUserData?.companyAddress || '');
+            // OLD: Gas engineer details always came from loggedInUserData.
+            // NEW: Use the selected engineer.
+            setTextField('Gas Engineer', effectiveEngineer?.name || '');
+            setTextField('gasSafeNo', effectiveEngineer?.gasSafetyRegNo || '');
+            setTextField('Company', effectiveEngineer?.companyName || '');
+            setTextField('Address', effectiveEngineer?.companyAddress || '');
             setTextField('Post Code', postCode || '');
-            setTextField('PostCode', gasEngineerPostCode || '');
+            setTextField('PostCode', effectiveEngineerPostCode || '');
             setTextField('Rented', formData.rentedAccommodation);
-            setTextField('Date  Time of Issue', formatDate(formData.dateTimeOfIssue));
+            setTextField('Date  Time of Issue', formatDate(effectiveDateTimeOfIssue));
             setTextField('Work Description', formData.workDescription);
 
             // Appliance Details
@@ -847,12 +931,12 @@ const GasBoilerService = ({
             // Signatures
             setTextField('Print Name', formData.siteContactUser?.name);
             setTextField('Date', formatDate(formData.customerSignatureDate));
-            setTextField('Print Name_2', formData.engineerName);
-            setTextField('Date_2', formatDate(formData.engineerSignatureDate));
+            setTextField('Print Name_2', effectiveEngineer?.name || formData.engineerName || '');
+            setTextField('Date_2', formatDate(dateTimeOverride ? getUkLocalDate() : formData.engineerSignatureDate));
 
-            if (loggedInUserData?.signature) {
+            if (effectiveEngineer?.signature) {
                 try {
-                    const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
+                    const signatureUrl = `${effectiveEngineer.signature}?${sasToken}`;
                     const signatureResponse = await fetch(signatureUrl);
                     const signatureImageBytes = await signatureResponse.arrayBuffer();
 
@@ -886,7 +970,7 @@ const GasBoilerService = ({
             setShowPdfButton(true);
 
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName);
+                await uploadPdfToServer(blob, fileName, effectiveDateTimeOfIssue);
             }
 
             return { success: true, fileName };
@@ -929,9 +1013,15 @@ const GasBoilerService = ({
             // Save the inspection data with actionId
             const inspectionPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 checkId: currentCheckId,
                 actionId: verifiedAction.actionId,
+                engineer: formData.engineer,
+                engineerName: formData.user?.name || formData.engineerName,
+                inspectionByUser: formData.user || selectedEngineer || loggedInUserData,
+                dateTimeOfIssue: getUkLocalDateTimeInput(),
+                engineerSignatureDate: getUkLocalDate(),
+                customerSignatureDate: getUkLocalDate(),
                 type: 'Inspection',
                 subType: 'Gas Boiler',
                 category: 'Gas Boiler Service'
@@ -971,6 +1061,18 @@ const GasBoilerService = ({
 
 
 
+    // NEW: Shared Gas Engineer selection. Related Gas Safe/business/signature
+    // details follow the selected engineer rather than the logged-in user.
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            engineer: newValue?.id || "",
+            engineerName: newValue?.name || "",
+            user: newValue || {},
+            registeredBusinessRegNo: newValue?.gasSafetyRegNo || prev.registeredBusinessRegNo,
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isLoading) {
@@ -988,6 +1090,11 @@ const GasBoilerService = ({
             return;
         }
 
+        if (!formData.engineer || !selectedEngineer) {
+            toast.error('Please select an active engineer for this Site Check.');
+            return;
+        }
+
         // Add validation for required fields
         if (!formData.selectedAsset) {
             toast.error('Please select a boiler asset');
@@ -997,6 +1104,22 @@ const GasBoilerService = ({
         setIsLoading(true);
 
         try {
+            // NEW: Open checks use the current UK date/time, matching Air Conditioning.
+            const submissionDateTime = checkStatus === "Open"
+                ? getUkLocalDateTimeInput()
+                : formData.dateTimeOfIssue;
+            const submissionDate = checkStatus === "Open"
+                ? getUkLocalDate()
+                : formData.engineerSignatureDate;
+
+            if (checkStatus === "Open") {
+                setFormData((prev) => ({
+                    ...prev,
+                    dateTimeOfIssue: submissionDateTime,
+                    customerSignatureDate: submissionDate,
+                    engineerSignatureDate: submissionDate,
+                }));
+            }
 
             let existingInspection = null;
             if (currentCheckId) {
@@ -1009,13 +1132,15 @@ const GasBoilerService = ({
             }
             // First create/update the site check record
             const statusPayload = {
-                siteId: siteSelectedForGlobal?.siteId,
-                type: 'Inspection',
-                subType: 'Gas Boiler',
-                category: 'Gas Boiler Service',
+                siteId: authoritativeSiteId,
+                type: siteCheck?.type || 'Inspection',
+                // OLD: subType/category used internal inspection values.
+                // NEW: preserve the UI route.
+                subType: siteCheck?.subType || 'Gas',
+                category: siteCheck?.category || 'Boiler Service / Maintenance Checklist',
                 status: 'Done',
-                startDate: new Date().toISOString(),
-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                startDate: `${submissionDate}T00:00:00`,
+                dueDate: formatLocalDateTime(calculateExpiryDate(submissionDateTime, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1034,12 +1159,17 @@ const GasBoilerService = ({
             const inspectionPayload = {
                 ...formData,
                 installationAddress,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 checkId: checkIdToUse,
                 siteContact: formData.siteContactUser?.id || formData.siteContact,
                 actionId: existingAction?.actionId || null,
                 registeredBusinessRegNo: formData.registeredBusinessRegNo,
                 rentedAccommodation: formData.rentedAccommodation,
+                engineer: formData.engineer,
+                engineerName: selectedEngineer?.name || formData.engineerName,
+                dateTimeOfIssue: submissionDateTime,
+                customerSignatureDate: submissionDate,
+                engineerSignatureDate: submissionDate,
                 // Include all check data
                 applianceChecks: formData.applianceChecks.map(check => ({
                     id: check.id,
@@ -1056,12 +1186,9 @@ const GasBoilerService = ({
                     remarks: check.remarks,
                     result: check.id === 8 ? check.result : undefined
                 })),
-                inspectionByUser: {
-                    id: loggedInUserData?.id || 0,
-                    name: loggedInUserData?.name || "",
-                    // Include other required user fields
-                    ...loggedInUserData
-                },
+                // OLD: inspectionByUser was always loggedInUserData.
+                // NEW: save the selected engineer.
+                inspectionByUser: selectedEngineer || formData.user || loggedInUserData || {},
                 gasTightnessTestResult: formData.safetyChecks.find(c => c.id === 8)?.result || null
             };
 
@@ -1084,7 +1211,7 @@ const GasBoilerService = ({
             }
 
             // Generate and upload PDF
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionDateTime);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }
@@ -1141,7 +1268,7 @@ const GasBoilerService = ({
             const filteredUsers =
                 users?.filter((user) =>
                     user.taggedSites?.some(
-                        (site) => site.id === siteSelectedForGlobal?.siteId
+                        (site) => Number(site.id) === Number(authoritativeSiteId)
                     )
                 ) || [];
 
@@ -1282,21 +1409,33 @@ const GasBoilerService = ({
                                         disabled={!isFormEditable || isSubmitted}
                                     />
                                 </div>
+                                {/* =========================================================
+                                    OLD GAS ENGINEER FIELD - COMMENTED FOR REVIEW
+
                                 <div className="mb-3">
                                     <label className="form-label">Gas Engineer Name</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        value={loggedInUserData?.name || ""}
-                                        disabled
-                                    />
+                                    <input type="text" className="form-control" value={loggedInUserData?.name || ""} disabled />
                                 </div>
+
+                                ========================================================= */}
+
+                                {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+                                <SiteCheckEngineerSelector
+                                    options={engineerOptions}
+                                    value={selectedEngineer}
+                                    onChange={handleEngineerSelect}
+                                    isOpen={checkStatus === "Open"}
+                                    disabled={isSubmitted || !isFormEditable}
+                                    loading={isLoadingEngineers}
+                                    error={engineerLoadError}
+                                    label="Gas Engineer Name"
+                                />
                                 <div className="mb-3">
                                     <label className="form-label">Gas Safe Registration No</label>
                                     <input
                                         type="text"
                                         className="form-control"
-                                        value={loggedInUserData?.gasSafetyRegNo || ""}
+                                        value={selectedEngineer?.gasSafetyRegNo || formData.user?.gasSafetyRegNo || ""}
                                         disabled
                                     />
                                 </div>
@@ -1305,7 +1444,7 @@ const GasBoilerService = ({
                                     <input
                                         type="text"
                                         className="form-control"
-                                        value={loggedInUserData?.companyName || ""}
+                                        value={selectedEngineer?.companyName || formData.user?.companyName || ""}
                                         disabled
                                     />
                                 </div>
@@ -1314,7 +1453,7 @@ const GasBoilerService = ({
                                     <input
                                         type="text"
                                         className="form-control"
-                                        value={loggedInUserData?.companyAddress || ""}
+                                        value={selectedEngineer?.companyAddress || formData.user?.companyAddress || ""}
                                         disabled
                                     />
                                 </div>
@@ -1324,7 +1463,7 @@ const GasBoilerService = ({
                                         type="text"
                                         className="form-control"
                                         value={
-                                            gasEngineerPostCode || ""
+                                            getPostCodeFromAddress(selectedEngineer?.companyAddress || formData.user?.companyAddress) || ""
                                         }
                                         disabled
                                     />
@@ -1363,7 +1502,7 @@ const GasBoilerService = ({
                                         width="200"
                                         height="50"
                                         style={{ border: "1px solid" }}
-                                        src={loggedInUserData?.signature + "?" + sasToken}
+                                        src={(selectedEngineer?.signature || formData.user?.signature || "") + "?" + sasToken}
                                         alt="Signature"
                                     />
                                 </div>

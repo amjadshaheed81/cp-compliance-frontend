@@ -16,6 +16,9 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import { PDFDocument } from 'pdf-lib';
 import RiskScoreCard2 from "./RiskScoreCard2";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 // NOTE: You must have a PDF template at this path for the PDF generation to work correctly.
 import pdfTemplate from './pdf/FireFightingEquippement.pdf';
@@ -32,6 +35,7 @@ const FireFightingEquipmentReport = ({
                                          getUsers,
                                          siteSelectedForGlobal,
                                          loggedInUserData,
+                                         siteCheck = {},
                                      }) => {
     const license = JSON.parse(localStorage.getItem("license"));
 
@@ -44,14 +48,14 @@ should be carried out more frequently.`;
     const [formData, setFormData] = useState({
         address: "",
         siteContact: "",
-        inspectionDate: new Date().toISOString().split("T")[0],
+        inspectionDate: getUkLocalDate(),
         siteContactNo: "",
         report: getDefaultReportTemplate(),
         code: "",
         engineer: loggedInUserData?.id || "",
         client: "",
         user: loggedInUserData || {},
-        signedDate: new Date().toISOString().split("T")[0],
+        signedDate: getUkLocalDate(),
         clientUser: null,
         siteContactUser: null,
         actionId: null,
@@ -92,6 +96,41 @@ should be carried out more frequently.`;
     const navigate = useNavigate();
     const isInternalUserTaggedWithSite = true;
     const [inspectionDetails, setInspectionDetails] = useState(null);
+
+    // NEW: same authoritative site/status and Engineer behaviour as Air Conditioning.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const [lastEngineerId, setLastEngineerId] = useState(null);
+    const effectiveCheckStatus = siteCheck?.status || state.checkStatus || "Open";
+
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: effectiveCheckStatus,
+        selectedEngineerId: formData.engineer,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    useEffect(() => {
+        if (effectiveCheckStatus !== "Open") return;
+
+        setFormData((prev) => ({
+            ...prev,
+            inspectionDate: getUkLocalDate(),
+            signedDate: getUkLocalDate(),
+            engineer: prev.engineer || loggedInUserData?.id || "",
+            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+        }));
+    }, [effectiveCheckStatus, loggedInUserData?.id]);
 
     // Filter assets for Fire Fighting Equipment category
     const filteredAssets = React.useMemo(() =>
@@ -300,9 +339,9 @@ should be carried out more frequently.`;
                 setFormData(prev => ({ ...prev, actionId: null }));
             }
 
-            if (!siteSelectedForGlobal?.siteId || !state.currentCheckId) return;
+            if (!authoritativeSiteId || !state.currentCheckId) return;
 
-            const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site/actions/${authoritativeSiteId}`);
             const relevantActions = response?.filter(action =>
                 action.checkId === state.currentCheckId
             );
@@ -325,13 +364,13 @@ should be carried out more frequently.`;
         } catch (error) {
             console.error("Error fetching existing actions:", error);
         }
-    }, [fetchActionById, siteSelectedForGlobal?.siteId, state.currentCheckId]);
+    }, [fetchActionById, authoritativeSiteId, state.currentCheckId]);
 
     const fetchSiteCheckData = useCallback(async () => {
         try {
-            if (!siteSelectedForGlobal?.siteId) return;
+            if (!authoritativeSiteId) return;
 
-            const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
             const fireEquipmentCheck = checkId
                 ? response?.find(check => check.checkId === parseInt(checkId, 10))
                 : null;
@@ -371,7 +410,7 @@ should be carried out more frequently.`;
             toast.error('Failed to load site check status');
             setState(prev => ({ ...prev, isFormEditable: true }));
         }
-    }, [checkId, siteSelectedForGlobal?.siteId]);
+    }, [checkId, authoritativeSiteId]);
 
     const fetchInspectionData = useCallback(async () => {
         try {
@@ -384,6 +423,14 @@ should be carried out more frequently.`;
 
                 const clientUser = users.find(user => user.id === mostRecentItem.client);
                 const siteContactUser = users.find(user => user.id === mostRecentItem.siteContact);
+                const engineerUser = users.find(
+                    user => String(user.id) === String(mostRecentItem.engineer)
+                );
+                const savedEngineerId = mostRecentItem.engineer || null;
+                setLastEngineerId(savedEngineerId);
+                const isCurrentOpenInspection =
+                    effectiveCheckStatus === "Open" &&
+                    isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
 
                 let existingAction = null;
                 if (mostRecentItem.actionId) {
@@ -395,13 +442,19 @@ should be carried out more frequently.`;
                     address: mostRecentItem.address || "",
                     siteContact: mostRecentItem.siteContact || "",
                     siteContactNo: mostRecentItem.siteContactNo || "",
-                    inspectionDate: formatDate(mostRecentItem.inspectionDate) || new Date().toISOString().split("T")[0],
+                    inspectionDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (formatDate(mostRecentItem.inspectionDate) || getUkLocalDate()),
                     report: mostRecentItem.report || getDefaultReportTemplate(),
                     code: mostRecentItem.code || "",
-                    engineer: mostRecentItem.engineer || loggedInUserData?.id || "",
+                    // OLD: user always reset to the logged-in user.
+                    // NEW: Open defaults to current Engineer; Done restores saved Engineer.
+                    engineer: effectiveCheckStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+                        : (savedEngineerId || prev.engineer || ""),
                     client: mostRecentItem.client || "",
-                    user: loggedInUserData || {},
-                    signedDate: formatDate(mostRecentItem.signedDate) || new Date().toISOString().split("T")[0],
+                    user: effectiveCheckStatus === "Open"
+                        ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+                        : (engineerUser || prev.user || {}),
+                    signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (formatDate(mostRecentItem.signedDate) || prev.signedDate),
                     clientUser: clientUser || null,
                     siteContactUser: siteContactUser || null,
                     actionId: mostRecentItem.actionId || null,
@@ -512,7 +565,7 @@ should be carried out more frequently.`;
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId) return 1;
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -529,11 +582,11 @@ should be carried out more frequently.`;
             console.error('Error checking file versions:', error);
             return 1;
         }
-    }, [siteSelectedForGlobal]);
+    }, [authoritativeSiteId]);
 
     const checkFileExists = useCallback(async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -551,9 +604,9 @@ should be carried out more frequently.`;
             console.error('Error checking file existence:', error);
             return { exists: false, file: null };
         }
-    }, [siteSelectedForGlobal]);
+    }, [authoritativeSiteId]);
 
-    const uploadPdfToServer = useCallback(async (pdfBlob, fileName) => {
+    const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride) => {
         let exists;
         try {
             setState(prev => ({ ...prev, isUploading: true }));
@@ -570,7 +623,7 @@ should be carried out more frequently.`;
             const fileCheck = await checkFileExists(targetFolderId, fileName);
             exists = fileCheck.exists;
             const existingFile = fileCheck.file;
-            const formData = new FormData();
+            const uploadFormData = new FormData();
 
             const fileVersion = exists && existingFile
                 ? existingFile.fileVersion + 1
@@ -583,9 +636,9 @@ should be carried out more frequently.`;
                     name: fileName.split('.')[0],
                     originalFileName: fileName,
                     fileVersion,
-                    siteId: siteSelectedForGlobal?.siteId || 0,
-                    issueDate: formatDateForBackend(formData.inspectionDate),
-                    expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                    siteId: authoritativeSiteId || 0,
+                    issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+                    expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                     uploaderUserId: loggedInUserData?.id || 0,
                     reviewerUserId: loggedInUserData?.id || 0,
                     referenceNumber: `FFR-${new Date().getTime()}`
@@ -593,12 +646,12 @@ should be carried out more frequently.`;
             };
 
             if (exists) {
-                formData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+                uploadFormData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
             } else {
-                formData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
+                uploadFormData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
             }
 
-            formData.append('documentRequestString', JSON.stringify(documentRequest));
+            uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
 
             const method = exists ? 'put' : 'post';
             const url = exists
@@ -608,7 +661,7 @@ should be carried out more frequently.`;
             const response = await axios({
                 method,
                 url,
-                data: formData,
+                data: uploadFormData,
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -633,12 +686,12 @@ should be carried out more frequently.`;
         checkFileExists,
         getHighestFileVersion,
         loggedInUserData,
-        siteSelectedForGlobal,
+        authoritativeSiteId,
         folderIds,
         inspectionDetails
     ]);
 
-    const generatePDF = useCallback(async (uploadToServer = true) => {
+    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride) => {
         try {
             setState(prev => ({ ...prev, isGeneratingPDF: true }));
 
@@ -668,8 +721,8 @@ should be carried out more frequently.`;
                 return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
             };
 
-            const formattedDate = formatDateString(formData.inspectionDate);
-            const engineer = users?.find(u => u.id === formData.engineer);
+            const formattedDate = formatDateString(inspectionDateOverride || formData.inspectionDate);
+            const engineer = selectedEngineer || users?.find(u => String(u.id) === String(formData.engineer));
 
             setTextField('Customer Name', license?.companyName || '', 8);
             setTextField('Customer Address', license?.companyAddress || '', 8);
@@ -723,7 +776,7 @@ should be carried out more frequently.`;
 
             let uploadedToServer = false;
             if (uploadToServer) {
-                uploadedToServer = await uploadPdfToServer(blob, fileName);
+                uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride);
             }
 
             if (uploadedToServer || !uploadToServer) {
@@ -745,25 +798,52 @@ should be carried out more frequently.`;
         uploadPdfToServer,
         users,
         filteredAssets,
-        license
+        license,
+        selectedEngineer
     ]);
+
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            engineer: newValue?.id || "",
+            user: newValue || {},
+        }));
+        setState((prev) => ({
+            ...prev,
+            validationErrors: { ...prev.validationErrors, engineer: "" },
+        }));
+    };
 
     // Main form submission handler
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (state.isLoading) return;
 
-        setState(prev => ({ ...prev, isLoading: true }));
+        const errors = {};
+        if (!formData.engineer || !selectedEngineer) {
+            errors.engineer = "Please select an active engineer for this Site Check.";
+        }
+        if (Object.keys(errors).length > 0) {
+            setState(prev => ({ ...prev, validationErrors: errors }));
+            return;
+        }
+
+        setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
         try {
+            const submissionInspectionDate = effectiveCheckStatus === "Open"
+                ? getUkLocalDate()
+                : formData.inspectionDate;
             const statusPayload = {
-                siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-                type: 'Inspection',
-                subType: 'Fire Equipment',
-                category: 'Fire Fighting Equipment',
+                siteId: authoritativeSiteId,
+                type: siteCheck?.type || 'Inspection',
+                // OLD: Fire Equipment / Fire Fighting Equipment changed the UI route.
+                // NEW: preserve the Site Check's original route.
+                subType: siteCheck?.subType || subType || 'Fire Fighting Equipment',
+                category: siteCheck?.category || category || 'Fire Extinguisher Inspection & Service',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: `${submissionInspectionDate}T00:00:00`,
+                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
@@ -782,7 +862,9 @@ should be carried out more frequently.`;
 
             const inspectionPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
+                inspectionDate: submissionInspectionDate,
+                signedDate: submissionInspectionDate,
                 type: 'Inspection',
                 subType: 'Fire Equipment',
                 category: 'Fire Fighting Equipment',
@@ -803,7 +885,7 @@ should be carried out more frequently.`;
                 );
             }
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
@@ -829,11 +911,11 @@ should be carried out more frequently.`;
         const fetchData = async () => {
             setState(prev => ({ ...prev, isLoading: true }));
             try {
-                if (siteSelectedForGlobal?.siteId) {
+                if (authoritativeSiteId) {
                     await Promise.all([
-                        getSiteAssets(siteSelectedForGlobal.siteId),
-                        getSiteDetailsById(siteSelectedForGlobal.siteId),
-                        fetchFolderStructure(siteSelectedForGlobal.siteId),
+                        getSiteAssets(authoritativeSiteId),
+                        getSiteDetailsById(authoritativeSiteId),
+                        fetchFolderStructure(authoritativeSiteId),
                         fetchSiteCheckData(),
                         fetchInspectionData(),
                     ]);
@@ -843,7 +925,7 @@ should be carried out more frequently.`;
                     }
 
                     const currentSite = sites.find(
-                        site => site.siteId === siteSelectedForGlobal.siteId
+                        site => site.siteId === authoritativeSiteId
                     );
                     const siteData = currentSite || siteSelectedForGlobal;
 
@@ -893,7 +975,7 @@ should be carried out more frequently.`;
 
         fetchData();
     }, [
-        siteSelectedForGlobal?.siteId,
+        authoritativeSiteId,
         state.currentCheckId
     ]);
 
@@ -928,7 +1010,7 @@ should be carried out more frequently.`;
 
             const inspectionPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 checkId: state.currentCheckId,
                 actionId: verifiedAction.actionId,
                 type: 'Inspection',
@@ -960,7 +1042,7 @@ should be carried out more frequently.`;
         if (isInternalUserTaggedWithSite) {
             const filteredUsers = users?.filter(user =>
                 user.taggedSites?.some(
-                    site => site.id === siteSelectedForGlobal?.siteId
+                    site => site.id === authoritativeSiteId
                 )
             ) || [];
 
@@ -1023,7 +1105,7 @@ should be carried out more frequently.`;
         if (isInternalUserTaggedWithSite) {
             const filteredUsers = users?.filter(user =>
                 user.taggedSites?.some(
-                    site => site.id === siteSelectedForGlobal?.siteId
+                    site => site.id === authoritativeSiteId
                 )
             ) || [];
 
@@ -1193,6 +1275,9 @@ should be carried out more frequently.`;
                         </div>
                     </div>
                     <div className="col-md-3">
+                        {/* =========================================================
+                            OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
                         <div className="mb-3">
                             <label className="form-label">Engineer</label>
                             <input
@@ -1205,6 +1290,18 @@ should be carried out more frequently.`;
                                 disabled
                             />
                         </div>
+
+                        ========================================================= */}
+                        <SiteCheckEngineerSelector
+                            options={engineerOptions}
+                            value={selectedEngineer}
+                            onChange={handleEngineerSelect}
+                            isOpen={effectiveCheckStatus === "Open"}
+                            disabled={state.isSubmitted || !state.isFormEditable}
+                            loading={isLoadingEngineers}
+                            error={state.validationErrors.engineer || engineerLoadError}
+                            label="Engineer"
+                        />
                         <div className="mb-3">
                             <label className="form-label">Site Telephone</label>
                             <input
@@ -1595,7 +1692,7 @@ should be carried out more frequently.`;
                         ) : (
                             <RiskScoreCard2
                                 desc={`Inspection - Fire Equipment - Fire Fighting Equipment`}
-                                siteId={siteSelectedForGlobal?.siteId}
+                                siteId={authoritativeSiteId}
                                 checkId={state.currentCheckId}
                                 createdBy={loggedInUserData?.id}
                                 onRiskAssessmentComplete={handleRiskAssessmentComplete}
@@ -1615,6 +1712,9 @@ should be carried out more frequently.`;
                         </div>
                     </div>
                     <div className="col-md-6">
+                        {/* =========================================================
+                            OLD ENGINEER SIGN-OFF FIELD - COMMENTED FOR REVIEW
+
                         <div className="mb-3">
                             <label className="form-label fw-bold">Engineer's Name</label>
                             <input
@@ -1624,6 +1724,18 @@ should be carried out more frequently.`;
                                 readOnly
                                 value={formData.user.name}
                                 required
+                                disabled
+                            />
+                        </div>
+
+                        ========================================================= */}
+                        <div className="mb-3">
+                            <label className="form-label fw-bold">Engineer's Name</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={selectedEngineer?.name || formData.user?.name || ""}
+                                readOnly
                                 disabled
                             />
                         </div>
@@ -1657,7 +1769,7 @@ should be carried out more frequently.`;
                     ) : (
                         <div className="text-center">
                             <div className="alert alert-success mb-4">
-                                Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                                Report submitted successfully on {getUkLocalDate()}
                             </div>
                         </div>
                     )}

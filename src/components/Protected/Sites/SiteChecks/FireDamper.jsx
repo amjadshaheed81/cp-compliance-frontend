@@ -19,6 +19,9 @@ import axios from 'axios';
 import pdfTemplate from './pdf/FireDamper.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -59,12 +62,13 @@ const FireDamper = ({
                         getUsers,
                         siteSelectedForGlobal,
                         loggedInUserData,
+                        siteCheck = {},
                     }) => {
     const [formData, setFormData] = useState({
         address: "",
         assetId: "",
         siteContact: "",
-        inspectionDate: new Date().toISOString().split("T")[0],
+        inspectionDate: getUkLocalDate(),
         siteContactNo: "",
         job: "",
         manufacturer: "",
@@ -87,7 +91,7 @@ const FireDamper = ({
         user: loggedInUserData || {},
         engineer: loggedInUserData?.id || "",
         selectedAsset: null,
-        signedDate: new Date().toISOString().split("T")[0],
+        signedDate: getUkLocalDate(),
         clientUser: null,
         siteContactUser: null,
         actionId: null,
@@ -123,6 +127,41 @@ const FireDamper = ({
 
     const navigate = useNavigate();
 
+    // NEW: use the Site Check's own site/status for the shared Engineer behaviour.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const [lastEngineerId, setLastEngineerId] = useState(null);
+    const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
+
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: effectiveCheckStatus,
+        selectedEngineerId: formData.engineer,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    useEffect(() => {
+        if (effectiveCheckStatus !== "Open") return;
+
+        setFormData((prev) => ({
+            ...prev,
+            inspectionDate: getUkLocalDate(),
+            signedDate: getUkLocalDate(),
+            engineer: prev.engineer || loggedInUserData?.id || "",
+            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+        }));
+    }, [effectiveCheckStatus, loggedInUserData?.id]);
+
     const isInternalUserTaggedWithSite = true;
 
     useEffect(() => {
@@ -154,7 +193,7 @@ const FireDamper = ({
 
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return 1;
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -181,7 +220,7 @@ const FireDamper = ({
 
     const checkFileExists = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -220,11 +259,17 @@ const FireDamper = ({
                     (user) => user.id === mostRecentItem.client
                 );
                 const engineerUser = users.find(
-                    (user) => user.id === mostRecentItem.engineer
+                    (user) => String(user.id) === String(mostRecentItem.engineer)
                 );
                 const siteContactUser = users.find(
                     (user) => user.id === mostRecentItem.siteContact
                 );
+
+                const savedEngineerId = mostRecentItem.engineer || null;
+                setLastEngineerId(savedEngineerId);
+                const isCurrentOpenInspection =
+                    effectiveCheckStatus === "Open" &&
+                    isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
 
                 // Load pre-inspection photos without overwriting existing ones
                 const newPrePhotos = [];
@@ -286,7 +331,7 @@ const FireDamper = ({
                     address: prev.address,
                     assetId: mostRecentItem.assetId || prev.assetId,
                     siteContact: mostRecentItem.siteContact || prev.siteContact,
-                    inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+                    inspectionDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.inspectionDate || prev.inspectionDate),
                     siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
                     job: mostRecentItem.job || prev.job,
                     manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
@@ -306,10 +351,16 @@ const FireDamper = ({
                     param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
                     param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
                     client: mostRecentItem.client || "",
-                    engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-                    user: engineerUser || loggedInUserData || prev.user,
+                    // OLD: always used saved/logged-in Engineer with no Open/Done distinction.
+                    // NEW: same Open/Done rules as Air Conditioning.
+                    engineer: effectiveCheckStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+                        : (savedEngineerId || prev.engineer || ""),
+                    user: effectiveCheckStatus === "Open"
+                        ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+                        : (engineerUser || prev.user || {}),
                     selectedAsset: selectedAsset || prev.selectedAsset,
-                    signedDate: mostRecentItem.signedDate || prev.signedDate,
+                    signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
                     clientUser: clientUser || null,
                     siteContactUser: siteContactUser || null,
                     actionId: mostRecentItem.actionId || null,
@@ -344,9 +395,9 @@ const FireDamper = ({
                 setFormData(prev => ({ ...prev, actionId: null }));
             }
 
-            if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+            if (!authoritativeSiteId || !currentCheckId) return;
 
-            const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site/actions/${authoritativeSiteId}`);
             if (response && response.length > 0) {
                 const relevantActions = response.filter(action =>
                     action.checkId === currentCheckId
@@ -433,9 +484,9 @@ const FireDamper = ({
     useEffect(() => {
         const fetchSiteCheckData = async () => {
             try {
-                if (!siteSelectedForGlobal?.siteId) return;
+                if (!authoritativeSiteId) return;
 
-                const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+                const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
                 if (response && response.length > 0) {
                     let ventilationCheck = checkId
                         ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -481,10 +532,10 @@ const FireDamper = ({
         const fetchData = async () => {
             setIsLoading(true);
             try {
-                if (siteSelectedForGlobal?.siteId) {
-                    await getSiteAssets(siteSelectedForGlobal?.siteId);
-                    await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-                    await fetchFolderStructure(siteSelectedForGlobal.siteId);
+                if (authoritativeSiteId) {
+                    await getSiteAssets(authoritativeSiteId);
+                    await getSiteDetailsById(authoritativeSiteId);
+                    await fetchFolderStructure(authoritativeSiteId);
                     await fetchSiteCheckData();
                     await fetchInspectionData();
 
@@ -501,7 +552,7 @@ const FireDamper = ({
                     }
 
                     const currentSite = sites.find(
-                        (site) => site.siteId === siteSelectedForGlobal.siteId
+                        (site) => site.siteId === authoritativeSiteId
                     );
                     const siteData = currentSite || siteSelectedForGlobal;
 
@@ -623,7 +674,7 @@ const FireDamper = ({
                     user: formData.user,
                     actionId: verifiedAction.actionId,
                     checkId: currentCheckId,
-                    siteId: siteSelectedForGlobal?.siteId,
+                    siteId: authoritativeSiteId,
                     type: 'Inspection',
                     subType: 'Ventilation',
                     category: 'Ventilation',
@@ -665,7 +716,7 @@ const FireDamper = ({
             const uploadResults = await Promise.all(
                 filesToUpload.map(async (file, index) => {
                     const response = await uploadSiteCheckDoc({
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         file: file
                     });
 
@@ -703,7 +754,7 @@ const FireDamper = ({
             if (currentCheckId) {
                 const payload = {
                     checkId: currentCheckId,
-                    siteId: siteSelectedForGlobal?.siteId,
+                    siteId: authoritativeSiteId,
                     type: 'Inspection',
                     subType: 'Fire Damper',
                     category: 'Fire Damper Inspection',
@@ -729,7 +780,7 @@ const FireDamper = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
         try {
             setIsUploading(true);
             await savePdfToLocal(pdfBlob, fileName);
@@ -742,10 +793,10 @@ const FireDamper = ({
             }
 
             const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-            const formData = new FormData();
+            const uploadFormData = new FormData();
 
             if (exists && existingFile) {
-                formData.append('file', pdfFile);
+                uploadFormData.append('file', pdfFile);
                 const documentRequestString = {
                     folderId: targetFolderId,
                     files: [{
@@ -753,20 +804,20 @@ const FireDamper = ({
                         name: fileName,
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
-                        siteId: siteSelectedForGlobal?.siteId || 0,
-                        issueDate: formatDateForBackend(formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId || 0,
+                        issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `FD-${new Date().getTime()}`
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequestString));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
                 const response = await axios({
                     method: 'put',
                     url: '/api/document/file/newVersion/upload',
-                    data: formData,
+                    data: uploadFormData,
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -779,18 +830,18 @@ const FireDamper = ({
                     return true;
                 }
             } else {
-                formData.append('files', pdfFile);
+                uploadFormData.append('files', pdfFile);
                 const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
                 const documentRequestString = {
                     folderId: targetFolderId,
                     files: [{
                         name: fileName.split('.')[0],
-                        issueDate: formatDateForBackend(formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         note: 'Fire Damper Inspection Report',
                         fileVersion: fileVersion,
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
@@ -798,11 +849,11 @@ const FireDamper = ({
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequestString));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
                 const response = await axios({
                     method: 'post',
                     url: '/api/document/files/upload',
-                    data: formData,
+                    data: uploadFormData,
                     headers: {
                         'Content-Type': 'multipart/form-data',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -825,7 +876,7 @@ const FireDamper = ({
         }
     };
 
-    const generatePDF = async (uploadToServer = true) => {
+    const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
         try {
             setIsGeneratingPDF(true);
 
@@ -900,7 +951,7 @@ const FireDamper = ({
             const smallFont = 8;
             const mediumFont = 10;
 
-            setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+            setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
 
             const equipmentDetails = formData.selectedAsset ? [
                 selectedAsset.position,
@@ -990,7 +1041,7 @@ const FireDamper = ({
             setShowPdfButton(true);
 
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName);
+                await uploadPdfToServer(blob, fileName, inspectionDateOverride);
             }
 
             toast.success('PDF generated successfully!');
@@ -1031,7 +1082,7 @@ const FireDamper = ({
             const uploadResults = await Promise.all(
                 filesToUpload.map(async (file, index) => {
                     const response = await uploadSiteCheckDoc({
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         file: file
                     });
 
@@ -1069,7 +1120,7 @@ const FireDamper = ({
             if (currentCheckId) {
                 const payload = {
                     checkId: currentCheckId,
-                    siteId: siteSelectedForGlobal?.siteId,
+                    siteId: authoritativeSiteId,
                     type: 'Inspection',
                     subType: 'Fire Damper',
                     category: 'Fire Damper Inspection',
@@ -1110,7 +1161,7 @@ const FireDamper = ({
         if (currentCheckId && photoToRemove.paramKey) {
             const payload = {
                 checkId: currentCheckId,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 type: 'Inspection',
                 subType: 'Fire Damper',
                 category: 'Fire Damper Inspection',
@@ -1140,7 +1191,7 @@ const FireDamper = ({
         if (currentCheckId && photoToRemove.paramKey) {
             const payload = {
                 checkId: currentCheckId,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 type: 'Inspection',
                 subType: 'Fire Damper',
                 category: 'Fire Damper Inspection',
@@ -1170,6 +1221,15 @@ const FireDamper = ({
         }));
     };
 
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            engineer: newValue?.id || "",
+            user: newValue || {},
+        }));
+        setValidationErrors((prev) => ({ ...prev, engineer: "" }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log('Form submitted');
@@ -1197,6 +1257,9 @@ const FireDamper = ({
         }
 
         const errors = {};
+        if (!formData.engineer || !selectedEngineer) {
+            errors.engineer = "Please select an active engineer for this Site Check.";
+        }
 
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors);
@@ -1207,6 +1270,10 @@ const FireDamper = ({
         setIsLoading(true);
 
         try {
+            const submissionInspectionDate = effectiveCheckStatus === "Open"
+                ? getUkLocalDate()
+                : formData.inspectionDate;
+
             let existingInspection = null;
             if (currentCheckId) {
                 try {
@@ -1218,13 +1285,15 @@ const FireDamper = ({
             }
 
             const statusPayload = {
-                siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-                type: 'Inspection',
-                subType: 'Plant and Equipment Inspection',
-                category: 'Ventilation',
+                siteId: authoritativeSiteId,
+                type: siteCheck?.type || 'Inspection',
+                // OLD: Plant and Equipment Inspection / Ventilation changed the original route.
+                // NEW: preserve Passive Fire / Passive Fire - Fire Damper Inspection.
+                subType: siteCheck?.subType || subType || 'Passive Fire',
+                category: siteCheck?.category || category || 'Passive Fire - Fire Damper Inspection',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: `${submissionInspectionDate}T00:00:00`,
+                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };
@@ -1256,7 +1325,9 @@ const FireDamper = ({
 
             const inspectionPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
+                inspectionDate: submissionInspectionDate,
+                signedDate: submissionInspectionDate,
                 assetId: formData.selectedAsset?.assetId || formData.assetId || null,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
@@ -1287,12 +1358,12 @@ const FireDamper = ({
 
             console.log('Inspection data saved successfully:', saveResponse.data);
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
 
-            toast.success("Ventilation report saved and PDF generated successfully!");
+            toast.success("Fire Damper report saved and PDF generated successfully!");
             setShowPdfButton(true);
             setIsSubmitted(true);
 
@@ -1349,6 +1420,19 @@ const FireDamper = ({
                                 disabled={isSubmitted}
                             />
                         </div>
+                    </div>
+                    <div className="col-md-5">
+                        {/* OLD: Fire Damper stored engineer in the payload but had no Engineer UI field. */}
+                        {/* NEW: shared Engineer selector using the approved Air Conditioning rules. */}
+                        <SiteCheckEngineerSelector
+                            options={engineerOptions}
+                            value={selectedEngineer}
+                            onChange={handleEngineerSelect}
+                            isOpen={effectiveCheckStatus === "Open"}
+                            disabled={isSubmitted || !isFormEditable}
+                            loading={isLoadingEngineers}
+                            error={validationErrors.engineer || engineerLoadError}
+                        />
                     </div>
                 </div>
 
@@ -1916,7 +2000,7 @@ const FireDamper = ({
                             ) : (
                                 <RiskScoreCard
                                     desc={`Inspection - Passive Fire - Fire Damper Inspection`}
-                                    siteId={siteSelectedForGlobal?.siteId}
+                                    siteId={authoritativeSiteId}
                                     checkId={currentCheckId}
                                     createdBy={loggedInUserData?.id}
                                     taggedAsset={formData.selectedAsset?.assetId}
@@ -1958,7 +2042,7 @@ const FireDamper = ({
                 ) : (
                     <div className="text-center print-hide">
                         <div className="alert alert-success mb-4">
-                            Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                            Report submitted successfully on {getUkLocalDate()}
                         </div>
                         {showPdfButton && generatedPdfBlob && (
                             <button

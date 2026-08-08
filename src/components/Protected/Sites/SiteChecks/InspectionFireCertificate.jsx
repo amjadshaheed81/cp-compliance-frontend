@@ -9,12 +9,20 @@ import axios from 'axios';
 import pdfTemplate from './pdf/Fire Alarm.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import {
+    getUkLocalDate,
+    getUkLocalDateAsDate,
+    isCurrentUkInspectionDate,
+} from "./shared/siteCheckDateUtils";
 
 const InspectionFireCertificate = ({
                                        checkId,
                                        sasToken,
                                        siteAssets = [],
                                        getSiteAssets,
+                                       getUsers,
                                        siteSelectedForGlobal = {},
                                        loggedInUserData = {},
                                        siteCheck = {},
@@ -34,6 +42,13 @@ const InspectionFireCertificate = ({
     const [isNewCheck, setIsNewCheck] = useState(!checkId);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
     const users = useSelector((state) => state.site.users || []);
+
+    // NEW: Use the Site Check's own site and Open/Done status.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const checkStatus = inspectionDetails?.status || siteCheck?.status || "Open";
+    const [lastEngineerId, setLastEngineerId] = useState(null);
 
     const [folderIds, setFolderIds] = useState({
         logBooks: null,
@@ -111,7 +126,7 @@ const InspectionFireCertificate = ({
         additionalComments: "",
         additionalComments1: "",
         additionalComments2: "",
-        inspectionDate: new Date(),
+        inspectionDate: getUkLocalDateAsDate(),
         installationName: "",
         installationAddress: "",
         inspectionBy: loggedInUserData?.id,
@@ -139,6 +154,43 @@ const InspectionFireCertificate = ({
         user: loggedInUserData,
         actionId: null,
     });
+
+    // NEW: Shared engineer behaviour copied from Air Conditioning.
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: checkStatus,
+        selectedEngineerId: formData.inspectionBy,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    // NEW: Open = logged-in engineer/current UK date. Done is restored from API.
+    useEffect(() => {
+        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
+            setInspectionDetails(siteCheck);
+            const done = siteCheck.status === "Done";
+            setIsSubmitted(done);
+            setIsFormEditable(!done);
+        }
+
+        setLastEngineerId(null);
+        setFormData((prev) => ({
+            ...prev,
+            inspectionBy: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
+            user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
+            inspectionDate: siteCheck?.status === "Open"
+                ? getUkLocalDateAsDate()
+                : prev.inspectionDate,
+        }));
+    }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
 
     // Helper function to fetch PDF as ArrayBuffer
     const fetchPdfTemplate = async () => {
@@ -225,10 +277,10 @@ const InspectionFireCertificate = ({
             // Save the inspection data with the actionId
             const inspectionPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 checkId: currentCheckId,
                 actionId: verifiedAction.actionId,
-                inspectionBy: loggedInUserData.id,
+                inspectionBy: formData.inspectionBy,
                 type: 'Inspection',
                 subType: 'Fire Alarm',
                 category: inspectionDetails?.category || 'Fire Alarm'
@@ -289,9 +341,9 @@ const InspectionFireCertificate = ({
                 setFormData(prev => ({ ...prev, actionId: null }));
             }
 
-            if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+            if (!authoritativeSiteId || !currentCheckId) return;
 
-            const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site/actions/${authoritativeSiteId}`);
             if (response && response.length > 0) {
                 const relevantActions = response.filter(action =>
                     Number(action.checkId) === Number(currentCheckId)
@@ -316,7 +368,7 @@ const InspectionFireCertificate = ({
     };
 
     // Generate PDF function
-    const generatePDF = async () => {
+    const generatePDF = async (inspectionDateOverride) => {
         try {
             setIsGeneratingPDF(true);
 
@@ -325,6 +377,11 @@ const InspectionFireCertificate = ({
             if (currentCheckId) {
                 inspectionDetails = await fetchInspectionDetails(currentCheckId);
             }
+
+            // NEW: Use the exact engineer/date selected for this submission.
+            const effectiveInspectionDate =
+                inspectionDateOverride || formData.inspectionDate;
+            const effectiveEngineer = formData.user || selectedEngineer || loggedInUserData || {};
 
             // Generate PDF content
             const { PDFDocument } = await import('pdf-lib');
@@ -379,12 +436,12 @@ const InspectionFireCertificate = ({
             setTextField('Address_2', formData.installationAddress || '');
 
             // Set inspection company info
-            setTextField('inspectionTest', loggedInUserData?.companyName || '');
-            setTextField('Address_3', loggedInUserData?.companyAddress || '');
+            setTextField('inspectionTest', effectiveEngineer?.companyName || loggedInUserData?.companyName || '');
+            setTextField('Address_3', effectiveEngineer?.companyAddress || loggedInUserData?.companyAddress || '');
 
             // Set inspection date
-            const formattedDate = formData.inspectionDate
-                ? new Date(formData.inspectionDate).toLocaleDateString('en-GB')
+            const formattedDate = effectiveInspectionDate
+                ? new Date(effectiveInspectionDate).toLocaleDateString('en-GB')
                 : '';
             setTextField('Date', formattedDate);
 
@@ -438,15 +495,18 @@ const InspectionFireCertificate = ({
             setTextField('additionalComments1', formData.additionalComments1 || '');
             setTextField('additionalComments2', formData.additionalComments2 || '');
 
-            // Set inspector details
-            const inspector = users.find(u => u.id === loggedInUserData?.id);
-            setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
-            setTextField('Position', loggedInUserData?.role || '');
+            // OLD:
+            // const inspector = users.find(u => u.id === loggedInUserData?.id);
+            // Engineer/position/signature all came from the logged-in user.
+            // NEW: use the selected inspection engineer.
+            const inspector = effectiveEngineer;
+            setTextField('Engineer', inspector?.name || '');
+            setTextField('Position', inspector?.role || '');
 
-            // Add signature if available
-            if (loggedInUserData?.signature) {
+            // Add the selected engineer signature if available.
+            if (inspector?.signature) {
                 try {
-                    const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
+                    const signatureUrl = `${inspector.signature}?${sasToken}`;
                     const signatureResponse = await fetch(signatureUrl);
                     const signatureImageBytes = await signatureResponse.arrayBuffer();
 
@@ -496,7 +556,8 @@ const InspectionFireCertificate = ({
             await uploadPdfToServer(
                 blob,
                 fileName,
-                inspectionDetails?.category || 'Fire Alarm'
+                inspectionDetails?.category || 'Fire Alarm',
+                effectiveInspectionDate
             );
 
             return { success: true, fileName };
@@ -643,15 +704,17 @@ const InspectionFireCertificate = ({
         return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName, category) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride) => {
         try {
             setIsUploading(true);
+            const inspectionDateForUpload =
+                inspectionDateOverride || formData.inspectionDate;
 
             // First save locally
             await savePdfToLocal(pdfBlob, fileName);
 
             // Ensure we have the latest folder structure
-            const targetFolderId = await fetchFolderStructure(siteSelectedForGlobal?.siteId, category);
+            const targetFolderId = await fetchFolderStructure(authoritativeSiteId, category);
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
             }
@@ -673,9 +736,9 @@ const InspectionFireCertificate = ({
                         name: fileName,
                         originalFileName: fileName,
                         fileVersion: (existingFile.fileVersion || 1) + 1,
-                        siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId,
+                        issueDate: formatDateForBackend(inspectionDateForUpload),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `FA-${new Date().getTime()}`
@@ -711,9 +774,9 @@ const InspectionFireCertificate = ({
                         name: fileName.split('.')[0],
                         originalFileName: fileName,
                         fileVersion: fileVersion,
-                        siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId,
+                        issueDate: formatDateForBackend(inspectionDateForUpload),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `FA-${new Date().getTime()}`
@@ -749,7 +812,7 @@ const InspectionFireCertificate = ({
 
     const checkFileExists = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -772,7 +835,7 @@ const InspectionFireCertificate = ({
 
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return 1;
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -826,6 +889,14 @@ const InspectionFireCertificate = ({
                     apiChecksMap[check.check] = check;
                 });
 
+                const savedEngineerId = apiData?.inspectionBy || apiData?.inspectionByUser?.id || null;
+                setLastEngineerId(savedEngineerId);
+                const engineerUser = apiData?.inspectionByUser ||
+                    users.find((u) => String(u.id) === String(savedEngineerId));
+                const isCurrentOpenInspection =
+                    checkStatus === "Open" &&
+                    isCurrentUkInspectionDate(apiData?.inspectionDate);
+
                 setFormData(prev => ({
                     ...prev,
                     id: apiData?.id || prev.id,
@@ -852,7 +923,24 @@ const InspectionFireCertificate = ({
                     additionalComments1: apiData?.additionalComments1 || prev.additionalComments1,
                     additionalComments2: apiData?.additionalComments2 || prev.additionalComments2,
                     files: apiData?.files || prev.files,
-                    user: apiData?.inspectionByUser || prev.user,
+
+                    // OLD: user: apiData?.inspectionByUser || prev.user,
+                    // NEW: same Open/Done engineer/date behaviour as Air Conditioning.
+                    inspectionBy: checkStatus === "Open"
+                        ? (isCurrentOpenInspection
+                            ? (savedEngineerId || loggedInUserData?.id || "")
+                            : (loggedInUserData?.id || ""))
+                        : (savedEngineerId || prev.inspectionBy || ""),
+                    user: checkStatus === "Open"
+                        ? (isCurrentOpenInspection
+                            ? (engineerUser || loggedInUserData || {})
+                            : (loggedInUserData || {}))
+                        : (engineerUser || prev.user || {}),
+                    inspectionDate: checkStatus === "Open"
+                        ? getUkLocalDateAsDate()
+                        : (apiData?.inspectionDate
+                            ? new Date(`${String(apiData.inspectionDate).slice(0, 10)}T12:00:00`)
+                            : prev.inspectionDate),
                 }));
 
 
@@ -908,8 +996,8 @@ const InspectionFireCertificate = ({
     useEffect(() => {
         const fetchData = async () => {
             getUsers();
-            if (siteSelectedForGlobal?.siteId) {
-                await fetchFolderStructure(siteSelectedForGlobal.siteId, 'Fire Alarm');
+            if (authoritativeSiteId) {
+                await fetchFolderStructure(authoritativeSiteId, 'Fire Alarm');
             }
 
             if (checkId) {
@@ -918,13 +1006,13 @@ const InspectionFireCertificate = ({
 
             await fetchExistingActions();
 
-            if (siteSelectedForGlobal?.siteId) {
-                getSiteAssets(siteSelectedForGlobal.siteId);
+            if (authoritativeSiteId) {
+                getSiteAssets(authoritativeSiteId);
             }
         };
 
         fetchData();
-    }, [siteSelectedForGlobal?.siteId, checkId]);
+    }, [authoritativeSiteId, checkId]);
 
     useEffect(() => {
         if (license?.companyName) {
@@ -975,10 +1063,19 @@ const InspectionFireCertificate = ({
     };
 
     const handleDateChange = (date) => {
-        setFormData(prev => ({ ...prev, inspectionDate: date || new Date() }));
+        setFormData(prev => ({ ...prev, inspectionDate: date || getUkLocalDateAsDate() }));
     };
 
 
+
+    // NEW: Shared engineer dropdown selection.
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            inspectionBy: newValue?.id || "",
+            user: newValue || {},
+        }));
+    };
 
     const submitInspection = async (e) => {
         e.preventDefault();
@@ -990,6 +1087,11 @@ const InspectionFireCertificate = ({
 
         if (!formData.systemCondition) {
             toast.error("Please select system condition (Satisfactory/Unsatisfactory)");
+            return;
+        }
+
+        if (!formData.inspectionBy || !selectedEngineer) {
+            toast.error("Please select an active engineer for this Site Check.");
             return;
         }
 
@@ -1005,15 +1107,29 @@ const InspectionFireCertificate = ({
         setIsLoading(true);
 
         try {
+            const submissionInspectionDate = checkStatus === "Open"
+                ? getUkLocalDateAsDate()
+                : formData.inspectionDate;
+            const submissionDateString = getUkLocalDate(submissionInspectionDate);
+
+            if (checkStatus === "Open") {
+                setFormData((prev) => ({
+                    ...prev,
+                    inspectionDate: submissionInspectionDate,
+                }));
+            }
+
             // 1. First create/update site check record
             const statusPayload = {
-                siteId: siteSelectedForGlobal?.siteId,
-                type: 'Inspection',
-                subType: 'Fire Alarm',
-                category: 'Fire Alarm',
+                siteId: authoritativeSiteId,
+                type: siteCheck?.type || 'Inspection',
+                // OLD: subType/category were replaced with generic Fire Alarm values.
+                // NEW: preserve the original UpdateSiteCheck routing values.
+                subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
+                category: siteCheck?.category || inspectionDetails?.category || 'Fire Alarm',
                 status: 'Done',
-                startDate: new Date().toISOString(),
-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: `${submissionDateString}T00:00:00`,
+                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1031,9 +1147,10 @@ const InspectionFireCertificate = ({
             // 2. Save inspection data
             const inspectionPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 checkId: checkIdToUse,
-                inspectionBy: loggedInUserData?.id,
+                inspectionBy: formData.inspectionBy,
+                inspectionDate: submissionInspectionDate,
                 actionId: existingAction?.actionId || formData.actionId,
                 batteryTestResults: formData.batteryTestResults.slice(0, formData.batteryCount)
             };
@@ -1043,7 +1160,7 @@ const InspectionFireCertificate = ({
                 : await post("/api/site-check/fire-alarm-inspection", inspectionPayload);
 
             // 3. Generate and upload PDF
-            const pdfResult = await generatePDF();
+            const pdfResult = await generatePDF(submissionInspectionDate);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }
@@ -1453,7 +1570,7 @@ const InspectionFireCertificate = ({
                                 ) : (
                                     <RiskScoreCard
                                         desc={`Inspection - Fire Alarm to meet BS5839 - ${inspectionDetails?.category || ''}`}
-                                        siteId={siteSelectedForGlobal?.siteId}
+                                        siteId={authoritativeSiteId}
                                         checkId={currentCheckId}
                                         createdBy={loggedInUserData?.id}
                                         onRiskAssessmentComplete={handleRiskAssessmentComplete}
@@ -1518,6 +1635,9 @@ const InspectionFireCertificate = ({
                     <h5 className="mb-3">For the Inspection & Test of the system:</h5>
                     <div className="row mb-3">
                         <div className="col-md-4">
+                            {/* =========================================================
+                                OLD ENGINEER NAME FIELD - COMMENTED FOR REVIEW
+
                             <div className="mb-3">
                                 <label className="form-label">Name</label>
                                 <input
@@ -1527,6 +1647,20 @@ const InspectionFireCertificate = ({
                                     disabled
                                 />
                             </div>
+
+                            ========================================================= */}
+
+                            {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+                            <SiteCheckEngineerSelector
+                                options={engineerOptions}
+                                value={selectedEngineer}
+                                onChange={handleEngineerSelect}
+                                isOpen={checkStatus === "Open"}
+                                disabled={isSubmitted || !isFormEditable}
+                                loading={isLoadingEngineers}
+                                error={engineerLoadError}
+                                label="Name"
+                            />
                         </div>
                         <div className="col-md-4">
                             <div className="mb-3">
@@ -1598,7 +1732,6 @@ const mapStateToProps = (state) => ({
     siteAssets: state.site.siteAssets || [],
     siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
     loggedInUserData: state.site.loggedInUserData || {},
-    siteCheck: state.site.siteCheck || {},
 });
 
 export default connect(mapStateToProps, { getSiteAssets, getUsers })(

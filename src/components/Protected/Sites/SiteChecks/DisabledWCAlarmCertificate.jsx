@@ -18,6 +18,12 @@ import pdfTemplate from './pdf/DisabledWCAlarmCertificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import {
+  getUkLocalDate,
+  isCurrentUkInspectionDate,
+} from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -52,6 +58,7 @@ const DisabledWCAlarmCertificate = ({
                                       checkId,
                                       subType,
                                       category,
+                                      siteCheck,
                                       getSiteDetailsById,
                                       siteAssets,
                                       getSiteAssets,
@@ -64,7 +71,7 @@ const DisabledWCAlarmCertificate = ({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     report: "",
@@ -78,13 +85,20 @@ const DisabledWCAlarmCertificate = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
   });
 
   const sites = useSelector((state) => state.site.sites);
+
+  // NEW: Use the Site Check's own site for engineers, assets and documents.
+  // The global selected site is retained only as a fallback while the parent loads.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -102,15 +116,106 @@ const DisabledWCAlarmCertificate = ({
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
-    const [inspectionDetails, setInspectionDetails] = useState(null);
-    const navigate = useNavigate();
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+  const navigate = useNavigate();
+
+  // NEW: Shared engineer list/selection behaviour copied from Air Conditioning.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: checkStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Reset the common engineer/date fields when another Site Check opens.
+  // A Done inspection is then restored from its saved inspection record.
+  useEffect(() => {
+    setLastEngineerId(null);
+
+    setFormData((prev) => ({
+      ...prev,
+      engineer:
+        siteCheck?.status === "Done"
+          ? ""
+          : (loggedInUserData?.id || ""),
+      user:
+        siteCheck?.status === "Done"
+          ? {}
+          : (loggedInUserData || {}),
+      inspectionDate:
+        siteCheck?.status === "Open"
+          ? getUkLocalDate()
+          : prev.inspectionDate,
+      signedDate:
+        siteCheck?.status === "Open"
+          ? getUkLocalDate()
+          : prev.signedDate,
+    }));
+  }, [
+    checkId,
+    authoritativeSiteId,
+    siteCheck?.status,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+  ]);
+
+  // NEW: An Open check defaults to the logged-in engineer. A deliberate
+  // selection is not replaced while the engineer works through the form.
+  useEffect(() => {
+    if (checkStatus !== "Open" || !loggedInUserData?.id) {
+      return;
+    }
+
+    setFormData((prev) => {
+      if (
+        prev.engineer &&
+        String(prev.engineer) !== String(loggedInUserData.id)
+      ) {
+        return prev;
+      }
+
+      const loggedInEngineer =
+        engineerOptions.find(
+          (user) => String(user.id) === String(loggedInUserData.id)
+        ) || loggedInUserData;
+
+      if (
+        String(prev.engineer || "") === String(loggedInEngineer.id) &&
+        prev.user?.name === loggedInEngineer.name
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        engineer: loggedInEngineer.id,
+        user: loggedInEngineer,
+      };
+    });
+  }, [
+    checkId,
+    checkStatus,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+    engineerOptions,
+  ]);
 
   const isInternalUserTaggedWithSite = true;
 
-  const fetchInspectionData = async () => {
+  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
     try {
       if (!checkId) return;
 
@@ -118,40 +223,68 @@ const DisabledWCAlarmCertificate = ({
         await getUsers();
       }
 
-      const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+      const apiData = await get(
+        `/api/site-check/generic-inspection/${checkId}`
+      );
+
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        setLastEngineerId(mostRecentItem.engineer || null);
+
         const selectedAsset = siteAssets.find(
-            (asset) => asset.assetId === mostRecentItem.assetId
+          (asset) =>
+            String(asset.assetId) === String(mostRecentItem.assetId)
         );
 
         const clientUser = users.find(
-            (user) => user.id === mostRecentItem.client
+          (user) => String(user.id) === String(mostRecentItem.client)
         );
         const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
+          (user) => String(user.id) === String(mostRecentItem.engineer)
         );
         const siteContactUser = users.find(
-            (user) => user.id === mostRecentItem.siteContact
+          (user) =>
+            String(user.id) === String(mostRecentItem.siteContact)
         );
 
-        // Fetch action data if actionId exists
-        let existingAction = null;
+        let existingInspectionAction = null;
         if (mostRecentItem.actionId) {
-          existingAction = await fetchActionById(mostRecentItem.actionId);
-          if (existingAction) {
-            setExistingAction(existingAction);
+          existingInspectionAction = await fetchActionById(
+            mostRecentItem.actionId
+          );
+          if (existingInspectionAction) {
+            setExistingAction(existingInspectionAction);
             setActionRaised(true);
           }
         }
+
+        const isCurrentOpenInspection =
+          siteCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
+        const openInspectionEngineer = isCurrentOpenInspection
+          ? (engineerUser || loggedInUserData || {})
+          : (loggedInUserData || {});
 
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
-          siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
-          siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+          siteContact:
+            mostRecentItem.siteContact || prev.siteContact,
+
+          // OLD:
+          // inspectionDate:
+          //   mostRecentItem.inspectionDate || prev.inspectionDate,
+
+          // NEW: Open uses today's UK date; Done uses the saved date.
+          inspectionDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.inspectionDate || prev.inspectionDate),
+
+          siteContactNo:
+            mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
           param1: mostRecentItem.param1 || prev.param1,
@@ -161,18 +294,54 @@ const DisabledWCAlarmCertificate = ({
           param5: mostRecentItem.param5 || prev.param5,
           param6: mostRecentItem.param6 || prev.param6,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+
+          // OLD:
+          // engineer:
+          //   mostRecentItem.engineer ||
+          //   prev.engineer ||
+          //   loggedInUserData?.id,
+          // user: engineerUser || loggedInUserData || prev.user,
+
+          // NEW: Match Air Conditioning Open/Done engineer behaviour.
+          engineer:
+            siteCheckStatus === "Open"
+              ? (
+                  isCurrentOpenInspection
+                    ? (
+                        mostRecentItem.engineer ||
+                        loggedInUserData?.id ||
+                        ""
+                      )
+                    : (loggedInUserData?.id || "")
+                )
+              : (mostRecentItem.engineer || prev.engineer || ""),
+          user:
+            siteCheckStatus === "Open"
+              ? openInspectionEngineer
+              : (engineerUser || prev.user || {}),
+
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+
+          // OLD:
+          // signedDate:
+          //   mostRecentItem.signedDate || prev.signedDate,
+
+          // NEW: Open uses today's UK date; Done uses the saved date.
+          signedDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.signedDate || prev.signedDate),
+
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
         }));
+      } else {
+        setLastEngineerId(null);
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
-      //toast.error("Failed to load inspection data");
+      // toast.error("Failed to load inspection data");
     }
   };
 
@@ -188,7 +357,7 @@ const DisabledWCAlarmCertificate = ({
   };
 
   const selectedAsset = siteAssets.find(
-      (asset) => asset.assetId === formData.assetId
+    (asset) => String(asset.assetId) === String(formData.assetId)
   );
 
   const fetchExistingActions = async () => {
@@ -207,9 +376,9 @@ const DisabledWCAlarmCertificate = ({
       }
 
       // Now look for other actions specifically for this checkId
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         // Only consider actions with exact checkId match
         const relevantActions = response.filter(action =>
@@ -319,109 +488,140 @@ const DisabledWCAlarmCertificate = ({
 
 
   useEffect(() => {
-    // Enhance the status check in your fetchSiteCheckData function
+    const applySiteCheckState = (loadedSiteCheck) => {
+      if (!loadedSiteCheck) {
+        return null;
+      }
+
+      setInspectionDetails(loadedSiteCheck);
+      setCurrentCheckId(loadedSiteCheck.checkId);
+      setCheckStatus(loadedSiteCheck.status);
+
+      const isDone = loadedSiteCheck.status === "Done";
+      setIsFormEditable(!isDone);
+      setIsSubmitted(isDone);
+      setShowPdfButton(isDone);
+
+      return loadedSiteCheck;
+    };
+
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
-
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
-        if (response && response.length > 0) {
-          // First try to find the exact checkId from URL
-          let disabledWCCheck = checkId
-              ? response.find(check => check.checkId === parseInt(checkId, 10))
-              : null;
-
-          // If not found by checkId, find first matching type
-          // if (!disabledWCCheck) {
-          //   disabledWCCheck = response.find(check =>
-          //       check.type === 'Inspection' &&
-          //       check.subType === 'Plant and Equipment Inspection' &&
-          //       check.category === 'Disabled WC Alarm Certificate'
-          //   );
-          // }
-
-          if (disabledWCCheck) {
-            console.log('Found check:', {
-              checkId: disabledWCCheck.checkId,
-              requestedCheckId: checkId,
-              matchType: disabledWCCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
-            });
-
-            setInspectionDetails(disabledWCCheck);
-            setCurrentCheckId(disabledWCCheck.checkId);
-            setCheckStatus(disabledWCCheck.status);
-
-            // Set form editability based on status
-            const isDone = disabledWCCheck.status === 'Done';
-            setIsFormEditable(!isDone);
-            setIsSubmitted(isDone);
-            setShowPdfButton(isDone);
-          } else {
-            // If no matching check found, default to editable
-            console.log('No matching check found, using checkId from URL:', checkId);
-            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
-            setIsFormEditable(true);
-            setIsSubmitted(false);
-            setShowPdfButton(false);
-          }
+        // NEW: Prefer the exact Site Check already loaded by UpdateSiteCheck.
+        if (
+          siteCheck &&
+          Number(siteCheck.checkId) === Number(checkId)
+        ) {
+          return applySiteCheckState(siteCheck);
         }
-      } catch (error) {
-        console.error('Error fetching site check data:', error);
-        toast.error('Failed to load site check status');
+
+        /*
+         * OLD BEHAVIOUR RETAINED AS A FALLBACK:
+         * The component used to retrieve every Site Check for the globally
+         * selected site and then search for checkId.
+         */
+        if (!authoritativeSiteId) return null;
+
+        const response = await get(
+          `/api/site-check/site/${authoritativeSiteId}`
+        );
+
+        const disabledWCCheck = checkId
+          ? response?.find(
+              (check) => Number(check.checkId) === Number(checkId)
+            )
+          : null;
+
+        if (disabledWCCheck) {
+          return applySiteCheckState(disabledWCCheck);
+        }
+
+        setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
         setIsFormEditable(true);
+        setIsSubmitted(false);
+        setShowPdfButton(false);
+        return null;
+      } catch (error) {
+        console.error("Error fetching site check data:", error);
+        toast.error("Failed to load site check status");
+        setIsFormEditable(true);
+        return null;
       }
     };
 
-    if (isInternalUserTaggedWithSite && users.length === 0) {
-      getUsers();
-    }
-
     const fetchData = async () => {
       setIsLoading(true);
-      try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
 
-          if (formData.actionId) {
-            const action = await fetchActionById(formData.actionId);
-            if (action) {
-              setExistingAction(action);
-              setActionRaised(true);
-            } else {
-              await fetchExistingActions();
-            }
+      try {
+        if (!authoritativeSiteId) {
+          return;
+        }
+
+        // OLD:
+        // await getSiteAssets(siteSelectedForGlobal?.siteId);
+        // await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+        // await fetchFolderStructure(siteSelectedForGlobal.siteId);
+
+        // NEW: Use the Site Check's own site.
+        await getSiteAssets(authoritativeSiteId);
+        await getSiteDetailsById(authoritativeSiteId);
+        await fetchFolderStructure(authoritativeSiteId);
+
+        const loadedSiteCheck = await fetchSiteCheckData();
+        await fetchInspectionData(
+          loadedSiteCheck?.status || checkStatus
+        );
+
+        if (formData.actionId) {
+          const action = await fetchActionById(formData.actionId);
+          if (action) {
+            setExistingAction(action);
+            setActionRaised(true);
           } else {
             await fetchExistingActions();
           }
+        } else {
+          await fetchExistingActions();
+        }
 
-          const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
+        const currentSite = sites.find(
+          (site) =>
+            Number(site.siteId ?? site.id) === authoritativeSiteId
+        );
+
+        const selectedGlobalSiteId = Number(
+          siteSelectedForGlobal?.siteId ?? siteSelectedForGlobal?.id
+        );
+
+        const siteData =
+          currentSite ||
+          (
+            selectedGlobalSiteId === authoritativeSiteId
+              ? siteSelectedForGlobal
+              : null
           );
-          const siteData = currentSite || siteSelectedForGlobal;
 
-          if (siteData) {
-            const addressParts = [
-              siteData.address1,
-              siteData.address2,
-              siteData.city,
-              siteData.area,
-              siteData.postCode,
-              siteData.country,
-            ].filter((part) => part && part.trim() !== "");
+        if (siteData) {
+          const addressParts = [
+            siteData.address1,
+            siteData.address2,
+            siteData.city,
+            siteData.area,
+            siteData.postCode,
+            siteData.country,
+          ].filter((part) => part && part.trim() !== "");
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({
+            ...prev,
+            address: fullAddress,
+          }));
 
-          if (siteSelectedForGlobal.siteContact) {
+          if (siteData.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
         }
@@ -435,12 +635,15 @@ const DisabledWCAlarmCertificate = ({
 
     fetchData();
   }, [
+    siteCheck,
+    checkId,
+    authoritativeSiteId,
     siteSelectedForGlobal,
     getSiteAssets,
+    getSiteDetailsById,
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
-    checkId,
   ]);
 
   useEffect(() => {
@@ -498,7 +701,7 @@ const DisabledWCAlarmCertificate = ({
           siteContactUser: formData.siteContactUser,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Disabled WC Alarm',
           category: 'Disabled WC Alarm Certificate',
@@ -533,6 +736,21 @@ const DisabledWCAlarmCertificate = ({
     }));
   };
 
+  // NEW: Save both the selected engineer ID and the complete user object.
+  // The PDF reads the name from formData.user.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+
+    setValidationErrors((prev) => ({
+      ...prev,
+      engineer: "",
+    }));
+  };
+
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
       const url = URL.createObjectURL(pdfBlob);
@@ -554,7 +772,7 @@ const DisabledWCAlarmCertificate = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -610,7 +828,7 @@ const DisabledWCAlarmCertificate = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -634,26 +852,53 @@ const DisabledWCAlarmCertificate = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (
+    pdfBlob,
+    fileName,
+    inspectionDateOverride
+  ) => {
     try {
       setIsUploading(true);
+
+      const inspectionDateForUpload =
+        inspectionDateOverride || formData.inspectionDate;
+
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
       }
 
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const targetFolderId = folderIds.disabledWCAlarm || folderIds.logBooks;
+      const pdfFile = new File([pdfBlob], fileName, {
+        type: 'application/pdf',
+      });
+      const targetFolderId =
+        folderIds.disabledWCAlarm || folderIds.logBooks;
 
       if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
+        throw new Error(
+          'Could not determine target folder for PDF upload'
+        );
       }
 
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      const { exists, file: existingFile } =
+        await checkFileExists(targetFolderId, fileName);
+
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const formData = new FormData();
+       * issueDate: formatDateForBackend(formData.inspectionDate)
+       *
+       * The local FormData variable hid the React formData state.
+       */
+
+      // NEW: Use a clearly named upload object and the exact UK date used
+      // by the Site Check, inspection record and PDF.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
+
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -661,64 +906,94 @@ const DisabledWCAlarmCertificate = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-              uploaderUserId: loggedInUserData?.id || 0,
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(
+              inspectionDateForUpload
+            ),
+            expiryDate: formatDateForBackend(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                inspectionDetails?.repeatFrequency
+              )
+            ),
+            uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `DWC-${new Date().getTime()}`
-          }]
+            referenceNumber: `DWC-${new Date().getTime()}`,
+          }],
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append(
+          'documentRequestString',
+          JSON.stringify(documentRequestString)
+        );
+
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
+            'Accept': 'application/json',
+          },
         });
 
         if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+          toast.success(
+            `PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`
+          );
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        uploadFormData.append('files', pdfFile);
+
+        const fileVersion = await getHighestFileVersion(
+          targetFolderId,
+          fileName
+        );
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-              note: 'Disabled WC Alarm Certificate',
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            issueDate: formatDateForBackend(
+              inspectionDateForUpload
+            ),
+            expiryDate: formatDateForBackend(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                inspectionDetails?.repeatFrequency
+              )
+            ),
+            note: 'Disabled WC Alarm Certificate',
+            fileVersion,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `DWC-${new Date().getTime()}`
-          }]
+            referenceNumber: `DWC-${new Date().getTime()}`,
+          }],
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append(
+          'documentRequestString',
+          JSON.stringify(documentRequestString)
+        );
+
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
 
         if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          toast.success(
+            `PDF uploaded successfully as version ${fileVersion}!`
+          );
           return true;
         }
       }
@@ -732,7 +1007,10 @@ const DisabledWCAlarmCertificate = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (
+    uploadToServer = true,
+    inspectionDateOverride
+  ) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -790,6 +1068,8 @@ const DisabledWCAlarmCertificate = ({
 
       const smallFont = 8;
       const mediumFont = 10;
+      const effectiveInspectionDate =
+        inspectionDateOverride || formData.inspectionDate;
 
       // Address and contact information
       const addressLines = (formData.address || '').split(',');
@@ -799,7 +1079,11 @@ const DisabledWCAlarmCertificate = ({
       setTextField('postalCode', addressLines[3] || '', smallFont);
       setTextField('country', addressLines[4] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      // OLD:
+      // setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+
+      // NEW: Use the exact UK date used by the Open-to-Done submission.
+      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('siteContact', formData.siteContactUser?.name || '', smallFont);
       setTextField('contactNo', formData.siteContactNo || '', smallFont);
       setTextField('jobNo', formData.job || '', smallFont);
@@ -833,8 +1117,13 @@ const DisabledWCAlarmCertificate = ({
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      // OLD:
+      // setTextField('on', dateFormat(formData.signedDate), smallFont);
+      // setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+
+      // NEW: Open submission uses today's UK date consistently.
+      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
+      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -846,7 +1135,11 @@ const DisabledWCAlarmCertificate = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(
+          blob,
+          fileName,
+          effectiveInspectionDate
+        );
       }
 
       toast.success('PDF generated successfully!');
@@ -870,10 +1163,7 @@ const DisabledWCAlarmCertificate = ({
       return;
     }
 
-    // Validation checks
-    const hasFailures = [
-      formData.param6
-    ].some(val => val === "Fail");
+    const hasFailures = formData.param6 === "Fail";
 
     if (hasFailures && !actionRaised) {
       toast.error("Please complete the risk assessment before submitting");
@@ -885,8 +1175,14 @@ const DisabledWCAlarmCertificate = ({
       return;
     }
 
-    // Form validation
     const errors = {};
+
+    // NEW: The engineer must be a valid option for this Site Check site.
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer =
+        "Please select an active engineer for this Site Check.";
+    }
+
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -896,6 +1192,11 @@ const DisabledWCAlarmCertificate = ({
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+
+      if (errors.engineer) {
+        toast.error(errors.engineer);
+      }
+
       return;
     }
 
@@ -903,43 +1204,85 @@ const DisabledWCAlarmCertificate = ({
     setIsLoading(true);
 
     try {
-      // First check if we have an existing inspection
+      // NEW: Match Air Conditioning. An Open check is completed using
+      // today's UK date rather than an older inspection record date.
+      const submissionInspectionDate =
+        checkStatus === "Open"
+          ? getUkLocalDate()
+          : formData.inspectionDate;
+
+      if (checkStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       let existingInspection = null;
       if (currentCheckId) {
         try {
-          const inspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-          existingInspection = inspections?.length > 0 ? inspections[0] : null;
+          const inspections = await get(
+            `/api/site-check/generic-inspection/${currentCheckId}`
+          );
+          existingInspection =
+            inspections?.length > 0 ? inspections[0] : null;
         } catch (error) {
           console.error('Error checking for existing inspection:', error);
         }
       }
 
-      // First update or create the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Plant and Equipment Inspection',
-        category: 'Disabled WC Alarm Certificate',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+
+        // OLD:
+        // subType: 'Plant and Equipment Inspection',
+        // category: 'Disabled WC Alarm Certificate',
+
+        // NEW: Preserve the values used by UpdateSiteCheck routing.
+        subType: siteCheck?.subType || 'Electrical',
+        category: siteCheck?.category || 'WC Alarm Testing',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-        leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
-        assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+
+        // OLD:
+        // startDate:
+        //   new Date().toISOString().split('T')[0] + 'T00:00:00',
+        // dueDate:
+        //   formatLocalDateTime(
+        //     calculateExpiryDate(
+        //       formData.inspectionDate,
+        //       inspectionDetails?.repeatFrequency
+        //     )
+        //   ),
+
+        // NEW: Use one current UK date throughout the completed check.
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(
+          calculateExpiryDate(
+            submissionInspectionDate,
+            inspectionDetails?.repeatFrequency
+          )
+        ),
+        leadUserID: loggedInUserData?.id
+          ? String(loggedInUserData.id)
+          : '0',
+        assistantUserID: loggedInUserData?.id
+          ? String(loggedInUserData.id)
+          : '0',
       };
 
       let statusResponse;
       if (currentCheckId) {
-        // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
-            statusPayload
+          `/api/site-check/${currentCheckId}`,
+          statusPayload
         );
       } else {
-        // Create new check
         statusResponse = await post(
-            `/api/site-check`,
-            statusPayload
+          `/api/site-check`,
+          statusPayload
         );
         if (statusResponse?.checkId) {
           setCurrentCheckId(statusResponse.checkId);
@@ -950,17 +1293,20 @@ const DisabledWCAlarmCertificate = ({
         throw new Error('Failed to update site check status');
       }
 
-      console.log('Site check status updated successfully:', statusResponse.data);
       setCheckStatus('Done');
       setIsFormEditable(false);
 
-      // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+
+        // NEW: Explicitly save the UK submission date, not stale state.
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
+
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Disabled WC Alarm',
@@ -971,16 +1317,14 @@ const DisabledWCAlarmCertificate = ({
 
       let saveResponse;
       if (existingInspection) {
-        // Update existing inspection
         saveResponse = await put(
-            `/api/site-check/generic-inspection/${currentCheckId}`,
-            inspectionPayload
+          `/api/site-check/generic-inspection/${currentCheckId}`,
+          inspectionPayload
         );
       } else {
-        // Create new inspection
         saveResponse = await post(
-            `/api/site-check/generic-inspection`,
-            inspectionPayload
+          `/api/site-check/generic-inspection`,
+          inspectionPayload
         );
       }
 
@@ -988,15 +1332,17 @@ const DisabledWCAlarmCertificate = ({
         throw new Error('Failed to save inspection data');
       }
 
-      console.log('Inspection data saved successfully:', saveResponse.data);
-
-      // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Disabled WC Alarm report saved and PDF generated successfully!");
+      toast.success(
+        "Disabled WC Alarm report saved and PDF generated successfully!"
+      );
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -1020,7 +1366,8 @@ const DisabledWCAlarmCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) =>
+                    Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1094,7 +1441,8 @@ const DisabledWCAlarmCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) =>
+                    Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1662,7 +2010,7 @@ const DisabledWCAlarmCertificate = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Electrical - Disabled WC Alarm Inspection`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1701,9 +2049,15 @@ const DisabledWCAlarmCertificate = ({
               </div>
             </div>
             <div className="col-md-6">
-              <div className="mb-3">
-                <label className="form-label fw-bold">Engineer's Name</label>
-                <input
+              {/*
+                =========================================================
+                OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    Engineer's Name
+                  </label>
+                  <input
                     type="text"
                     className="form-control"
                     name="engineer name"
@@ -1711,8 +2065,28 @@ const DisabledWCAlarmCertificate = ({
                     value={formData.user.name}
                     required
                     disabled
-                />
-              </div>
+                  />
+                </div>
+
+                =========================================================
+              */}
+
+              {/* ======================================================
+                  NEW SHARED ENGINEER CONTROL
+                  MATCHES AIR CONDITIONING BEHAVIOUR
+              ====================================================== */}
+              <SiteCheckEngineerSelector
+                options={engineerOptions}
+                value={selectedEngineer}
+                onChange={handleEngineerSelect}
+                isOpen={checkStatus === "Open"}
+                disabled={isSubmitted || !isFormEditable}
+                loading={isLoadingEngineers}
+                error={
+                  validationErrors.engineer ||
+                  engineerLoadError
+                }
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input

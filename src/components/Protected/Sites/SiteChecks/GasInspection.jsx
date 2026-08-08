@@ -18,6 +18,9 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -53,18 +56,17 @@ const GasSafetyRecord = ({
                              getUsers,
                              siteSelectedForGlobal,
                              loggedInUserData,
+                             siteCheck = {},
                          }) => {
     const license = JSON.parse(localStorage.getItem("license"));
     const [sasToken, setSasToken] = useState('');
     const navigate = useNavigate();
-    const gasEngineerPostCode = loggedInUserData?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0]
-
     const adminPostCode = license?.companyAddress?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0];
     const [inspectionDetails, setInspectionDetails] = useState(null);
 
     //console.log(license)
     const [formData, setFormData] = useState({
-        date: new Date().toISOString().split("T")[0],
+        date: getUkLocalDate(),
         ref: "",
         gasSafeRegNo: loggedInUserData?.gasSafetyRegNo || "",
         serialNo: "",
@@ -72,7 +74,7 @@ const GasSafetyRecord = ({
         // Registered Business Details
         registeredBusinessName: loggedInUserData?.name || "",
         registeredBusinessAddress: loggedInUserData?.companyAddress || "",
-        registeredBusinessPostcode: gasEngineerPostCode || "",
+        registeredBusinessPostcode: loggedInUserData?.companyPostcode || "",
         registeredBusinessContact: loggedInUserData?.phone || "",
 
         // Landlord/Homeowner Details
@@ -134,10 +136,11 @@ const GasSafetyRecord = ({
         // Signatures
         engineerName: loggedInUserData?.name || "",
         engineer: loggedInUserData?.id || "",
-        engineerSignatureDate: new Date().toISOString().split("T")[0],
+        user: loggedInUserData || {},
+        engineerSignatureDate: getUkLocalDate(),
         receivedByName: "",
         receivedByPosition: "",
-        receivedByDate: new Date().toISOString().split("T")[0],
+        receivedByDate: getUkLocalDate(),
 
         actionId: null
     });
@@ -157,6 +160,45 @@ const GasSafetyRecord = ({
     const [showRiskAssessment, setShowRiskAssessment] = useState(false);
     const [nextInspectionDue, setNextInspectionDue] = useState(null);
 
+    // NEW: Use the Site Check's site/status and the shared engineer selector.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const checkStatus = siteCheck?.status || inspectionDetails?.status || "Open";
+    const [lastEngineerId, setLastEngineerId] = useState(null);
+
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: checkStatus,
+        selectedEngineerId: formData.engineer,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    const getPostCodeFromAddress = (address) =>
+        address?.match(/[A-Z]{1,2}\d{1,2}[A-Z]?\s\d[A-Z]{2}/)?.[0] || "";
+
+    // NEW: Open = current UK date and logged-in engineer by default.
+    useEffect(() => {
+        if (checkStatus !== "Open") return;
+        setFormData((prev) => ({
+            ...prev,
+            date: getUkLocalDate(),
+            engineerSignatureDate: getUkLocalDate(),
+            engineer: prev.engineer || loggedInUserData?.id || "",
+            engineerName: prev.user?.name || loggedInUserData?.name || "",
+            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+        }));
+    }, [checkStatus, loggedInUserData?.id]);
+
 
     const [folderIds, setFolderIds] = useState({
         logBooks: null,
@@ -165,7 +207,7 @@ const GasSafetyRecord = ({
     });
 
     const isInternalUserTaggedWithSite = loggedInUserData?.taggedSites?.some(
-        (site) => site.id === siteSelectedForGlobal?.siteId
+        (site) => Number(site.id) === Number(authoritativeSiteId)
     );
     const formatDateForBackend = (dateString) => {
         if (!dateString) return null;
@@ -229,8 +271,8 @@ const GasSafetyRecord = ({
                 }
 
                 // Load site assets if not already loaded
-                if (siteAssets.length === 0 && siteSelectedForGlobal?.siteId) {
-                    await getSiteAssets(siteSelectedForGlobal.siteId);
+                if (siteAssets.length === 0 && authoritativeSiteId) {
+                    await getSiteAssets(authoritativeSiteId);
                 }
 
                 const statusResponse = await get(`/api/site-check/check-id/${checkId}`);
@@ -260,7 +302,7 @@ const GasSafetyRecord = ({
         };
 
         fetchInspectionStatus();
-    }, [checkId, users.length, siteAssets.length, siteSelectedForGlobal.siteId]);
+    }, [checkId, users.length, siteAssets.length, authoritativeSiteId]);
 
     // Second useEffect for loading gas safety specific data
     useEffect(() => {
@@ -310,19 +352,44 @@ const GasSafetyRecord = ({
                 setUploadedPhotos(photosFromApi);
 
                 // Set form data with proper fallbacks
+                const savedEngineerId = gasSafetyData.engineer || null;
+                setLastEngineerId(savedEngineerId);
+                const savedEngineerUser = users.find(
+                    (user) => String(user.id) === String(savedEngineerId)
+                ) || (savedEngineerId ? {
+                    id: savedEngineerId,
+                    name: gasSafetyData.engineerName || `Engineer ${savedEngineerId}`,
+                    gasSafetyRegNo: gasSafetyData.gasSafeRegNo || "",
+                    companyName: gasSafetyData.registeredBusinessName || "",
+                    companyAddress: gasSafetyData.registeredBusinessAddress || "",
+                    phone: gasSafetyData.registeredBusinessContact || "",
+                } : null);
+                const isCurrentOpenInspection =
+                    checkStatus === "Open" && isCurrentUkInspectionDate(gasSafetyData.date);
+
                 setFormData(prev => ({
                     ...prev,
                     // Basic info
-                    date: gasSafetyData.date || prev.date,
+                    date: checkStatus === "Open" ? getUkLocalDate() : (gasSafetyData.date || prev.date),
                     ref: gasSafetyData.ref || prev.ref,
-                    gasSafeRegNo: gasSafetyData.gasSafeRegNo || loggedInUserData?.gasSafetyRegNo || prev.gasSafeRegNo,
+                    gasSafeRegNo: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerUser?.gasSafetyRegNo || loggedInUserData?.gasSafetyRegNo || "") : (loggedInUserData?.gasSafetyRegNo || ""))
+                        : (gasSafetyData.gasSafeRegNo || savedEngineerUser?.gasSafetyRegNo || prev.gasSafeRegNo),
                     serialNo: gasSafetyData.serialNo || prev.serialNo,
 
                     // Registered Business
-                    registeredBusinessName: gasSafetyData.registeredBusinessName || loggedInUserData?.companyName || prev.registeredBusinessName,
-                    registeredBusinessAddress: gasSafetyData.registeredBusinessAddress || loggedInUserData?.companyAddress || prev.registeredBusinessAddress,
-                    registeredBusinessPostcode: gasSafetyData.registeredBusinessPostcode || loggedInUserData?.companyPostcode || prev.registeredBusinessPostcode,
-                    registeredBusinessContact: gasSafetyData.registeredBusinessContact || loggedInUserData?.phone || prev.registeredBusinessContact,
+                    registeredBusinessName: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerUser?.companyName || loggedInUserData?.companyName || "") : (loggedInUserData?.companyName || ""))
+                        : (gasSafetyData.registeredBusinessName || savedEngineerUser?.companyName || prev.registeredBusinessName),
+                    registeredBusinessAddress: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerUser?.companyAddress || loggedInUserData?.companyAddress || "") : (loggedInUserData?.companyAddress || ""))
+                        : (gasSafetyData.registeredBusinessAddress || savedEngineerUser?.companyAddress || prev.registeredBusinessAddress),
+                    registeredBusinessPostcode: checkStatus === "Open"
+                        ? getPostCodeFromAddress(isCurrentOpenInspection ? (savedEngineerUser?.companyAddress || loggedInUserData?.companyAddress) : loggedInUserData?.companyAddress)
+                        : (gasSafetyData.registeredBusinessPostcode || getPostCodeFromAddress(savedEngineerUser?.companyAddress) || prev.registeredBusinessPostcode),
+                    registeredBusinessContact: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerUser?.phone || loggedInUserData?.phone || "") : (loggedInUserData?.phone || ""))
+                        : (gasSafetyData.registeredBusinessContact || savedEngineerUser?.phone || prev.registeredBusinessContact),
 
                     // Landlord
                     landlordName: gasSafetyData.landlordName || `${license?.adminFirstName} ${license?.adminLastName}` || prev.landlordName,
@@ -386,9 +453,20 @@ const GasSafetyRecord = ({
                     param5: gasSafetyData.param5 || prev.param5,
 
                     // Signatures
-                    engineerName: gasSafetyData.engineerName || loggedInUserData?.name || prev.engineerName,
-                    engineer: gasSafetyData.engineer || loggedInUserData?.id || prev.engineer,
-                    engineerSignatureDate: gasSafetyData.engineerSignatureDate || prev.engineerSignatureDate,
+                    // OLD: engineer always fell back to loggedInUserData.
+                    // NEW: Open defaults to current user; Done restores the saved engineer.
+                    engineerName: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerUser?.name || loggedInUserData?.name || "") : (loggedInUserData?.name || ""))
+                        : (gasSafetyData.engineerName || savedEngineerUser?.name || prev.engineerName),
+                    engineer: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+                        : (savedEngineerId || prev.engineer || ""),
+                    user: checkStatus === "Open"
+                        ? (isCurrentOpenInspection ? (savedEngineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+                        : (savedEngineerUser || prev.user || {}),
+                    engineerSignatureDate: checkStatus === "Open"
+                        ? getUkLocalDate()
+                        : (gasSafetyData.engineerSignatureDate || prev.engineerSignatureDate),
                     receivedByName: gasSafetyData.receivedByName || prev.receivedByName,
                     receivedByPosition: gasSafetyData.receivedByPosition || prev.receivedByPosition,
                     receivedByDate: gasSafetyData.receivedByDate || prev.receivedByDate,
@@ -480,7 +558,7 @@ const GasSafetyRecord = ({
                 }));
 
                 // Set engineer details from logged in user
-                if (loggedInUserData) {
+                if (loggedInUserData && checkStatus === "Open") {
                     setFormData(prev => ({
                         ...prev,
                         registeredBusinessName: loggedInUserData.companyName || "",
@@ -537,7 +615,12 @@ const GasSafetyRecord = ({
                     ...formData,
                     actionId: verifiedAction.actionId,
                     checkId: currentCheckId,
-                    siteId: siteSelectedForGlobal?.siteId,
+                    siteId: authoritativeSiteId,
+                    engineer: formData.engineer,
+                    engineerName: formData.user?.name || formData.engineerName,
+                    gasSafeRegNo: formData.user?.gasSafetyRegNo || formData.gasSafeRegNo,
+                    date: getUkLocalDate(),
+                    engineerSignatureDate: getUkLocalDate(),
                 };
 
                 const existingInspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
@@ -571,7 +654,7 @@ const GasSafetyRecord = ({
                 setFormData(prev => ({ ...prev, actionId: null }));
             }
 
-            if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+            if (!authoritativeSiteId || !currentCheckId) return;
 
             const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
             if (response && response.length > 0) {
@@ -656,7 +739,7 @@ const GasSafetyRecord = ({
 
     const checkFileExists = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -678,7 +761,7 @@ const GasSafetyRecord = ({
 
     const getHighestFileVersion = async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return 1;
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -699,23 +782,23 @@ const GasSafetyRecord = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
         try {
             setIsUploading(true);
             await savePdfToLocal(pdfBlob, fileName);
 
-            const targetFolderId = folderIds.gasRecords || await fetchFolderStructure(siteSelectedForGlobal?.siteId);
+            const targetFolderId = folderIds.gasRecords || await fetchFolderStructure(authoritativeSiteId);
             if (!targetFolderId) {
                 throw new Error('Could not determine target folder for PDF upload');
             }
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-            const formData = new FormData();
+            const uploadFormData = new FormData();
 
             const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
 
             if (exists && existingFile) {
-                formData.append('file', pdfFile);
+                uploadFormData.append('file', pdfFile);
                 const documentRequest = {
                     folderId: targetFolderId,
                     files: [{
@@ -723,19 +806,19 @@ const GasSafetyRecord = ({
                         name: fileName,
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
-                        siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.date),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId,
+                        issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequest));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
                 const response = await axios.put(
                     '/api/document/file/newVersion/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -749,7 +832,7 @@ const GasSafetyRecord = ({
                     return true;
                 }
             } else {
-                formData.append('files', pdfFile);
+                uploadFormData.append('files', pdfFile);
                 const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
                 const documentRequest = {
@@ -758,19 +841,19 @@ const GasSafetyRecord = ({
                         name: fileName.split('.')[0],
                         originalFileName: fileName,
                         fileVersion: fileVersion,
-                        siteId: siteSelectedForGlobal?.siteId,
-                        issueDate: formatDateForBackend(formData.date),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+                        siteId: authoritativeSiteId,
+                        issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
+                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
                     }]
                 };
 
-                formData.append('documentRequestString', JSON.stringify(documentRequest));
+                uploadFormData.append('documentRequestString', JSON.stringify(documentRequest));
                 const response = await axios.post(
                     '/api/document/files/upload',
-                    formData,
+                    uploadFormData,
                     {
                         headers: {
                             'Content-Type': 'multipart/form-data',
@@ -815,7 +898,7 @@ const GasSafetyRecord = ({
             const uploadResults = await Promise.all(
                 filesToUpload.map(async (file, index) => {
                     const response = await uploadSiteCheckDoc({
-                        siteId: siteSelectedForGlobal?.siteId || 0,
+                        siteId: authoritativeSiteId || 0,
                         file: file
                     });
 
@@ -856,7 +939,7 @@ const GasSafetyRecord = ({
             if (currentCheckId) {
                 const payload = {
                     checkId: currentCheckId,
-                    siteId: siteSelectedForGlobal?.siteId,
+                    siteId: authoritativeSiteId,
                     type: 'Inspection',
                     subType: 'Gas Safety',
                     category: 'Gas Safety Record',
@@ -895,7 +978,7 @@ const GasSafetyRecord = ({
         if (currentCheckId && photoToRemove.paramKey) {
             const payload = {
                 checkId: currentCheckId,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 type: 'Inspection',
                 subType: 'Gas Safety',
                 category: 'Gas Safety Record',
@@ -942,7 +1025,7 @@ const GasSafetyRecord = ({
         }
     };
 
-    const generatePDF = async (uploadToServer = true) => {
+    const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
         try {
             setIsGeneratingPDF(true);
             if (!PDFLib) {
@@ -1007,10 +1090,14 @@ const GasSafetyRecord = ({
                 }
             };
 
+            // NEW: Use the exact submission date and selected/saved engineer.
+            const effectiveInspectionDate = inspectionDateOverride || formData.date;
+            const effectiveEngineer = selectedEngineer || (formData.user?.id ? formData.user : null) || loggedInUserData || {};
+
             // Set form data in PDF
-            setTextField('Date', formatDate(formData.date));
+            setTextField('Date', formatDate(effectiveInspectionDate));
             //setTextField('Ref', formData.ref || '');
-            setTextField('GasSafeRegNo', loggedInUserData?.gasSafetyRegNo || '');
+            setTextField('GasSafeRegNo', effectiveEngineer?.gasSafetyRegNo || formData.gasSafeRegNo || '');
             //setTextField('Serial no', formData.serialNo || '');
 
             // Registered Business Details
@@ -1083,14 +1170,14 @@ const GasSafetyRecord = ({
             setTextField('DueDate', formatDateToReadable(nextInspectionDue));
 
             // Signatures
-            setTextField('Gas Engineer Name', formData.engineerName || '');
-            setTextField('Date_2', formatDate(formData.engineerSignatureDate));
+            setTextField('Gas Engineer Name', effectiveEngineer?.name || formData.engineerName || '');
+            setTextField('Date_2', formatDate(inspectionDateOverride || formData.engineerSignatureDate));
             // setTextField('Name_4', formData.receivedByName || '');
             setTextField('Gas Safe Licence', formData.gasSafeRegNo || '');
 
-            if (loggedInUserData?.signature) {
+            if (effectiveEngineer?.signature) {
                 try {
-                    const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
+                    const signatureUrl = `${effectiveEngineer.signature}?${sasToken}`;
                     const signatureResponse = await fetch(signatureUrl);
                     const signatureImageBytes = await signatureResponse.arrayBuffer();
 
@@ -1182,7 +1269,7 @@ const GasSafetyRecord = ({
             setShowPdfButton(true);
 
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName);
+                await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
             }
 
             return { success: true, fileName };
@@ -1209,9 +1296,31 @@ const GasSafetyRecord = ({
         }));
     };
 
+    // NEW: Shared Gas Engineer selection. Gas Safe/business/signature details
+    // follow the selected engineer.
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            engineer: newValue?.id || "",
+            engineerName: newValue?.name || "",
+            user: newValue || {},
+            gasSafeRegNo: newValue?.gasSafetyRegNo || "",
+            registeredBusinessName: newValue?.companyName || "",
+            registeredBusinessAddress: newValue?.companyAddress || "",
+            registeredBusinessPostcode: getPostCodeFromAddress(newValue?.companyAddress),
+            registeredBusinessContact: newValue?.phone || "",
+        }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isLoading || !isFormEditable) return;
+
+        // NEW: The same engineer validation used by the Air Conditioning flow.
+        if (!formData.engineer || !selectedEngineer) {
+            toast.error("Please select an active engineer for this Site Check.");
+            return;
+        }
 
         const hasFailures = [
             formData.flueVisualCondition,
@@ -1237,6 +1346,18 @@ const GasSafetyRecord = ({
         setIsLoading(true);
 
         try {
+            // NEW: Open checks submit with today's UK date.
+            const submissionInspectionDate =
+                checkStatus === "Open" ? getUkLocalDate() : formData.date;
+
+            if (checkStatus === "Open") {
+                setFormData((prev) => ({
+                    ...prev,
+                    date: submissionInspectionDate,
+                    engineerSignatureDate: submissionInspectionDate,
+                }));
+            }
+
             let existingInspection = null;
             if (currentCheckId) {
                 try {
@@ -1248,13 +1369,15 @@ const GasSafetyRecord = ({
             }
 
             const statusPayload = {
-                siteId: siteSelectedForGlobal?.siteId,
-                type: 'Inspection',
-                subType: 'Gas Safety',
-                category: 'Gas Safety Record',
+                siteId: authoritativeSiteId,
+                type: siteCheck?.type || 'Inspection',
+                // OLD: subType/category were internal Gas Safety values.
+                // NEW: preserve the UI route.
+                subType: siteCheck?.subType || 'Gas',
+                category: siteCheck?.category || 'Gas Safety Annual Inspection',
                 status: 'Done',
-                startDate: new Date().toISOString(),
-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+                startDate: `${submissionInspectionDate}T00:00:00`,
+                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1271,11 +1394,20 @@ const GasSafetyRecord = ({
 
             const inspectionPayload = {
                 ...formData,
+                siteId: authoritativeSiteId,
+                date: submissionInspectionDate,
+                engineer: formData.engineer,
+                engineerName: selectedEngineer?.name || formData.engineerName,
+                gasSafeRegNo: selectedEngineer?.gasSafetyRegNo || formData.gasSafeRegNo,
+                registeredBusinessName: selectedEngineer?.companyName || formData.registeredBusinessName,
+                registeredBusinessAddress: selectedEngineer?.companyAddress || formData.registeredBusinessAddress,
+                registeredBusinessPostcode: getPostCodeFromAddress(selectedEngineer?.companyAddress) || formData.registeredBusinessPostcode,
+                registeredBusinessContact: selectedEngineer?.phone || formData.registeredBusinessContact,
                 nextInspectionDue: formatDateForBackend(inspectionDetails?.dueDate),
                 actionId: formData.actionId,
                 operatingPressure: formData.operatingPressure ? parseFloat(formData.operatingPressure) : null,
                 combustionAnalyserReading: formData.combustionAnalyserReading ? parseFloat(formData.combustionAnalyserReading) : null,
-                engineerSignatureDate: formData.engineerSignatureDate,
+                engineerSignatureDate: submissionInspectionDate,
                 checkId: checkIdToUse
             };
 
@@ -1296,7 +1428,7 @@ const GasSafetyRecord = ({
                 throw new Error('Failed to save inspection data');
             }
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }
@@ -1403,7 +1535,7 @@ const GasSafetyRecord = ({
                                         type="text"
                                         className="form-control"
                                         name="gasSafeRegNo"
-                                        value={loggedInUserData?.gasSafetyRegNo}
+                                        value={selectedEngineer?.gasSafetyRegNo || formData.gasSafeRegNo}
                                         onChange={handleInputChange}
                                         disabled
                                     />
@@ -1464,7 +1596,7 @@ const GasSafetyRecord = ({
                                         type="text"
                                         className="form-control"
                                         name="registeredBusinessPostcode"
-                                        value={gasEngineerPostCode}
+                                        value={formData.registeredBusinessPostcode}
                                         onChange={handleInputChange}
                                         disabled
                                     />
@@ -2334,17 +2466,27 @@ const GasSafetyRecord = ({
                     <div className="card-body">
                         <div className="row">
                             <div className="col-md-6">
+                                {/* =========================================================
+                                    OLD GAS ENGINEER FIELD - COMMENTED FOR REVIEW
+
                                 <div className="mb-3">
                                     <label className="form-label">Gas Engineer</label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        name="engineerName"
-                                        value={formData.engineerName}
-                                        onChange={handleInputChange}
-                                        disabled
-                                    />
+                                    <input type="text" className="form-control" name="engineerName" value={formData.engineerName} disabled />
                                 </div>
+
+                                ========================================================= */}
+
+                                {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+                                <SiteCheckEngineerSelector
+                                    options={engineerOptions}
+                                    value={selectedEngineer}
+                                    onChange={handleEngineerSelect}
+                                    isOpen={checkStatus === "Open"}
+                                    disabled={isSubmitted || !isFormEditable}
+                                    loading={isLoadingEngineers}
+                                    error={engineerLoadError}
+                                    label="Gas Engineer"
+                                />
                                 <div className="mb-3">
                                     <label className="form-label">Date</label>
                                     <input
@@ -2363,7 +2505,7 @@ const GasSafetyRecord = ({
                                         width="200"
                                         height="50"
                                         style={{ border: "1px solid" }}
-                                        src={loggedInUserData?.signature + "?" + sasToken}
+                                        src={(selectedEngineer?.signature || formData.user?.signature || "") + "?" + sasToken}
                                         alt="Signature"
                                     />
                                 </div>
@@ -2435,12 +2577,12 @@ const GasSafetyRecord = ({
                 ) : (
                     <div className="text-center print-hide">
                         <div className="alert alert-success mb-4">
-                            Gas Safety Record submitted successfully on {new Date().toISOString().split("T")[0]}
+                            Gas Safety Record submitted successfully on {formatDate(formData.date)}
                         </div>
                         {showPdfButton && generatedPdfBlob && (
                             <button
                                 className="btn btn-success"
-                                onClick={() => savePdfToLocal(generatedPdfBlob, `GasSafetyRecord_${siteSelectedForGlobal?.siteId}_${new Date().toISOString().split('T')[0]}.pdf`)}
+                                onClick={() => savePdfToLocal(generatedPdfBlob, `GasSafetyRecord_${siteSelectedForGlobal?.siteId}_${getUkLocalDate()}.pdf`)}
                             >
                                 Download PDF
                             </button>

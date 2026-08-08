@@ -1,0 +1,1947 @@
+--- a/src/components/Protected/Sites/SiteChecks/WaterHeaterCertificate.jsx
++++ b/src/components/Protected/Sites/SiteChecks/WaterHeaterCertificate.jsx
+@@ -19,6 +19,9 @@
+ import moment from "moment";
+ import axios from "axios";
+ import { useNavigate } from "react-router-dom";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+ 
+ let PDFLib;
+ 
+@@ -59,12 +62,13 @@
+                                   getUsers,
+                                   siteSelectedForGlobal,
+                                   loggedInUserData,
++                                  siteCheck = {},
+                                 }) => {
+   const [formData, setFormData] = useState({
+     address: "",
+     assetId: "",
+     siteContact: "",
+-    inspectionDate: new Date().toISOString().split("T")[0],
++    inspectionDate: getUkLocalDate(),
+     siteContactNo: "",
+     job: "",
+     manufacturer: "",
+@@ -86,7 +90,7 @@
+     user: loggedInUserData || {},
+     engineer: loggedInUserData?.id || "",
+     selectedAsset: null,
+-    signedDate: new Date().toISOString().split("T")[0],
++    signedDate: getUkLocalDate(),
+     clientUser: null,
+     siteContactUser: null,
+     actionId: null,
+@@ -116,10 +120,47 @@
+   const [existingAction, setExistingAction] = useState(null);
+   const navigate = useNavigate();
+ 
++  // NEW: Use the Site Check itself as the authoritative site/status source.
++  const authoritativeSiteId = siteCheck?.siteId
++      ? Number(siteCheck.siteId)
++      : Number(siteSelectedForGlobal?.siteId) || null;
++  const [lastEngineerId, setLastEngineerId] = useState(null);
++  const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
++
++  // NEW: Shared engineer list/selection matching Air Conditioning.
++  const {
++    engineerOptions,
++    selectedEngineer,
++    isLoadingEngineers,
++    engineerLoadError,
++  } = useSiteCheckEngineers({
++    users,
++    getUsers,
++    siteId: authoritativeSiteId,
++    loggedInUserData,
++    status: effectiveCheckStatus,
++    selectedEngineerId: formData.engineer,
++    selectedEngineerUser: formData.user,
++    lastEngineerId,
++  });
++
++  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
++  useEffect(() => {
++    if (effectiveCheckStatus !== "Open") return;
++
++    setFormData((prev) => ({
++      ...prev,
++      inspectionDate: getUkLocalDate(),
++      signedDate: getUkLocalDate(),
++      engineer: prev.engineer || loggedInUserData?.id || "",
++      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
++    }));
++  }, [effectiveCheckStatus, loggedInUserData?.id]);
++
+   const isInternalUserTaggedWithSite =
+       (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
+       loggedInUserData?.taggedSites?.some(
+-          (site) => site.id === siteSelectedForGlobal?.siteId
++          (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+       );
+ 
+   useEffect(() => {
+@@ -165,6 +206,12 @@
+             (user) => user.id === mostRecentItem.siteContact
+         );
+ 
++        const savedEngineerId = mostRecentItem.engineer || null;
++        setLastEngineerId(savedEngineerId);
++        const isCurrentOpenInspection =
++            effectiveCheckStatus === "Open" &&
++            isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
++
+         // Load photos from parameters
+         const photosFromApi = [];
+         for (let i = 2; i <= 5; i++) {
+@@ -195,7 +242,7 @@
+           address: prev.address,
+           assetId: mostRecentItem.assetId || prev.assetId,
+           siteContact: mostRecentItem.siteContact || prev.siteContact,
+-          signedDate: mostRecentItem.signedDate || prev.signedDate,
++          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
+           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+           jobNo: mostRecentItem.jobNo || prev.jobNo,
+           engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
+@@ -211,8 +258,17 @@
+           param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
+           param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
+           client: mostRecentItem.client || "",
+-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+-          user: engineerUser || loggedInUserData || prev.user,
++          // OLD: engineer/user always preferred the saved record, even while Open.
++          // NEW: same Open/Done behaviour as Air Conditioning.
++          engineer: effectiveCheckStatus === "Open"
++              ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
++              : (savedEngineerId || prev.engineer || ""),
++          user: effectiveCheckStatus === "Open"
++              ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
++              : (engineerUser || prev.user || {}),
++          inspectionDate: effectiveCheckStatus === "Open"
++              ? getUkLocalDate()
++              : (mostRecentItem.inspectionDate || prev.inspectionDate),
+           selectedAsset: selectedAsset || prev.selectedAsset,
+           clientDate: mostRecentItem.clientDate || prev.clientDate,
+           engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
+@@ -250,9 +306,9 @@
+         setFormData(prev => ({ ...prev, actionId: null }));
+       }
+ 
+-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+-
+-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++      if (!authoritativeSiteId || !currentCheckId) return;
++
++      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+       if (response && response.length > 0) {
+         const relevantActions = response.filter(action =>
+             action.checkId === currentCheckId
+@@ -337,9 +393,9 @@
+   useEffect(() => {
+     const fetchSiteCheckData = async () => {
+       try {
+-        if (!siteSelectedForGlobal?.siteId) return;
+-
+-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
++        if (!authoritativeSiteId) return;
++
++        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+         if (response && response.length > 0) {
+           let waterHeaterCheck = checkId
+               ? response.find(check => check.checkId === parseInt(checkId, 10))
+@@ -386,10 +442,10 @@
+     const fetchData = async () => {
+       setIsLoading(true);
+       try {
+-        if (siteSelectedForGlobal?.siteId) {
+-          await getSiteAssets(siteSelectedForGlobal?.siteId);
+-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
++        if (authoritativeSiteId) {
++          await getSiteAssets(authoritativeSiteId);
++          await getSiteDetailsById(authoritativeSiteId);
++          await fetchFolderStructure(authoritativeSiteId);
+           await fetchSiteCheckData();
+           await fetchInspectionData();
+ 
+@@ -405,7 +461,10 @@
+             await fetchExistingActions();
+           }
+ 
+-          const siteData = siteDetailsById || siteSelectedForGlobal;
++          const siteData = siteDetailsById ||
++              (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
++                  ? siteSelectedForGlobal
++                  : null);
+ 
+           if (siteData) {
+             const addressParts = [
+@@ -421,11 +480,11 @@
+             setFormData((prev) => ({ ...prev, address: fullAddress }));
+           }
+ 
+-          if (siteSelectedForGlobal.siteContact) {
++          if (siteData?.siteContact) {
+             setFormData((prev) => ({
+               ...prev,
+-              siteContact: siteSelectedForGlobal.siteContact.name || "",
+-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
++              siteContact: siteData.siteContact.name || "",
++              siteContactNo: siteData.siteContact.phone || "",
+             }));
+           }
+         }
+@@ -484,7 +543,7 @@
+           user: formData.user,
+           actionId: verifiedAction.actionId,
+           checkId: currentCheckId,
+-          siteId: siteSelectedForGlobal?.siteId,
++          siteId: authoritativeSiteId,
+           type: 'Inspection',
+           subType: 'Water Heater',
+           category: 'Water Heater Service',
+@@ -586,7 +645,7 @@
+     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+   }
+ 
+-  const uploadPdfToServer = async (pdfBlob, fileName) => {
++  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
+     try {
+       setIsUploading(true);
+       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+@@ -614,9 +673,9 @@
+             name: fileName,
+             originalFileName: fileName,
+             fileVersion: existingFile.fileVersion + 1,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++            siteId: authoritativeSiteId || 0,
++            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+             referenceNumber: `WHR-${new Date().getTime()}`
+@@ -647,11 +706,11 @@
+           folderId: targetFolderId,
+           files: [{
+             name: fileName.split('.')[0],
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+             note: 'Water Heater Service Report',
+             fileVersion: fileVersion,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
++            siteId: authoritativeSiteId || 0,
+             originalFileName: fileName,
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+@@ -687,7 +746,7 @@
+ 
+   const checkFileExists = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId || !folderId) return { exists: false, file: null };
+ 
+       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -709,7 +768,7 @@
+ 
+   const getHighestFileVersion = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId) {
+         console.warn('No site ID available for file version check');
+         return 1;
+@@ -737,7 +796,7 @@
+     }
+   };
+ 
+-  const generatePDF = async (uploadToServer = true) => {
++  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
+     try {
+       setIsGeneratingPDF(true);
+ 
+@@ -807,7 +866,7 @@
+       setTextField('Address_3', addressLines[2] || '', smallFont);
+       setTextField('Address_4', addressLines[3] || '', smallFont);
+ 
+-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
++      setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
+       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
+       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
+       setTextField('Job', formData.job || '', smallFont);
+@@ -845,12 +904,12 @@
+ 
+       // Signatures
+       const clientName = formData.clientUser?.name || formData.client || '';
+-      const engineerName = formData.user?.name || '';
++      const engineerName = selectedEngineer?.name || formData.user?.name || '';
+ 
+       setTextField('Clients Name', clientName, smallFont);
+       setTextField('Engineers Name', engineerName, smallFont);
+-      setTextField('on', dateFormat(formData.signedDate), smallFont);
+-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
++      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
++      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+ 
+       // Handle image embedding for PDF fields
+       const imageFields = [
+@@ -919,7 +978,7 @@
+       setShowPdfButton(true);
+ 
+       if (uploadToServer) {
+-        await uploadPdfToServer(blob, fileName);
++        await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
+       }
+ 
+       toast.success('PDF generated successfully!');
+@@ -956,7 +1015,7 @@
+       const uploadResults = await Promise.all(
+           filesToUpload.map(async (file, index) => {
+             const response = await uploadSiteCheckDoc({
+-              siteId: siteSelectedForGlobal?.siteId || 0,
++              siteId: authoritativeSiteId || 0,
+               file: file
+             });
+ 
+@@ -994,7 +1053,7 @@
+       if (currentCheckId) {
+         const payload = {
+           checkId: currentCheckId,
+-          siteId: siteSelectedForGlobal?.siteId,
++          siteId: authoritativeSiteId,
+           type: 'Inspection',
+           subType: 'Water Heater',
+           category: 'Water Heater Service',
+@@ -1033,7 +1092,7 @@
+     if (currentCheckId && photoToRemove.paramKey) {
+       const payload = {
+         checkId: currentCheckId,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         type: 'Inspection',
+         subType: 'Water Heater',
+         category: 'Water Heater Service',
+@@ -1083,6 +1142,9 @@
+     }
+ 
+     const errors = {};
++    if (!formData.engineer || !selectedEngineer) {
++      errors.engineer = "Please select an active engineer for this Site Check.";
++    }
+ 
+     if (Object.keys(errors).length > 0) {
+       setValidationErrors(errors);
+@@ -1093,6 +1155,18 @@
+     setIsLoading(true);
+ 
+     try {
++      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
++      const submissionInspectionDate =
++          effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
++
++      if (effectiveCheckStatus === "Open") {
++        setFormData((prev) => ({
++          ...prev,
++          inspectionDate: submissionInspectionDate,
++          signedDate: submissionInspectionDate,
++        }));
++      }
++
+       let existingInspection = null;
+       if (currentCheckId) {
+         try {
+@@ -1104,13 +1178,15 @@
+       }
+ 
+       const statusPayload = {
+-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-        type: 'Inspection',
+-        subType: 'Water Heater',
+-        category: 'Water Heater Service',
++        siteId: parseInt(authoritativeSiteId, 10),
++        type: siteCheck?.type || 'Inspection',
++        // OLD: subType/category used internal generic-inspection values.
++        // NEW: preserve the UI routing values of the Site Check.
++        subType: siteCheck?.subType || 'Legionella',
++        category: siteCheck?.category || 'Water Heater Inspection & Service',
+         status: 'Done',
+-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++        startDate: `${submissionInspectionDate}T00:00:00`,
++        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+       };
+@@ -1142,10 +1218,12 @@
+ 
+       const inspectionPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         assetId: formData.selectedAsset?.assetId || formData.assetId || null,
+         client: formData.clientUser?.id || formData.client,
+         engineer: formData.engineer,
++        inspectionDate: submissionInspectionDate,
++        signedDate: submissionInspectionDate,
+         siteContact: formData.siteContactUser?.id || formData.siteContact,
+         type: 'Inspection',
+         subType: 'Water Heater',
+@@ -1173,7 +1251,7 @@
+ 
+       console.log('Inspection data saved successfully:', saveResponse.data);
+ 
+-      const pdfResult = await generatePDF(true);
++      const pdfResult = await generatePDF(true, submissionInspectionDate);
+       if (!pdfResult.success) {
+         throw new Error(pdfResult.error || "Failed to generate PDF");
+       }
+@@ -1200,7 +1278,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+               )
+           ) || [];
+ 
+@@ -1274,7 +1352,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+               )
+           ) || [];
+ 
+@@ -1341,6 +1419,16 @@
+             disabled={isSubmitted}
+         />
+     );
++  };
++
++  // NEW: Shared engineer dropdown selection.
++  const handleEngineerSelect = (event, newValue) => {
++    setFormData((prev) => ({
++      ...prev,
++      engineer: newValue?.id || "",
++      user: newValue || {},
++    }));
++    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
+   };
+ 
+   const filteredAssets =
+@@ -1888,7 +1976,7 @@
+                   ) : (
+                       <RiskScoreCard
+                           desc={`Inspection - Water Heater Service`}
+-                          siteId={siteSelectedForGlobal?.siteId}
++                          siteId={authoritativeSiteId}
+                           checkId={currentCheckId}
+                           createdBy={loggedInUserData?.id}
+                           taggedAsset={formData.selectedAsset?.assetId}
+@@ -1927,6 +2015,9 @@
+               </div>
+             </div>
+             <div className="col-md-6">
++              {/* =========================================================
++                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+               <div className="mb-3">
+                 <label className="form-label fw-bold">Engineer's Name</label>
+                 <input
+@@ -1939,6 +2030,19 @@
+                     disabled
+                 />
+               </div>
++
++              ========================================================= */}
++
++              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++              <SiteCheckEngineerSelector
++                  options={engineerOptions}
++                  value={selectedEngineer}
++                  onChange={handleEngineerSelect}
++                  isOpen={effectiveCheckStatus === "Open"}
++                  disabled={isSubmitted || !isFormEditable}
++                  loading={isLoadingEngineers}
++                  error={validationErrors.engineer || engineerLoadError}
++              />
+               <div className="mb-3">
+                 <label className="form-label">Date</label>
+                 <input
+@@ -1986,7 +2090,7 @@
+           ) : (
+               <div className="text-center print-hide">
+                 <div className="alert alert-success mb-4">
+-                  Report submitted successfully on {new Date().toISOString().split("T")[0]}
++                  Report submitted successfully on {getUkLocalDate()}
+                 </div>
+                 {showPdfButton && generatedPdfBlob && (
+                     <button
+--- a/src/components/Protected/Sites/SiteChecks/WaterChlorination.jsx
++++ b/src/components/Protected/Sites/SiteChecks/WaterChlorination.jsx
+@@ -22,6 +22,9 @@
+ import pdfTemplate from "./pdf/Chlorination Certificate.pdf";
+ import RiskScoreCard2 from "./RiskScoreCard2";
+ import { PDFDocument } from "pdf-lib";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+ 
+ const WaterChlorinationCertificate = ({
+   sasToken,
+@@ -35,6 +38,7 @@
+   getUsers,
+   siteSelectedForGlobal,
+   loggedInUserData,
++  siteCheck = {},
+ }) => {
+   const license = JSON.parse(localStorage.getItem("license"));
+ 
+@@ -49,7 +53,7 @@
+     site: "",
+     clientAddress: license?.companyAddress || "",
+     siteContact: "",
+-    date: new Date().toISOString().split("T")[0],
++    date: getUkLocalDate(),
+     siteContactNo: "",
+     job: "",
+     report: "" || getDefaultReportTemplate(tankCapacity),
+@@ -57,8 +61,8 @@
+     engineerName: loggedInUserData?.name || "",
+     param5Remark: loggedInUserData?.signature || "",
+     selectedAsset: null,
+-    clientDate: new Date().toISOString().split("T")[0],
+-    engineerDate: new Date().toISOString().split("T")[0],
++    clientDate: getUkLocalDate(),
++    engineerDate: getUkLocalDate(),
+     param1Remark: "", //sterilant: "",
+     param2Remark: "", //neutralisingAgent: "",
+     param3Remark: "", //contactPeriod: "",
+@@ -98,7 +102,44 @@
+   const isInternalUserTaggedWithSite = true;
+   const [inspectionDetails, setInspectionDetails] = useState(null);
+ 
+-
++  // NEW: Use the actual Site Check for site/status selection.
++  const authoritativeSiteId = siteCheck?.siteId
++    ? Number(siteCheck.siteId)
++    : Number(siteSelectedForGlobal?.siteId) || null;
++  const effectiveCheckStatus = siteCheck?.status || state.checkStatus || "Open";
++  const [lastEngineerId, setLastEngineerId] = useState(null);
++
++  const {
++    engineerOptions,
++    selectedEngineer,
++    isLoadingEngineers,
++    engineerLoadError,
++  } = useSiteCheckEngineers({
++    users,
++    getUsers,
++    siteId: authoritativeSiteId,
++    loggedInUserData,
++    status: effectiveCheckStatus,
++    selectedEngineerId: formData.engineer,
++    selectedEngineerUser: formData.user,
++    lastEngineerId,
++  });
++
++  // NEW: Open checks always show today's UK date and default to logged-in engineer.
++  useEffect(() => {
++    if (effectiveCheckStatus !== "Open") return;
++
++    setFormData((prev) => ({
++      ...prev,
++      date: getUkLocalDate(),
++      clientDate: getUkLocalDate(),
++      engineerDate: getUkLocalDate(),
++      engineer: prev.engineer || loggedInUserData?.id || "",
++      engineerName: prev.user?.id ? (prev.user.name || prev.engineerName) : (loggedInUserData?.name || ""),
++      param5Remark: prev.user?.id ? (prev.user.signature || prev.param5Remark) : (loggedInUserData?.signature || ""),
++      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
++    }));
++  }, [effectiveCheckStatus, loggedInUserData?.id]);
+ 
+   // Event handlers
+ 
+@@ -201,10 +242,10 @@
+         setFormData((prev) => ({ ...prev, actionId: null }));
+       }
+ 
+-      if (!siteSelectedForGlobal?.siteId || !state.currentCheckId) return;
++      if (!authoritativeSiteId || !state.currentCheckId) return;
+ 
+       const response = await get(
+-        `/api/site/actions/${siteSelectedForGlobal.siteId}`
++        `/api/site/actions/${authoritativeSiteId}`
+       );
+       const relevantActions = response?.filter(
+         (action) => action.checkId === state.currentCheckId
+@@ -246,8 +287,14 @@
+         const mostRecentItem = apiData[apiData.length - 1];
+ 
+         // Find related users
+-        const clientUser = users.find(user => user.id === mostRecentItem.client);
+-        const siteContactUser = users.find(user => user.id === mostRecentItem.siteContact);
++        const clientUser = users.find(user => String(user.id) === String(mostRecentItem.client));
++        const siteContactUser = users.find(user => String(user.id) === String(mostRecentItem.siteContact));
++        const savedEngineerId = mostRecentItem.engineer || null;
++        setLastEngineerId(savedEngineerId);
++        const engineerUser = users.find(user => String(user.id) === String(savedEngineerId));
++        const isCurrentOpenInspection =
++          effectiveCheckStatus === "Open" &&
++          isCurrentUkInspectionDate(mostRecentItem.date);
+ 
+         // Fetch action data if actionId exists
+         let existingAction = null;
+@@ -261,20 +308,31 @@
+           site: mostRecentItem.site || prev.site,
+           clientAddress: mostRecentItem.clientAddress || license?.companyAddress || "",
+           siteContact: mostRecentItem.siteContact || prev.siteContact,
+-          date: mostRecentItem.date || prev.date,
++          date: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.date || prev.date),
+           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+           job: mostRecentItem.job || prev.job,
+           report: mostRecentItem.report || getDefaultReportTemplate(mostRecentItem.param6Remark || tankCapacity),
+           clientName: mostRecentItem.clientName || prev.clientName,
+-          engineerName: mostRecentItem.engineerName || loggedInUserData?.name || "",
+-          param5Remark: mostRecentItem.param5Remark || loggedInUserData?.signature || "",
++          engineerName: effectiveCheckStatus === "Open"
++            ? (isCurrentOpenInspection ? (engineerUser?.name || mostRecentItem.engineerName || loggedInUserData?.name || "") : (loggedInUserData?.name || ""))
++            : (engineerUser?.name || mostRecentItem.engineerName || prev.engineerName || ""),
++          param5Remark: effectiveCheckStatus === "Open"
++            ? (isCurrentOpenInspection ? (engineerUser?.signature || mostRecentItem.param5Remark || loggedInUserData?.signature || "") : (loggedInUserData?.signature || ""))
++            : (engineerUser?.signature || mostRecentItem.param5Remark || prev.param5Remark || ""),
+           param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
+           param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
+           param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+           param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
+           param6Remark: mostRecentItem.param6Remark || tankCapacity,
+           param7Remark: mostRecentItem.param7Remark || prev.param7Remark,
+-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
++          engineer: effectiveCheckStatus === "Open"
++            ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
++            : (savedEngineerId || prev.engineer || ""),
++          user: effectiveCheckStatus === "Open"
++            ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
++            : (engineerUser || prev.user || {}),
++          clientDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.clientDate || prev.clientDate),
++          engineerDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.engineerDate || prev.engineerDate),
+           clientUser: clientUser || null,
+           siteContactUser: siteContactUser || null,
+           actionId: mostRecentItem.actionId || null
+@@ -291,14 +349,14 @@
+       console.error("Error fetching inspection data:", error);
+       toast.error("Failed to load inspection data");
+     }
+-  }, [state.currentCheckId, users, fetchActionById, loggedInUserData, tankCapacity]);
++  }, [state.currentCheckId, users, fetchActionById, loggedInUserData, tankCapacity, effectiveCheckStatus]);
+ 
+   const fetchSiteCheckData = useCallback(async () => {
+     try {
+-      if (!siteSelectedForGlobal?.siteId) return;
++      if (!authoritativeSiteId) return;
+ 
+       const response = await get(
+-        `/api/site-check/site/${siteSelectedForGlobal.siteId}`
++        `/api/site-check/site/${authoritativeSiteId}`
+       );
+       const chlorinationCheck = checkId
+         ? response?.find((check) => check.checkId === parseInt(checkId, 10))
+@@ -342,7 +400,7 @@
+       toast.error("Failed to load site check status");
+       setState((prev) => ({ ...prev, isFormEditable: true }));
+     }
+-  }, [checkId, siteSelectedForGlobal]);
++  }, [checkId, authoritativeSiteId]);
+ 
+   // PDF functions
+   const fetchPdfTemplate = useCallback(async () => {
+@@ -389,7 +447,7 @@
+   const getHighestFileVersion = useCallback(
+     async (folderId, fileName) => {
+       try {
+-        const siteId = siteSelectedForGlobal?.siteId;
++        const siteId = authoritativeSiteId;
+         if (!siteId) return 1;
+ 
+         const response = await get(
+@@ -409,13 +467,13 @@
+         return 1;
+       }
+     },
+-    [siteSelectedForGlobal]
++    [authoritativeSiteId]
+   );
+ 
+   const checkFileExists = useCallback(
+     async (folderId, fileName) => {
+       try {
+-        const siteId = siteSelectedForGlobal?.siteId;
++        const siteId = authoritativeSiteId;
+         if (!siteId || !folderId) return { exists: false, file: null };
+ 
+         const response = await get(
+@@ -436,7 +494,7 @@
+         return { exists: false, file: null };
+       }
+     },
+-    [siteSelectedForGlobal]
++    [authoritativeSiteId]
+   );
+ 
+   const calculateExpiryDate = (visitDate, repeatFrequency) => {
+@@ -458,7 +516,7 @@
+   };
+ 
+   const uploadPdfToServer = useCallback(
+-    async (pdfBlob, fileName) => {
++    async (pdfBlob, fileName, inspectionDateOverride = null) => {
+       let exists;
+       try {
+         setState((prev) => ({ ...prev, isUploading: true }));
+@@ -498,9 +556,9 @@
+             name: fileName.split(".")[0],
+             originalFileName: fileName,
+             fileVersion,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
+-            issueDate: formatDateForBackend(formData.date),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
++            siteId: authoritativeSiteId || 0,
++            issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+             referenceNumber: `WTC-${new Date().getTime()}`
+@@ -562,7 +620,7 @@
+ 
+   console.log('report template -->', formData.report);
+   const generatePDF = useCallback(
+-    async (uploadToServer = true) => {
++    async (uploadToServer = true, inspectionDateOverride = null) => {
+       try {
+         setState((prev) => ({ ...prev, isGeneratingPDF: true }));
+ 
+@@ -595,8 +653,8 @@
+           ).padStart(2, "0")}-${date.getFullYear()}`;
+         };
+ 
+-        const formattedDate = formatDateString(formData.date);
+-        const engineer = users?.find((u) => u.id === formData.engineer);
++        const formattedDate = formatDateString(inspectionDateOverride || formData.date);
++        const engineer = selectedEngineer || users?.find((u) => String(u.id) === String(formData.engineer));
+ 
+ 
+ 
+@@ -648,9 +706,10 @@
+         //   10
+         // );
+ 
+-        if (loggedInUserData?.signature) {
++        if (engineer?.signature || formData.param5Remark) {
+           try {
+-            const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
++            const signatureBaseUrl = engineer?.signature || formData.param5Remark;
++            const signatureUrl = `${signatureBaseUrl}?${sasToken}`;
+             const signatureResponse = await fetch(signatureUrl);
+             const signatureImageBytes = await signatureResponse.arrayBuffer();
+             const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
+@@ -678,7 +737,7 @@
+ 
+         let uploadedToServer = false;
+         if (uploadToServer) {
+-          uploadedToServer = await uploadPdfToServer(blob, fileName);
++          uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.date);
+         }
+ 
+         if (uploadedToServer || !uploadToServer) {
+@@ -705,18 +764,41 @@
+     e.preventDefault();
+     if (state.isLoading) return;
+ 
+-    setState(prev => ({ ...prev, isLoading: true }));
++    const validationErrors = {};
++    if (!formData.engineer || !selectedEngineer) {
++      validationErrors.engineer = "Please select an active engineer for this Site Check.";
++    }
++    if (Object.keys(validationErrors).length > 0) {
++      setState((prev) => ({ ...prev, validationErrors }));
++      return;
++    }
++
++    setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
+ 
+     try {
++      const submissionInspectionDate =
++        effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.date;
++
++      if (effectiveCheckStatus === "Open") {
++        setFormData((prev) => ({
++          ...prev,
++          date: submissionInspectionDate,
++          clientDate: submissionInspectionDate,
++          engineerDate: submissionInspectionDate,
++        }));
++      }
++
+       const finalReport = getDefaultReportTemplate(tankCapacity);
+       const statusPayload = {
+-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-        type: "Maintenance",
+-        subType: "Chlorination",
+-        category: "Water Chlorination",
++        siteId: parseInt(authoritativeSiteId, 10),
++        type: siteCheck?.type || "Inspection",
++        // OLD: Maintenance/Chlorination/Water Chlorination changed the UI route.
++        // NEW: preserve the Site Check routing values.
++        subType: siteCheck?.subType || "Legionella",
++        category: siteCheck?.category || "Water - Storage System Chlorination",
+         status: "Done",
+-        startDate: new Date().toISOString().split("T")[0] + "T00:00:00",
+-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
++        startDate: `${submissionInspectionDate}T00:00:00`,
++        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+         leadUserID: String(loggedInUserData?.id || "0"),
+         assistantUserID: String(loggedInUserData?.id || "0"),
+       };
+@@ -740,11 +822,16 @@
+ 
+       const chlorinationPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         assetId: '',
+         report: finalReport,
+         client: formData.clientUser?.id || formData.clientName,
+         engineer: formData.engineer,
++        engineerName: selectedEngineer?.name || formData.engineerName || "",
++        param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
++        date: submissionInspectionDate,
++        clientDate: submissionInspectionDate,
++        engineerDate: submissionInspectionDate,
+         siteContact: formData.siteContactUser?.id || formData.siteContact,
+         type: "Maintenance",
+         subType: "Chlorination",
+@@ -769,7 +856,7 @@
+       }
+ 
+ 
+-      const pdfResult = await generatePDF(true);
++      const pdfResult = await generatePDF(true, submissionInspectionDate);
+       if (!pdfResult.success) {
+         throw new Error(pdfResult.error || "Failed to generate PDF");
+       }
+@@ -795,11 +882,11 @@
+     const fetchData = async () => {
+       setState((prev) => ({ ...prev, isLoading: true }));
+       try {
+-        if (siteSelectedForGlobal?.siteId) {
++        if (authoritativeSiteId) {
+           await Promise.all([
+-            getSiteAssets(siteSelectedForGlobal.siteId),
+-            getSiteDetailsById(siteSelectedForGlobal.siteId),
+-            fetchFolderStructure(siteSelectedForGlobal.siteId),
++            getSiteAssets(authoritativeSiteId),
++            getSiteDetailsById(authoritativeSiteId),
++            fetchFolderStructure(authoritativeSiteId),
+             fetchSiteCheckData(),
+             fetchInspectionData(),
+           ]);
+@@ -809,7 +896,7 @@
+           }
+ 
+           const currentSite = sites.find(
+-            (site) => site.siteId === siteSelectedForGlobal.siteId
++            (site) => Number(site.siteId ?? site.id) === Number(authoritativeSiteId)
+           );
+           const siteData = currentSite || siteSelectedForGlobal;
+ 
+@@ -827,11 +914,11 @@
+             setFormData((prev) => ({ ...prev, site: fullAddress }));
+           }
+ 
+-          if (siteSelectedForGlobal.siteContact) {
++          if (siteData?.siteContact) {
+             setFormData((prev) => ({
+               ...prev,
+-              siteContact: siteSelectedForGlobal.siteContact.name || "",
+-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
++              siteContact: siteData.siteContact.name || "",
++              siteContactNo: siteData.siteContact.phone || "",
+             }));
+           }
+ 
+@@ -869,6 +956,7 @@
+     getUsers,
+     isInternalUserTaggedWithSite,
+     siteSelectedForGlobal,
++    authoritativeSiteId,
+     sites,
+     users.length,
+   ]);
+@@ -909,7 +997,13 @@
+       // Save the inspection data with the actionId
+       const inspectionPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
++        engineer: formData.engineer,
++        engineerName: selectedEngineer?.name || formData.engineerName || "",
++        param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
++        date: getUkLocalDate(),
++        clientDate: getUkLocalDate(),
++        engineerDate: getUkLocalDate(),
+         checkId: state.currentCheckId,
+         actionId: verifiedAction.actionId,
+         type: 'Maintenance',
+@@ -935,6 +1029,21 @@
+       console.error("Error handling risk assessment completion:", error);
+       toast.error(error.message || "Failed to process action");
+     }
++  };
++
++  // NEW: Shared engineer dropdown selection.
++  const handleEngineerSelect = (event, newValue) => {
++    setFormData((prev) => ({
++      ...prev,
++      engineer: newValue?.id || "",
++      engineerName: newValue?.name || "",
++      param5Remark: newValue?.signature || "",
++      user: newValue || {},
++    }));
++    setState((prev) => ({
++      ...prev,
++      validationErrors: { ...prev.validationErrors, engineer: "" },
++    }));
+   };
+ 
+   // Render functions
+@@ -1196,7 +1305,7 @@
+             ) : (
+               <RiskScoreCard2
+                 desc={`Maintenance - Chlorination - Water Chlorination`}
+-                siteId={siteSelectedForGlobal?.siteId}
++                siteId={authoritativeSiteId}
+                 checkId={state.currentCheckId}
+                 createdBy={loggedInUserData?.id}
+                 taggedAsset={''}
+@@ -1211,6 +1320,9 @@
+ 
+         <div className="row mt-4">
+           <div className="col-md-5">
++            {/* =========================================================
++                OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+             <div className="mb-3">
+               <label className="form-label fw-bold">Engineer's Name</label>
+               <input
+@@ -1224,6 +1336,19 @@
+               />
+             </div>
+ 
++            ========================================================= */}
++
++            {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++            <SiteCheckEngineerSelector
++              options={engineerOptions}
++              value={selectedEngineer}
++              onChange={handleEngineerSelect}
++              isOpen={effectiveCheckStatus === "Open"}
++              disabled={state.isSubmitted || !state.isFormEditable}
++              loading={isLoadingEngineers}
++              error={state.validationErrors.engineer || engineerLoadError}
++            />
++
+           </div>
+           <div className="col-md-2">
+             <div className="mb-3">
+@@ -1233,7 +1358,7 @@
+                 width="200"
+                 height="50"
+                 style={{ border: "1px solid" }}
+-                src={loggedInUserData?.signature + "?" + sasToken}
++                src={(selectedEngineer?.signature || formData.param5Remark || "") + "?" + sasToken}
+                 alt="Engineer Signature"
+               />
+             </div>
+@@ -1274,7 +1399,7 @@
+             <div className="text-center">
+               <div className="alert alert-success mb-4">
+                 Certificate submitted successfully on{" "}
+-                {new Date().toISOString().split("T")[0]}
++                {getUkLocalDate()}
+               </div>
+             </div>
+           )}
+--- a/src/components/Protected/Sites/SiteChecks/ShowerHeadCertificate.jsx
++++ b/src/components/Protected/Sites/SiteChecks/ShowerHeadCertificate.jsx
+@@ -18,6 +18,9 @@
+ import RiskScoreCard from "./RiskScoreCard";
+ import { PDFDocument } from 'pdf-lib';
+ import RiskScoreCard2 from "./RiskScoreCard2";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+ 
+ const ShowerHeadCertificate = ({
+                                    sasToken,
+@@ -31,13 +34,14 @@
+                                    getUsers,
+                                    siteSelectedForGlobal,
+                                    loggedInUserData,
++                                   siteCheck = {},
+                                }) => {
+     // State initialization
+     const [formData, setFormData] = useState({
+         address: "",
+         assetId: "",
+         siteContact: "",
+-        inspectionDate: new Date().toISOString().split("T")[0],
++        inspectionDate: getUkLocalDate(),
+         siteContactNo: "",
+         job: "",
+         manufacturer: "",
+@@ -48,7 +52,7 @@
+         user: loggedInUserData || {},
+         engineer: loggedInUserData?.id || "",
+         selectedAsset: null,
+-        signedDate: new Date().toISOString().split("T")[0],
++        signedDate: getUkLocalDate(),
+         clientUser: null,
+         siteContactUser: null,
+         actionId: null,
+@@ -80,6 +84,41 @@
+     const isInternalUserTaggedWithSite = true;
+     const [inspectionDetails, setInspectionDetails] = useState(null);
+ 
++    // NEW: Use the actual Site Check as the authoritative site/status source.
++    const authoritativeSiteId = siteCheck?.siteId
++        ? Number(siteCheck.siteId)
++        : Number(siteSelectedForGlobal?.siteId) || null;
++    const effectiveCheckStatus = siteCheck?.status || state.checkStatus || "Open";
++    const [lastEngineerId, setLastEngineerId] = useState(null);
++
++    const {
++        engineerOptions,
++        selectedEngineer,
++        isLoadingEngineers,
++        engineerLoadError,
++    } = useSiteCheckEngineers({
++        users,
++        getUsers,
++        siteId: authoritativeSiteId,
++        loggedInUserData,
++        status: effectiveCheckStatus,
++        selectedEngineerId: formData.engineer,
++        selectedEngineerUser: formData.user,
++        lastEngineerId,
++    });
++
++    // NEW: Open checks use today's UK date and logged-in user by default.
++    useEffect(() => {
++        if (effectiveCheckStatus !== "Open") return;
++
++        setFormData((prev) => ({
++            ...prev,
++            inspectionDate: getUkLocalDate(),
++            signedDate: getUkLocalDate(),
++            engineer: prev.engineer || loggedInUserData?.id || "",
++            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
++        }));
++    }, [effectiveCheckStatus, loggedInUserData?.id]);
+ 
+     // Memoized values
+     const selectedAsset = React.useMemo(() =>
+@@ -209,9 +248,9 @@
+                 setFormData(prev => ({ ...prev, actionId: null }));
+             }
+ 
+-            if (!siteSelectedForGlobal?.siteId || !state.currentCheckId) return;
+-
+-            const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++            if (!authoritativeSiteId || !state.currentCheckId) return;
++
++            const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+             const relevantActions = response?.filter(action =>
+                 action.checkId === state.currentCheckId
+             );
+@@ -236,11 +275,86 @@
+         }
+     }, [fetchActionById, formData.actionId, siteSelectedForGlobal, state.currentCheckId]);
+ 
++    // NEW: Restore the saved engineer/date for Done checks, while Open checks
++    // keep the Air Conditioning behaviour (today + logged-in engineer unless a
++    // same-day temporary Risk Assessment record exists).
++    const fetchInspectionData = useCallback(async () => {
++        try {
++            if (!state.currentCheckId) return;
++
++            const apiData = await get(`/api/site-check/generic-inspection/${state.currentCheckId}`);
++            if (!apiData || apiData.length === 0) return;
++
++            const mostRecentItem = apiData[apiData.length - 1];
++            const savedEngineerId = mostRecentItem.engineer || null;
++            setLastEngineerId(savedEngineerId);
++
++            const engineerUser = users.find(
++                (user) => String(user.id) === String(savedEngineerId)
++            );
++            const clientUser = users.find(
++                (user) => String(user.id) === String(mostRecentItem.client)
++            );
++            const siteContactUser = users.find(
++                (user) => String(user.id) === String(mostRecentItem.siteContact)
++            );
++            const inspectionAsset = siteAssets.find(
++                (asset) => String(asset.assetId) === String(mostRecentItem.assetId)
++            );
++
++            const isCurrentOpenInspection =
++                effectiveCheckStatus === "Open" &&
++                isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
++
++            setFormData((prev) => ({
++                ...prev,
++                assetId: mostRecentItem.assetId || prev.assetId,
++                siteContact: mostRecentItem.siteContact || prev.siteContact,
++                siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
++                job: mostRecentItem.job || prev.job,
++                manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
++                location: mostRecentItem.location || prev.location,
++                param1remark: mostRecentItem.param1remark || prev.param1remark,
++                param2remark: mostRecentItem.param2remark || prev.param2remark,
++                client: mostRecentItem.client || prev.client,
++                engineer: effectiveCheckStatus === "Open"
++                    ? (isCurrentOpenInspection
++                        ? (savedEngineerId || loggedInUserData?.id || "")
++                        : (loggedInUserData?.id || ""))
++                    : (savedEngineerId || prev.engineer || ""),
++                user: effectiveCheckStatus === "Open"
++                    ? (isCurrentOpenInspection
++                        ? (engineerUser || loggedInUserData || {})
++                        : (loggedInUserData || {}))
++                    : (engineerUser || prev.user || {}),
++                inspectionDate: effectiveCheckStatus === "Open"
++                    ? getUkLocalDate()
++                    : (mostRecentItem.inspectionDate || prev.inspectionDate),
++                signedDate: effectiveCheckStatus === "Open"
++                    ? getUkLocalDate()
++                    : (mostRecentItem.signedDate || prev.signedDate),
++                selectedAsset: inspectionAsset || prev.selectedAsset,
++                clientUser: clientUser || prev.clientUser,
++                siteContactUser: siteContactUser || prev.siteContactUser,
++                actionId: mostRecentItem.actionId || prev.actionId,
++            }));
++        } catch (error) {
++            console.error("Error fetching shower head inspection data:", error);
++            toast.error("Failed to load inspection data");
++        }
++    }, [
++        state.currentCheckId,
++        users,
++        siteAssets,
++        effectiveCheckStatus,
++        loggedInUserData,
++    ]);
++
+     const fetchSiteCheckData = useCallback(async () => {
+         try {
+-            if (!siteSelectedForGlobal?.siteId) return;
+-
+-            const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
++            if (!authoritativeSiteId) return;
++
++            const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+             const showerHeadCheck = checkId
+                 ? response?.find(check => check.checkId === parseInt(checkId, 10))
+                 : null;
+@@ -348,7 +462,7 @@
+ 
+     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
+         try {
+-            const siteId = siteSelectedForGlobal?.siteId;
++            const siteId = authoritativeSiteId;
+             if (!siteId) return 1;
+ 
+             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -369,7 +483,7 @@
+ 
+     const checkFileExists = useCallback(async (folderId, fileName) => {
+         try {
+-            const siteId = siteSelectedForGlobal?.siteId;
++            const siteId = authoritativeSiteId;
+             if (!siteId || !folderId) return { exists: false, file: null };
+ 
+             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -389,7 +503,7 @@
+         }
+     }, [siteSelectedForGlobal]);
+ 
+-   const uploadPdfToServer = useCallback(async (pdfBlob, fileName) => {
++   const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride = null) => {
+     let exists;
+     try {
+         setState(prev => ({ ...prev, isUploading: true }));
+@@ -413,7 +527,7 @@
+             ? existingFile.fileVersion + 1
+             : await getHighestFileVersion(targetFolderId, fileName);
+ 
+-        const issueDate = new Date(formData.inspectionDate || new Date());
++        const issueDate = new Date(inspectionDateOverride || formData.inspectionDate || new Date());
+         const documentRequest = {
+             folderId: targetFolderId,
+             files: [{
+@@ -421,7 +535,7 @@
+                 name: fileName.split('.')[0],
+                 originalFileName: fileName,
+                 fileVersion,
+-                siteId: siteSelectedForGlobal?.siteId || 0,
++                siteId: authoritativeSiteId || 0,
+                 issueDate: issueDate.toISOString().replace('T', ' ').split('.')[0],
+                 expiryDate: formatDateForBackend(calculateExpiryDate(issueDate, inspectionDetails?.repeatFrequency)),
+                 uploaderUserId: loggedInUserData?.id || 0,
+@@ -476,7 +590,7 @@
+     state.folderIds
+ ]);
+ 
+-    const generatePDF = useCallback(async (uploadToServer = true) => {
++    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride = null) => {
+         try {
+             setState(prev => ({ ...prev, isGeneratingPDF: true }));
+ 
+@@ -507,8 +621,8 @@
+                 return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
+             };
+ 
+-            const formattedDate = formatDateString(formData.inspectionDate);
+-            const engineer = users?.find(u => u.id === formData.engineer);
++            const formattedDate = formatDateString(inspectionDateOverride || formData.inspectionDate);
++            const engineer = selectedEngineer || users?.find(u => String(u.id) === String(formData.engineer));
+ 
+             // Set form fields
+             const addressLines = (formData.address || '').split(',');
+@@ -545,7 +659,7 @@
+ 
+             let uploadedToServer = false;
+             if (uploadToServer) {
+-                uploadedToServer = await uploadPdfToServer(blob, fileName);
++                uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
+             }
+ 
+             if (uploadedToServer || !uploadToServer) {
+@@ -575,16 +689,38 @@
+         e.preventDefault();
+         if (state.isLoading) return;
+ 
+-        setState(prev => ({ ...prev, isLoading: true }));
++        const validationErrors = {};
++        if (!formData.engineer || !selectedEngineer) {
++            validationErrors.engineer = "Please select an active engineer for this Site Check.";
++        }
++        if (Object.keys(validationErrors).length > 0) {
++            setState((prev) => ({ ...prev, validationErrors }));
++            return;
++        }
++
++        setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
+ 
+         try {
++            const submissionInspectionDate =
++                effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
++
++            if (effectiveCheckStatus === "Open") {
++                setFormData((prev) => ({
++                    ...prev,
++                    inspectionDate: submissionInspectionDate,
++                    signedDate: submissionInspectionDate,
++                }));
++            }
++
+             const statusPayload = {
+-                siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-                type: 'Maintenance',
+-                subType: 'Cleaning',
+-                category: 'Shower Head Cleaning',
++                siteId: parseInt(authoritativeSiteId, 10),
++                type: siteCheck?.type || 'Inspection',
++                // OLD: Maintenance/Cleaning/Shower Head Cleaning changed the Site Check route.
++                // NEW: preserve the original UI route.
++                subType: siteCheck?.subType || 'Legionella',
++                category: siteCheck?.category || 'Periodic Shower Head Cleaning',
+                 status: 'Done',
+-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
++                startDate: `${submissionInspectionDate}T00:00:00`,
+                 leadUserID: String(loggedInUserData?.id || '0'),
+                 assistantUserID: String(loggedInUserData?.id || '0')
+             };
+@@ -602,10 +738,12 @@
+ 
+             const cleaningPayload = {
+                 ...formData,
+-                siteId: siteSelectedForGlobal?.siteId,
++                siteId: authoritativeSiteId,
+                 assetId: formData.selectedAsset?.assetId || formData.assetId,
+                 client: formData.clientUser?.id || formData.client,
+                 engineer: formData.engineer,
++                inspectionDate: submissionInspectionDate,
++                signedDate: submissionInspectionDate,
+                 siteContact: formData.siteContactUser?.id || formData.siteContact,
+                 type: 'Maintenance',
+                 subType: 'Cleaning',
+@@ -629,7 +767,7 @@
+                 );
+             }
+ 
+-            const pdfResult = await generatePDF(true);
++            const pdfResult = await generatePDF(true, submissionInspectionDate);
+             if (!pdfResult.success) {
+                 throw new Error(pdfResult.error || "Failed to generate PDF");
+             }
+@@ -655,11 +793,11 @@
+         const fetchData = async () => {
+             setState(prev => ({ ...prev, isLoading: true }));
+             try {
+-                if (siteSelectedForGlobal?.siteId) {
++                if (authoritativeSiteId) {
+                     await Promise.all([
+-                        getSiteAssets(siteSelectedForGlobal.siteId),
+-                        getSiteDetailsById(siteSelectedForGlobal.siteId),
+-                        fetchFolderStructure(siteSelectedForGlobal.siteId),
++                        getSiteAssets(authoritativeSiteId),
++                        getSiteDetailsById(authoritativeSiteId),
++                        fetchFolderStructure(authoritativeSiteId),
+                         fetchSiteCheckData()
+                     ]);
+ 
+@@ -667,10 +805,15 @@
+                         await getUsers();
+                     }
+ 
++                    await fetchInspectionData();
++
+                     const currentSite = sites.find(
+-                        site => site.siteId === siteSelectedForGlobal.siteId
++                        site => Number(site.siteId) === Number(authoritativeSiteId)
+                     );
+-                    const siteData = currentSite || siteSelectedForGlobal;
++                    const siteData = currentSite ||
++                        (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
++                            ? siteSelectedForGlobal
++                            : null);
+ 
+                     if (siteData) {
+                         const addressParts = [
+@@ -686,11 +829,11 @@
+                         setFormData((prev) => ({ ...prev, address: fullAddress }));
+                     }
+ 
+-                    if (siteSelectedForGlobal.siteContact) {
++                    if (siteData?.siteContact) {
+                         setFormData(prev => ({
+                             ...prev,
+-                            siteContact: siteSelectedForGlobal.siteContact.name || "",
+-                            siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
++                            siteContact: siteData.siteContact.name || "",
++                            siteContactNo: siteData.siteContact.phone || "",
+                         }));
+                     }
+ 
+@@ -723,6 +866,7 @@
+         fetchExistingActions,
+         fetchFolderStructure,
+         fetchSiteCheckData,
++        fetchInspectionData,
+         getSiteAssets,
+         getSiteDetailsById,
+         getUsers,
+@@ -768,7 +912,10 @@
+         // Save the inspection data with the actionId
+         const inspectionPayload = {
+             ...formData,
+-            siteId: siteSelectedForGlobal?.siteId,
++            siteId: authoritativeSiteId,
++            engineer: formData.engineer,
++            inspectionDate: getUkLocalDate(),
++            signedDate: getUkLocalDate(),
+             checkId: state.currentCheckId,
+             actionId: verifiedAction.actionId,
+             type: 'Maintenance',
+@@ -797,12 +944,25 @@
+ };
+ 
+ 
++    // NEW: Shared engineer dropdown selection.
++    const handleEngineerSelect = (event, newValue) => {
++        setFormData((prev) => ({
++            ...prev,
++            engineer: newValue?.id || "",
++            user: newValue || {},
++        }));
++        setState((prev) => ({
++            ...prev,
++            validationErrors: { ...prev.validationErrors, engineer: "" },
++        }));
++    };
++
+     // Render functions
+     const renderClientNameField = () => {
+         if (isInternalUserTaggedWithSite) {
+             const filteredUsers = users?.filter(user =>
+                 user.taggedSites?.some(
+-                    site => site.id === siteSelectedForGlobal?.siteId
++                    site => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+                 )
+             ) || [];
+ 
+@@ -865,7 +1025,7 @@
+         if (isInternalUserTaggedWithSite) {
+             const filteredUsers = users?.filter(user =>
+                 user.taggedSites?.some(
+-                    site => site.id === siteSelectedForGlobal?.siteId
++                    site => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+                 )
+             ) || [];
+ 
+@@ -1152,7 +1312,7 @@
+                         ) : (
+                             <RiskScoreCard2
+                                 desc={`Maintenance - Cleaning - Shower Head Cleaning`}
+-                                siteId={siteSelectedForGlobal?.siteId}
++                                siteId={authoritativeSiteId}
+                                 checkId={state.currentCheckId}
+                                 createdBy={loggedInUserData?.id}
+                                 taggedAsset={selectedAsset?.assetId}
+@@ -1186,6 +1346,9 @@
+                         </div>
+                     </div>
+                     <div className="col-md-6">
++                        {/* =========================================================
++                            OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+                         <div className="mb-3">
+                             <label className="form-label fw-bold">Engineer's Name</label>
+                             <input
+@@ -1198,6 +1361,19 @@
+                                 disabled
+                             />
+                         </div>
++
++                        ========================================================= */}
++
++                        {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++                        <SiteCheckEngineerSelector
++                            options={engineerOptions}
++                            value={selectedEngineer}
++                            onChange={handleEngineerSelect}
++                            isOpen={effectiveCheckStatus === "Open"}
++                            disabled={state.isSubmitted || !state.isFormEditable}
++                            loading={isLoadingEngineers}
++                            error={state.validationErrors.engineer || engineerLoadError}
++                        />
+                         <div className="mb-3">
+                             <label className="form-label">Date</label>
+                             <input
+@@ -1241,7 +1417,7 @@
+                     ) : (
+                         <div className="text-center">
+                             <div className="alert alert-success mb-4">
+-                                Certificate submitted successfully on {new Date().toISOString().split("T")[0]}
++                                Certificate submitted successfully on {getUkLocalDate()}
+                             </div>
+                         </div>
+                     )}
+--- a/src/components/Protected/Sites/SiteChecks/FanExtract.jsx
++++ b/src/components/Protected/Sites/SiteChecks/FanExtract.jsx
+@@ -18,6 +18,9 @@
+ import pdfTemplate from './pdf/ExtractFan.pdf';
+ import RiskScoreCard from "./RiskScoreCard";
+ import moment from "moment";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+ 
+ let PDFLib;
+ 
+@@ -60,12 +63,13 @@
+                       getUsers,
+                       siteSelectedForGlobal,
+                       loggedInUserData,
++                      siteCheck = {},
+                     }) => {
+   const [formData, setFormData] = useState({
+     address: "",
+     assetId: "",
+     siteContact: "",
+-    inspectionDate: new Date().toISOString().split("T")[0],
++    inspectionDate: getUkLocalDate(),
+     siteContactNo: "",
+     job: "",
+     manufacturer: "",
+@@ -83,7 +87,7 @@
+     user: loggedInUserData || {},
+     engineer: loggedInUserData?.id || "",
+     selectedAsset: null,
+-    signedDate: new Date().toISOString().split("T")[0],
++    signedDate: getUkLocalDate(),
+     clientUser: null,
+     siteContactUser: null,
+     actionId: null,
+@@ -113,6 +117,42 @@
+ 
+     const navigate = useNavigate();
+ 
++  // NEW: Use the Site Check itself as the authoritative site/status source.
++  const authoritativeSiteId = siteCheck?.siteId
++      ? Number(siteCheck.siteId)
++      : Number(siteSelectedForGlobal?.siteId) || null;
++  const [lastEngineerId, setLastEngineerId] = useState(null);
++  const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
++
++  const {
++    engineerOptions,
++    selectedEngineer,
++    isLoadingEngineers,
++    engineerLoadError,
++  } = useSiteCheckEngineers({
++    users,
++    getUsers,
++    siteId: authoritativeSiteId,
++    loggedInUserData,
++    status: effectiveCheckStatus,
++    selectedEngineerId: formData.engineer,
++    selectedEngineerUser: formData.user,
++    lastEngineerId,
++  });
++
++  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
++  useEffect(() => {
++    if (effectiveCheckStatus !== "Open") return;
++
++    setFormData((prev) => ({
++      ...prev,
++      inspectionDate: getUkLocalDate(),
++      signedDate: getUkLocalDate(),
++      engineer: prev.engineer || loggedInUserData?.id || "",
++      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
++    }));
++  }, [effectiveCheckStatus, loggedInUserData?.id]);
++
+   const isInternalUserTaggedWithSite = true;
+ 
+   const selectedAsset = siteAssets.find(
+@@ -144,6 +184,12 @@
+             (user) => user.id === mostRecentItem.siteContact
+         );
+ 
++        const savedEngineerId = mostRecentItem.engineer || null;
++        setLastEngineerId(savedEngineerId);
++        const isCurrentOpenInspection =
++            effectiveCheckStatus === "Open" &&
++            isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
++
+         // Fetch action data if actionId exists
+         let existingAction = null;
+         if (mostRecentItem.actionId) {
+@@ -159,7 +205,7 @@
+           address: prev.address,
+           assetId: mostRecentItem.assetId || prev.assetId,
+           siteContact: mostRecentItem.siteContact || prev.siteContact,
+-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
++          inspectionDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.inspectionDate || prev.inspectionDate),
+           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+           job: mostRecentItem.job || prev.job,
+           manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
+@@ -175,10 +221,16 @@
+           param5: mostRecentItem.param5 || prev.param5,
+           param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
+           client: mostRecentItem.client || "",
+-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+-          user: engineerUser || loggedInUserData || prev.user,
++          // OLD: engineer/user always preferred the saved record, even while Open.
++          // NEW: same Open/Done behaviour as Air Conditioning.
++          engineer: effectiveCheckStatus === "Open"
++              ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
++              : (savedEngineerId || prev.engineer || ""),
++          user: effectiveCheckStatus === "Open"
++              ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
++              : (engineerUser || prev.user || {}),
+           selectedAsset: selectedAsset || prev.selectedAsset,
+-          signedDate: mostRecentItem.signedDate || prev.signedDate,
++          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
+           clientUser: clientUser || null,
+           siteContactUser: siteContactUser || null,
+           actionId: mostRecentItem.actionId || null,
+@@ -217,9 +269,9 @@
+       }
+ 
+       // Now look for other actions specifically for this checkId
+-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+-
+-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++      if (!authoritativeSiteId || !currentCheckId) return;
++
++      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+       if (response && response.length > 0) {
+         // Only consider actions with exact checkId match
+         const relevantActions = response.filter(action =>
+@@ -333,9 +385,9 @@
+   useEffect(() => {
+     const fetchSiteCheckData = async () => {
+       try {
+-        if (!siteSelectedForGlobal?.siteId) return;
+-
+-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
++        if (!authoritativeSiteId) return;
++
++        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+         if (response && response.length > 0) {
+           let extractFanCheck = checkId
+               ? response.find(check => check.checkId === parseInt(checkId, 10))
+@@ -378,10 +430,10 @@
+     const fetchData = async () => {
+       setIsLoading(true);
+       try {
+-        if (siteSelectedForGlobal?.siteId) {
+-          await getSiteAssets(siteSelectedForGlobal?.siteId);
+-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
++        if (authoritativeSiteId) {
++          await getSiteAssets(authoritativeSiteId);
++          await getSiteDetailsById(authoritativeSiteId);
++          await fetchFolderStructure(authoritativeSiteId);
+           await fetchSiteCheckData();
+           await fetchInspectionData();
+ 
+@@ -398,9 +450,12 @@
+           }
+ 
+           const currentSite = sites.find(
+-              (site) => site.siteId === siteSelectedForGlobal.siteId
++              (site) => Number(site.siteId) === Number(authoritativeSiteId)
+           );
+-          const siteData = currentSite || siteSelectedForGlobal;
++          const siteData = currentSite ||
++              (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
++                  ? siteSelectedForGlobal
++                  : siteDetailsById);
+ 
+           if (siteData) {
+             const addressParts = [
+@@ -416,11 +471,11 @@
+             setFormData((prev) => ({ ...prev, address: fullAddress }));
+           }
+ 
+-          if (siteSelectedForGlobal.siteContact) {
++          if (siteData?.siteContact) {
+             setFormData((prev) => ({
+               ...prev,
+-              siteContact: siteSelectedForGlobal.siteContact.name || "",
+-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
++              siteContact: siteData.siteContact.name || "",
++              siteContactNo: siteData.siteContact.phone || "",
+             }));
+           }
+         }
+@@ -504,7 +559,7 @@
+           siteContactUser: formData.siteContactUser,
+           actionId: verifiedAction.actionId,
+           checkId: currentCheckId,
+-          siteId: siteSelectedForGlobal?.siteId,
++          siteId: authoritativeSiteId,
+           type: 'Inspection',
+           subType: 'Extract Fan',
+           category: 'Extract Fan',
+@@ -559,7 +614,7 @@
+ 
+   const getHighestFileVersion = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId) return 1;
+ 
+       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -594,7 +649,7 @@
+ 
+   const checkFileExists = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId || !folderId) return { exists: false, file: null };
+ 
+       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -618,7 +673,7 @@
+     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+   }
+ 
+-  const uploadPdfToServer = async (pdfBlob, fileName) => {
++  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
+     try {
+       setIsUploading(true);
+       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+@@ -645,9 +700,9 @@
+             name: fileName,
+             originalFileName: fileName,
+             fileVersion: existingFile.fileVersion + 1,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++            siteId: authoritativeSiteId || 0,
++            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+               uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+             referenceNumber: `EF-${new Date().getTime()}`
+@@ -678,11 +733,11 @@
+           folderId: targetFolderId,
+           files: [{
+             name: fileName.split('.')[0],
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+               note: 'Extract Fan Certificate',
+             fileVersion: fileVersion,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
++            siteId: authoritativeSiteId || 0,
+             originalFileName: fileName,
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+@@ -716,7 +771,7 @@
+     }
+   };
+ 
+-  const generatePDF = async (uploadToServer = true) => {
++  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
+     try {
+       setIsGeneratingPDF(true);
+ 
+@@ -770,7 +825,7 @@
+       setTextField('address2', addressLines[2] || '', smallFont);
+       setTextField('address3', addressLines[3] || '', smallFont);
+ 
+-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
++      setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
+       setTextField('siteContact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
+       setTextField('contactNo', formData.siteContactNo || '', smallFont);
+       setTextField('jobNo', formData.job || '', smallFont);
+@@ -810,12 +865,12 @@
+ 
+       // Signatures
+       const clientName = formData.clientUser?.name || formData.client || '';
+-      const engineerName = formData.user?.name || '';
++      const engineerName = selectedEngineer?.name || formData.user?.name || '';
+ 
+       setTextField('Clients Name', clientName, mediumFont);
+       setTextField('Engineers Name', engineerName, mediumFont);
+-      setTextField('on', dateFormat(formData.signedDate), smallFont);
+-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
++      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
++      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+ 
+       form.flatten();
+       const pdfBytesModified = await pdfDoc.save();
+@@ -826,7 +881,7 @@
+       setShowPdfButton(true);
+ 
+       if (uploadToServer) {
+-        await uploadPdfToServer(blob, fileName);
++        await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
+       }
+ 
+       toast.success('PDF generated successfully!');
+@@ -873,6 +928,9 @@
+     if (!formData.param3) errors.param3 = "Please select one option";
+     if (!formData.param4) errors.param4 = "Please select one option";
+     if (!formData.param5) errors.param5 = "Please select one option";
++    if (!formData.engineer || !selectedEngineer) {
++      errors.engineer = "Please select an active engineer for this Site Check.";
++    }
+ 
+     if (Object.keys(errors).length > 0) {
+       setValidationErrors(errors);
+@@ -883,6 +941,18 @@
+     setIsLoading(true);
+ 
+     try {
++      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
++      const submissionInspectionDate =
++          effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
++
++      if (effectiveCheckStatus === "Open") {
++        setFormData((prev) => ({
++          ...prev,
++          inspectionDate: submissionInspectionDate,
++          signedDate: submissionInspectionDate,
++        }));
++      }
++
+       // First check if we have an existing inspection
+       let existingInspection = null;
+       if (currentCheckId) {
+@@ -896,13 +966,14 @@
+ 
+       // First update the site check status
+       const statusPayload = {
+-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-        type: 'Inspection',
+-        subType: 'Plant and Equipment Inspection',
+-        category: 'Extract Fan',
++        siteId: parseInt(authoritativeSiteId, 10),
++        type: siteCheck?.type || 'Inspection',
++        subType: siteCheck?.subType || 'Plant and Equipment Inspection',
++        // OLD category: 'Extract Fan' broke the UI route after completion.
++        category: siteCheck?.category || 'Extract Fan Cleaning',
+         status: 'Done',
+-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++        startDate: `${submissionInspectionDate}T00:00:00`,
++        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+       };
+@@ -937,10 +1008,12 @@
+       // Then update the generic inspection record
+       const inspectionPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         assetId: formData.selectedAsset?.assetId || formData.assetId,
+         client: formData.clientUser?.id || formData.client,
+         engineer: formData.engineer,
++        inspectionDate: submissionInspectionDate,
++        signedDate: submissionInspectionDate,
+         siteContact: formData.siteContactUser?.id || formData.siteContact,
+         type: 'Inspection',
+         subType: 'Extract Fan',
+@@ -972,7 +1045,7 @@
+ 
+ 
+       // Generate PDF
+-      const pdfResult = await generatePDF(true);
++      const pdfResult = await generatePDF(true, submissionInspectionDate);
+       if (!pdfResult.success) {
+         throw new Error(pdfResult.error || "Failed to generate PDF");
+       }
+@@ -999,7 +1072,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+               )
+           ) || [];
+ 
+@@ -1073,7 +1146,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
+               )
+           ) || [];
+ 
+@@ -1140,6 +1213,16 @@
+             disabled={isSubmitted}
+         />
+     );
++  };
++
++  // NEW: Shared engineer dropdown selection.
++  const handleEngineerSelect = (event, newValue) => {
++    setFormData((prev) => ({
++      ...prev,
++      engineer: newValue?.id || "",
++      user: newValue || {},
++    }));
++    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
+   };
+ 
+   const filteredAssets =
+@@ -1622,7 +1705,7 @@
+                   ) : (
+                       <RiskScoreCard
+                           desc={`Inspection - Plant and Equipment Inspection - Extract Fan Inspection`}
+-                          siteId={siteSelectedForGlobal?.siteId}
++                          siteId={authoritativeSiteId}
+                           checkId={currentCheckId}
+                           createdBy={loggedInUserData?.id}
+                           taggedAsset={selectedAsset?.assetId}
+@@ -1661,6 +1744,9 @@
+               </div>
+             </div>
+             <div className="col-md-6">
++              {/* =========================================================
++                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+               <div className="mb-3">
+                 <label className="form-label fw-bold">Engineer's Name</label>
+                 <input
+@@ -1673,6 +1759,19 @@
+                     disabled
+                 />
+               </div>
++
++              ========================================================= */}
++
++              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++              <SiteCheckEngineerSelector
++                  options={engineerOptions}
++                  value={selectedEngineer}
++                  onChange={handleEngineerSelect}
++                  isOpen={effectiveCheckStatus === "Open"}
++                  disabled={isSubmitted || !isFormEditable}
++                  loading={isLoadingEngineers}
++                  error={validationErrors.engineer || engineerLoadError}
++              />
+               <div className="mb-3">
+                 <label className="form-label">Date</label>
+                 <input
+@@ -1722,7 +1821,7 @@
+             ) : (
+                 <div className="text-center">
+                   <div className="alert alert-success mb-4">
+-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
++                    Report submitted successfully on {getUkLocalDate()}
+                   </div>
+                 </div>
+             )}
+--- a/src/components/Protected/Sites/SiteChecks/UpdateSiteCheck.jsx
++++ b/src/components/Protected/Sites/SiteChecks/UpdateSiteCheck.jsx
+@@ -767,6 +767,7 @@
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck.category}
+                                     leadUserID={siteCheck?.leadUserID}
++                                    siteCheck={siteCheck}
+                                 />
+                             </Item>
+                         )}
+@@ -790,6 +791,7 @@
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck.category}
+                                     leadUserID={siteCheck?.leadUserID}
++                                    siteCheck={siteCheck}
+                                 />
+                             </Item>
+                         )}
+@@ -801,6 +803,7 @@
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck.category}
+                                     leadUserID={siteCheck?.leadUserID}
++                                    siteCheck={siteCheck}
+                                 />
+                             </Item>
+                         )}
+@@ -846,6 +849,7 @@
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck.category}
+                                     leadUserID={siteCheck?.leadUserID}
++                                    siteCheck={siteCheck}
+                                 />
+                             </Item>
+                         )}

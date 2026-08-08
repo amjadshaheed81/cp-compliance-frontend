@@ -19,6 +19,9 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -59,12 +62,13 @@ const WaterHeaterCertificate = ({
                                   getUsers,
                                   siteSelectedForGlobal,
                                   loggedInUserData,
+                                  siteCheck = {},
                                 }) => {
   const [formData, setFormData] = useState({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     manufacturer: "",
@@ -86,7 +90,7 @@ const WaterHeaterCertificate = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
@@ -116,10 +120,47 @@ const WaterHeaterCertificate = ({
   const [existingAction, setExistingAction] = useState(null);
   const navigate = useNavigate();
 
+  // NEW: Use the Site Check itself as the authoritative site/status source.
+  const authoritativeSiteId = siteCheck?.siteId
+      ? Number(siteCheck.siteId)
+      : Number(siteSelectedForGlobal?.siteId) || null;
+  const [lastEngineerId, setLastEngineerId] = useState(null);
+  const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
+
+  // NEW: Shared engineer list/selection matching Air Conditioning.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: effectiveCheckStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
+  useEffect(() => {
+    if (effectiveCheckStatus !== "Open") return;
+
+    setFormData((prev) => ({
+      ...prev,
+      inspectionDate: getUkLocalDate(),
+      signedDate: getUkLocalDate(),
+      engineer: prev.engineer || loggedInUserData?.id || "",
+      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+    }));
+  }, [effectiveCheckStatus, loggedInUserData?.id]);
+
   const isInternalUserTaggedWithSite =
       (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
       loggedInUserData?.taggedSites?.some(
-          (site) => site.id === siteSelectedForGlobal?.siteId
+          (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
       );
 
   useEffect(() => {
@@ -165,6 +206,12 @@ const WaterHeaterCertificate = ({
             (user) => user.id === mostRecentItem.siteContact
         );
 
+        const savedEngineerId = mostRecentItem.engineer || null;
+        setLastEngineerId(savedEngineerId);
+        const isCurrentOpenInspection =
+            effectiveCheckStatus === "Open" &&
+            isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
         // Load photos from parameters
         const photosFromApi = [];
         for (let i = 2; i <= 5; i++) {
@@ -195,7 +242,7 @@ const WaterHeaterCertificate = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           jobNo: mostRecentItem.jobNo || prev.jobNo,
           engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
@@ -211,8 +258,17 @@ const WaterHeaterCertificate = ({
           param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
           param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD: engineer/user always preferred the saved record, even while Open.
+          // NEW: same Open/Done behaviour as Air Conditioning.
+          engineer: effectiveCheckStatus === "Open"
+              ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+              : (savedEngineerId || prev.engineer || ""),
+          user: effectiveCheckStatus === "Open"
+              ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+              : (engineerUser || prev.user || {}),
+          inspectionDate: effectiveCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.inspectionDate || prev.inspectionDate),
           selectedAsset: selectedAsset || prev.selectedAsset,
           clientDate: mostRecentItem.clientDate || prev.clientDate,
           engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
@@ -250,9 +306,9 @@ const WaterHeaterCertificate = ({
         setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
             action.checkId === currentCheckId
@@ -337,9 +393,9 @@ const WaterHeaterCertificate = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
+        if (!authoritativeSiteId) return;
 
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
         if (response && response.length > 0) {
           let waterHeaterCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -386,10 +442,10 @@ const WaterHeaterCertificate = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
           await fetchSiteCheckData();
           await fetchInspectionData();
 
@@ -405,7 +461,10 @@ const WaterHeaterCertificate = ({
             await fetchExistingActions();
           }
 
-          const siteData = siteDetailsById || siteSelectedForGlobal;
+          const siteData = siteDetailsById ||
+              (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
+                  ? siteSelectedForGlobal
+                  : null);
 
           if (siteData) {
             const addressParts = [
@@ -421,11 +480,11 @@ const WaterHeaterCertificate = ({
             setFormData((prev) => ({ ...prev, address: fullAddress }));
           }
 
-          if (siteSelectedForGlobal.siteContact) {
+          if (siteData?.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
         }
@@ -484,7 +543,7 @@ const WaterHeaterCertificate = ({
           user: formData.user,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Water Heater',
           category: 'Water Heater Service',
@@ -586,7 +645,7 @@ const WaterHeaterCertificate = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
     try {
       setIsUploading(true);
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
@@ -614,9 +673,9 @@ const WaterHeaterCertificate = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `WHR-${new Date().getTime()}`
@@ -647,11 +706,11 @@ const WaterHeaterCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
             note: 'Water Heater Service Report',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -687,7 +746,7 @@ const WaterHeaterCertificate = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -709,7 +768,7 @@ const WaterHeaterCertificate = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -737,7 +796,7 @@ const WaterHeaterCertificate = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -807,7 +866,7 @@ const WaterHeaterCertificate = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
       setTextField('Job', formData.job || '', smallFont);
@@ -845,12 +904,12 @@ const WaterHeaterCertificate = ({
 
       // Signatures
       const clientName = formData.clientUser?.name || formData.client || '';
-      const engineerName = formData.user?.name || '';
+      const engineerName = selectedEngineer?.name || formData.user?.name || '';
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
 
       // Handle image embedding for PDF fields
       const imageFields = [
@@ -919,7 +978,7 @@ const WaterHeaterCertificate = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -956,7 +1015,7 @@ const WaterHeaterCertificate = ({
       const uploadResults = await Promise.all(
           filesToUpload.map(async (file, index) => {
             const response = await uploadSiteCheckDoc({
-              siteId: siteSelectedForGlobal?.siteId || 0,
+              siteId: authoritativeSiteId || 0,
               file: file
             });
 
@@ -994,7 +1053,7 @@ const WaterHeaterCertificate = ({
       if (currentCheckId) {
         const payload = {
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Water Heater',
           category: 'Water Heater Service',
@@ -1033,7 +1092,7 @@ const WaterHeaterCertificate = ({
     if (currentCheckId && photoToRemove.paramKey) {
       const payload = {
         checkId: currentCheckId,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         type: 'Inspection',
         subType: 'Water Heater',
         category: 'Water Heater Service',
@@ -1083,6 +1142,9 @@ const WaterHeaterCertificate = ({
     }
 
     const errors = {};
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -1093,6 +1155,18 @@ const WaterHeaterCertificate = ({
     setIsLoading(true);
 
     try {
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate =
+          effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
+
+      if (effectiveCheckStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       let existingInspection = null;
       if (currentCheckId) {
         try {
@@ -1104,13 +1178,15 @@ const WaterHeaterCertificate = ({
       }
 
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Water Heater',
-        category: 'Water Heater Service',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+        // OLD: subType/category used internal generic-inspection values.
+        // NEW: preserve the UI routing values of the Site Check.
+        subType: siteCheck?.subType || 'Legionella',
+        category: siteCheck?.category || 'Water Heater Inspection & Service',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1142,10 +1218,12 @@ const WaterHeaterCertificate = ({
 
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Water Heater',
@@ -1173,7 +1251,7 @@ const WaterHeaterCertificate = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1200,7 +1278,7 @@ const WaterHeaterCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
               )
           ) || [];
 
@@ -1274,7 +1352,7 @@ const WaterHeaterCertificate = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
               )
           ) || [];
 
@@ -1341,6 +1419,16 @@ const WaterHeaterCertificate = ({
             disabled={isSubmitted}
         />
     );
+  };
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
   const filteredAssets =
@@ -1888,7 +1976,7 @@ const WaterHeaterCertificate = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Water Heater Service`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={formData.selectedAsset?.assetId}
@@ -1927,6 +2015,9 @@ const WaterHeaterCertificate = ({
               </div>
             </div>
             <div className="col-md-6">
+              {/* =========================================================
+                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
                 <input
@@ -1939,6 +2030,19 @@ const WaterHeaterCertificate = ({
                     disabled
                 />
               </div>
+
+              ========================================================= */}
+
+              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+              <SiteCheckEngineerSelector
+                  options={engineerOptions}
+                  value={selectedEngineer}
+                  onChange={handleEngineerSelect}
+                  isOpen={effectiveCheckStatus === "Open"}
+                  disabled={isSubmitted || !isFormEditable}
+                  loading={isLoadingEngineers}
+                  error={validationErrors.engineer || engineerLoadError}
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input
@@ -1986,7 +2090,7 @@ const WaterHeaterCertificate = ({
           ) : (
               <div className="text-center print-hide">
                 <div className="alert alert-success mb-4">
-                  Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                  Report submitted successfully on {getUkLocalDate()}
                 </div>
                 {showPdfButton && generatedPdfBlob && (
                     <button

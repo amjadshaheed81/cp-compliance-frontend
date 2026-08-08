@@ -17,6 +17,12 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/ExternalLightingCertificate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import {
+  getUkLocalDate,
+  isCurrentUkInspectionDate,
+} from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -58,6 +64,7 @@ const ExternalLightningCertificate = ({
                                         checkId,
                                         subType,
                                         category,
+                                        siteCheck,
                                         getSiteDetailsById,
                                         siteAssets,
                                         getSiteAssets,
@@ -72,7 +79,7 @@ const ExternalLightningCertificate = ({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     param1Remark: "", // fittingTypes
@@ -87,13 +94,19 @@ const ExternalLightningCertificate = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId:null,
   });
 
   const sites = useSelector((state) => state.site.sites);
+
+  // NEW: Use the Site Check's own site for the engineer list.
+  // The global site is kept only as a temporary fallback while the parent loads.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -111,10 +124,10 @@ const ExternalLightningCertificate = ({
   const [isFormEditable, setIsFormEditable] = useState(true);
   // Initialize with the checkId prop if available, otherwise null
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
-    const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
 
-
-    const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+  const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
 
@@ -127,6 +140,23 @@ const ExternalLightningCertificate = ({
     show: false,
     content: "",
     position: { x: 0, y: 0 },
+  });
+
+  // NEW: Shared engineer list/selection behaviour copied from Air Conditioning.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: checkStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
   });
 
   const handleMouseEnter = (e, content) => {
@@ -146,7 +176,80 @@ const ExternalLightningCertificate = ({
     setPopup((prev) => ({ ...prev, show: false }));
   };
 
-  const fetchInspectionData = async () => {
+  // NEW: Reset only the shared engineer/date fields when a different
+  // Site Check is opened. The inspection data loader then restores Done values.
+  useEffect(() => {
+    setLastEngineerId(null);
+
+    setFormData((prev) => ({
+      ...prev,
+      engineer:
+        siteCheck?.status === "Done"
+          ? ""
+          : (loggedInUserData?.id || ""),
+      user:
+        siteCheck?.status === "Done"
+          ? {}
+          : (loggedInUserData || {}),
+      inspectionDate:
+        siteCheck?.status === "Open"
+          ? getUkLocalDate()
+          : prev.inspectionDate,
+      signedDate:
+        siteCheck?.status === "Open"
+          ? getUkLocalDate()
+          : prev.signedDate,
+    }));
+  }, [
+    checkId,
+    authoritativeSiteId,
+    siteCheck?.status,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+  ]);
+
+  // NEW: Match Air Conditioning. An Open check defaults to the logged-in user,
+  // unless a different engineer was deliberately selected for the current form.
+  useEffect(() => {
+    if (checkStatus !== "Open" || !loggedInUserData?.id) {
+      return;
+    }
+
+    setFormData((prev) => {
+      if (
+        prev.engineer &&
+        String(prev.engineer) !== String(loggedInUserData.id)
+      ) {
+        return prev;
+      }
+
+      const loggedInEngineer =
+        engineerOptions.find(
+          (user) => String(user.id) === String(loggedInUserData.id)
+        ) || loggedInUserData;
+
+      if (
+        String(prev.engineer || "") === String(loggedInEngineer.id) &&
+        prev.user?.name === loggedInEngineer.name
+      ) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        engineer: loggedInEngineer.id,
+        user: loggedInEngineer,
+      };
+    });
+  }, [
+    checkId,
+    checkStatus,
+    loggedInUserData?.id,
+    loggedInUserData?.name,
+    engineerOptions,
+  ]);
+
+  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
     try {
       if (!checkId) return;
 
@@ -159,6 +262,8 @@ const ExternalLightningCertificate = ({
       );
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        setLastEngineerId(mostRecentItem.engineer || null);
+
         const selectedAsset = siteAssets.find(
             (asset) => asset.assetId === mostRecentItem.assetId
         );
@@ -167,18 +272,33 @@ const ExternalLightningCertificate = ({
             (user) => user.id === mostRecentItem.client
         );
         const engineerUser = users.find(
-            (user) => user.id === mostRecentItem.engineer
+            (user) => String(user.id) === String(mostRecentItem.engineer)
         );
         const siteContactUser = users.find(
             (user) => user.id === mostRecentItem.siteContact
         );
+
+        const isCurrentOpenInspection =
+          siteCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
+        const openInspectionEngineer = isCurrentOpenInspection
+          ? (engineerUser || loggedInUserData || {})
+          : (loggedInUserData || {});
 
         setFormData((prev) => ({
           ...prev,
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          // OLD:
+          // inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+
+          // NEW: Open shows today's UK date; Done shows the saved date.
+          inspectionDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
@@ -190,15 +310,39 @@ const ExternalLightningCertificate = ({
           param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
           param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
           client: mostRecentItem.client || "",
+          // OLD:
+          // engineer:
+          //   mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          // user: engineerUser || loggedInUserData || prev.user,
+
+          // NEW: Match Air Conditioning Open/Done engineer behaviour.
           engineer:
-              mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+            siteCheckStatus === "Open"
+              ? (
+                  isCurrentOpenInspection
+                    ? (mostRecentItem.engineer || loggedInUserData?.id || "")
+                    : (loggedInUserData?.id || "")
+                )
+              : (mostRecentItem.engineer || prev.engineer || ""),
+          user:
+            siteCheckStatus === "Open"
+              ? openInspectionEngineer
+              : (engineerUser || prev.user || {}),
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          // OLD:
+          // signedDate: mostRecentItem.signedDate || prev.signedDate,
+
+          // NEW: Open shows today's UK date; Done shows the saved date.
+          signedDate:
+            siteCheckStatus === "Open"
+              ? getUkLocalDate()
+              : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
         }));
+      } else {
+        setLastEngineerId(null);
       }
     } catch (error) {
       console.error("Error fetching inspection data:", error);
@@ -340,110 +484,142 @@ const ExternalLightningCertificate = ({
   }, [formData.actionId]);
 
   useEffect(() => {
+    const applySiteCheckState = (loadedSiteCheck) => {
+      if (!loadedSiteCheck) {
+        return null;
+      }
+
+      setCurrentCheckId(loadedSiteCheck.checkId);
+      setCheckStatus(loadedSiteCheck.status);
+      setInspectionDetails(loadedSiteCheck);
+
+      const isDone = loadedSiteCheck.status === "Done";
+      setIsFormEditable(!isDone);
+      setIsSubmitted(isDone);
+      setShowPdfButton(isDone);
+
+      return loadedSiteCheck;
+    };
+
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
-
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
-        if (response && response.length > 0) {
-          // First try to find the exact checkId from URL
-          let externalLightingCheck = checkId
-              ? response.find(check => check.checkId === parseInt(checkId, 10))
-              : null;
-
-          // If not found by checkId, find first matching type
-          // if (!externalLightingCheck) {
-          //   externalLightingCheck = response.find(check =>
-          //       check.type === 'Inspection' &&
-          //       check.subType === 'Electrical' &&
-          //       check.category === 'External Lighting Testing'
-          //   );
-          // }
-
-          if (externalLightingCheck) {
-            console.log('Found check:', {
-              checkId: externalLightingCheck.checkId,
-              requestedCheckId: checkId,
-              matchType: externalLightingCheck.checkId === parseInt(checkId, 10) ? 'exact' : 'type-match'
-            });
-
-            setCurrentCheckId(externalLightingCheck.checkId);
-            setCheckStatus(externalLightingCheck.status);
-
-            setInspectionDetails(externalLightingCheck);
-            // Set form editability based on status
-            const isDone = externalLightingCheck.status === 'Done';
-            setIsFormEditable(!isDone);
-            setIsSubmitted(isDone);
-            setShowPdfButton(isDone);
-          } else {
-            // If no matching check found, default to editable
-            console.log('No matching check found, using checkId from URL:', checkId);
-            setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
-            setIsFormEditable(true);
-            setIsSubmitted(false);
-            setShowPdfButton(false);
-          }
+        // NEW: UpdateSiteCheck now supplies the exact Site Check record.
+        if (
+          siteCheck &&
+          Number(siteCheck.checkId) === Number(checkId)
+        ) {
+          return applySiteCheckState(siteCheck);
         }
-      } catch (error) {
-        console.error('Error fetching site check data:', error);
-        toast.error('Failed to load site check status');
+
+        /*
+         * OLD BEHAVIOUR RETAINED AS A FALLBACK:
+         * The component used to load every Site Check for the globally selected
+         * site and then search for checkId. The exact parent-supplied Site Check
+         * is now preferred, matching Air Conditioning.
+         */
+        if (!authoritativeSiteId) return null;
+
+        const response = await get(
+          `/api/site-check/site/${authoritativeSiteId}`
+        );
+
+        const externalLightingCheck = checkId
+          ? response?.find(
+              (check) => Number(check.checkId) === Number(checkId)
+            )
+          : null;
+
+        if (externalLightingCheck) {
+          return applySiteCheckState(externalLightingCheck);
+        }
+
+        setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
         setIsFormEditable(true);
+        setIsSubmitted(false);
+        setShowPdfButton(false);
+        return null;
+      } catch (error) {
+        console.error("Error fetching site check data:", error);
+        toast.error("Failed to load site check status");
+        setIsFormEditable(true);
+        return null;
       }
     };
 
     if (isInternalUserTaggedWithSite && users.length === 0) {
       getUsers();
     }
+
     const fetchData = async () => {
       setIsLoading(true);
+
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
+        if (!authoritativeSiteId) {
+          return;
+        }
 
+        // OLD:
+        // await getSiteAssets(siteSelectedForGlobal?.siteId);
+        // await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+        // await fetchFolderStructure(siteSelectedForGlobal.siteId);
 
+        // NEW: Load data using the Site Check's own site.
+        await getSiteAssets(authoritativeSiteId);
+        await getSiteDetailsById(authoritativeSiteId);
+        await fetchFolderStructure(authoritativeSiteId);
 
-          if (formData.actionId) {
-            const action = await fetchActionById(formData.actionId);
-            if (action) {
-              setExistingAction(action);
-              setActionRaised(true);
-            } else {
-              // Fall back to general fetch if specific fetch fails
-              await fetchExistingActions();
-            }
+        const loadedSiteCheck = await fetchSiteCheckData();
+        await fetchInspectionData(
+          loadedSiteCheck?.status || checkStatus
+        );
+
+        if (formData.actionId) {
+          const action = await fetchActionById(formData.actionId);
+          if (action) {
+            setExistingAction(action);
+            setActionRaised(true);
           } else {
             await fetchExistingActions();
           }
+        } else {
+          await fetchExistingActions();
+        }
 
-          const currentSite = sites.find(
-              (site) => site.siteId === siteSelectedForGlobal.siteId
+        const currentSite = sites.find(
+          (site) =>
+            Number(site.siteId ?? site.id) === authoritativeSiteId
+        );
+
+        const selectedGlobalSiteId = Number(
+          siteSelectedForGlobal?.siteId ?? siteSelectedForGlobal?.id
+        );
+
+        const siteData =
+          currentSite ||
+          (
+            selectedGlobalSiteId === authoritativeSiteId
+              ? siteSelectedForGlobal
+              : null
           );
-          const siteData = currentSite || siteSelectedForGlobal;
-          // Properly construct the address
-          if (siteData) {
-            const addressParts = [
-              siteData.address1,
-              siteData.address2,
-              siteData.city,
-              siteData.area,
-              siteData.postCode,
-              siteData.country,
-            ].filter((part) => part && part.trim() !== ""); // Filter out empty/null parts
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+        if (siteData) {
+          const addressParts = [
+            siteData.address1,
+            siteData.address2,
+            siteData.city,
+            siteData.area,
+            siteData.postCode,
+            siteData.country,
+          ].filter((part) => part && part.trim() !== "");
 
-          if (siteSelectedForGlobal.siteContact) {
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({ ...prev, address: fullAddress }));
+
+          if (siteData.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
         }
@@ -457,8 +633,12 @@ const ExternalLightningCertificate = ({
 
     fetchData();
   }, [
+    siteCheck,
+    checkId,
+    authoritativeSiteId,
     siteSelectedForGlobal,
     getSiteAssets,
+    getSiteDetailsById,
     users.length,
     isInternalUserTaggedWithSite,
     getUsers,
@@ -556,6 +736,21 @@ const ExternalLightningCertificate = ({
     }));
   };
 
+  // NEW: Save both the selected engineer ID and user object.
+  // This matches the approved Air Conditioning implementation.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+
+    setValidationErrors((prev) => ({
+      ...prev,
+      engineer: "",
+    }));
+  };
+
   // Helper function to save PDF to local storage
   const savePdfToLocal = async (pdfBlob, fileName) => {
     try {
@@ -585,7 +780,7 @@ const ExternalLightningCertificate = ({
   // Function to get the highest file version for a given file name in a folder
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -627,7 +822,7 @@ const ExternalLightningCertificate = ({
   // Function to check if a file exists in the folder
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -668,33 +863,54 @@ const ExternalLightningCertificate = ({
     };
 
   // Helper function to upload PDF to the server
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (
+    pdfBlob,
+    fileName,
+    inspectionDateOverride
+  ) => {
     try {
       setIsUploading(true);
+
+      const inspectionDateForUpload =
+        inspectionDateOverride || formData.inspectionDate;
 
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
       }
 
-      const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      const pdfFile = new File([pdfBlob], fileName, {
+        type: 'application/pdf',
+      });
 
-      // Use the externalLighting folder ID if available, otherwise fall back to Log Books
-      const targetFolderId = folderIds.externalLighting || folderIds.logBooks;
+      const targetFolderId =
+        folderIds.externalLighting || folderIds.logBooks;
 
       if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
+        throw new Error(
+          'Could not determine target folder for PDF upload'
+        );
       }
 
-      // Check if file exists
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+      const { exists, file: existingFile } =
+        await checkFileExists(targetFolderId, fileName);
 
-      // Create FormData for both cases
-      const formData = new FormData();
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const formData = new FormData();
+       * issueDate: formatDateForBackend(formData.inspectionDate)
+       *
+       * The local FormData variable hid the React formData state, so
+       * formData.inspectionDate was undefined during document upload.
+       */
+
+      // NEW: Use a clearly named upload FormData object and the same
+      // current UK inspection date used by the Site Check submission.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        // File exists, use the new version upload endpoint
-        formData.append('file', pdfFile);  // Single file for new version
+        uploadFormData.append('file', pdfFile);
 
         const documentRequestString = {
           folderId: targetFolderId,
@@ -703,68 +919,94 @@ const ExternalLightningCertificate = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(
+              inspectionDateForUpload
+            ),
+            expiryDate: formatDateForBackend(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                inspectionDetails?.repeatFrequency
+              )
+            ),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `ELC-${new Date().getTime()}`
-          }]
+            referenceNumber: `ELC-${new Date().getTime()}`,
+          }],
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append(
+          'documentRequestString',
+          JSON.stringify(documentRequestString)
+        );
 
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
-            'Accept': 'application/json'
-          }
+            'Accept': 'application/json',
+          },
         });
 
         if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+          toast.success(
+            `PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`
+          );
           return true;
         }
       } else {
-        // File doesn't exist, use the regular upload endpoint
-        formData.append('files', pdfFile);  // Note: 'files' (plural) for new upload
+        uploadFormData.append('files', pdfFile);
 
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        const fileVersion = await getHighestFileVersion(
+          targetFolderId,
+          fileName
+        );
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(
+              inspectionDateForUpload
+            ),
+            expiryDate: formatDateForBackend(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                inspectionDetails?.repeatFrequency
+              )
+            ),
             note: 'External Lightning Certificate',
-            fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            fileVersion,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `ELC-${new Date().getTime()}`
-          }]
+            referenceNumber: `ELC-${new Date().getTime()}`,
+          }],
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append(
+          'documentRequestString',
+          JSON.stringify(documentRequestString)
+        );
 
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
         });
 
         if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
+          toast.success(
+            `PDF uploaded successfully as version ${fileVersion}!`
+          );
           return true;
         }
       }
@@ -791,7 +1033,10 @@ const ExternalLightningCertificate = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (
+    uploadToServer = true,
+    inspectionDateOverride
+  ) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -861,6 +1106,8 @@ const ExternalLightningCertificate = ({
 
       const smallFont = 10;
       const mediumFont = 10;
+      const effectiveInspectionDate =
+        inspectionDateOverride || formData.inspectionDate;
 
       const addressLines = (formData.address || '').split(',');
       setTextField('AddressLine1', addressLines[0] || '', mediumFont);
@@ -884,7 +1131,11 @@ const ExternalLightningCertificate = ({
         return `${day}-${month}-${year}`;
       };
 
-      const formattedDate = formatDateString(formData.inspectionDate);
+      // OLD:
+      // const formattedDate = formatDateString(formData.inspectionDate);
+
+      // NEW: Use the exact date used by the Open-to-Done submission.
+      const formattedDate = formatDateString(effectiveInspectionDate);
       setTextField('Date', formattedDate, mediumFont);
 
       // Fitting Information
@@ -901,9 +1152,20 @@ const ExternalLightningCertificate = ({
 
       // Use clientUser.name if it exists, otherwise fall back to client
       const clientName = formData.clientUser?.name || formData.client || '';
-      // Use engineer name from users list if available, otherwise use the ID
-      const engineer = users?.find(u => u.id === formData.engineer);
-      const engineerName = engineer?.name || formData.engineer || '';
+
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const engineer = users?.find(
+       *   (user) => user.id === formData.engineer
+       * );
+       * const engineerName =
+       *   engineer?.name || formData.engineer || '';
+       */
+
+      // NEW: Use the engineer selected by the shared control.
+      const engineerName =
+        selectedEngineer?.name || formData.user?.name || '';
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
@@ -937,7 +1199,11 @@ const ExternalLightningCertificate = ({
       // Upload to server if requested
       let uploadedToServer = false;
       if (uploadToServer && savedToPublic) {
-        uploadedToServer = await uploadPdfToServer(blob, fileName);
+        uploadedToServer = await uploadPdfToServer(
+          blob,
+          fileName,
+          effectiveInspectionDate
+        );
       } else if (savedToPublic) {
         // If not uploading to server but still need to download
         saveAs(blob, fileName);
@@ -982,6 +1248,13 @@ const ExternalLightningCertificate = ({
 
     // Form validation
     const errors = {};
+
+    // NEW: Engineer must be a valid option from the Site Check site list.
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer =
+        "Please select an active engineer for this Site Check.";
+    }
+
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -989,6 +1262,11 @@ const ExternalLightningCertificate = ({
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+
+      if (errors.engineer) {
+        toast.error(errors.engineer);
+      }
+
       return;
     }
 
@@ -996,6 +1274,21 @@ const ExternalLightningCertificate = ({
     setIsLoading(true);
 
     try {
+      // NEW: Match Air Conditioning. An Open check is always submitted
+      // using the current UK date, not a date from an older inspection.
+      const submissionInspectionDate =
+        checkStatus === "Open"
+          ? getUkLocalDate()
+          : formData.inspectionDate;
+
+      if (checkStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -1009,13 +1302,31 @@ const ExternalLightningCertificate = ({
 
       // First update or create the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+        siteId: parseInt(authoritativeSiteId, 10),
         type: 'Inspection',
         subType: 'Electrical',
         category: 'External Lighting Testing',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+
+        // OLD:
+        // startDate:
+        //   new Date().toISOString().split('T')[0] + 'T00:00:00',
+        // dueDate:
+        //   formatLocalDateTime(
+        //     calculateExpiryDate(
+        //       formData.inspectionDate,
+        //       inspectionDetails?.repeatFrequency
+        //     )
+        //   ),
+
+        // NEW: Use the same current UK date everywhere.
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(
+          calculateExpiryDate(
+            submissionInspectionDate,
+            inspectionDetails?.repeatFrequency
+          )
+        ),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1050,10 +1361,14 @@ const ExternalLightningCertificate = ({
       // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+
+        // NEW: Explicitly override the stale React state values.
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'External Lighting',
@@ -1093,7 +1408,10 @@ const ExternalLightningCertificate = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1716,9 +2034,15 @@ const ExternalLightningCertificate = ({
               </div>
             </div>
             <div className="col-md-6">
-              <div className="mb-3">
-                <label className="form-label fw-bold">Engineer's Name</label>
-                <input
+              {/*
+                =========================================================
+                OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">
+                    Engineer's Name
+                  </label>
+                  <input
                     type="text"
                     className="form-control"
                     name="engineer name"
@@ -1726,8 +2050,28 @@ const ExternalLightningCertificate = ({
                     value={formData.user.name}
                     required
                     disabled
-                />
-              </div>
+                  />
+                </div>
+
+                =========================================================
+              */}
+
+              {/* ======================================================
+                  NEW SHARED ENGINEER CONTROL
+                  MATCHES AIR CONDITIONING BEHAVIOUR
+              ====================================================== */}
+              <SiteCheckEngineerSelector
+                options={engineerOptions}
+                value={selectedEngineer}
+                onChange={handleEngineerSelect}
+                isOpen={checkStatus === "Open"}
+                disabled={isSubmitted || !isFormEditable}
+                loading={isLoadingEngineers}
+                error={
+                  validationErrors.engineer ||
+                  engineerLoadError
+                }
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input
@@ -1778,7 +2122,7 @@ const ExternalLightningCertificate = ({
             ) : (
                 <div className="text-center">
                   <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                    Report submitted successfully on {getUkLocalDate()}
                   </div>
                 </div>
             )}

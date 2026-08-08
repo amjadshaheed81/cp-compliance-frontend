@@ -18,6 +18,9 @@ import pdfTemplate from './pdf/FireRefuge.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -52,6 +55,7 @@ const RefugeIntercomTesting = ({
                                  checkId,
                                  subType,
                                  category,
+                                 siteCheck,
                                  getSiteDetailsById,
                                  siteDetailsById,
                                  siteAssets,
@@ -65,7 +69,7 @@ const RefugeIntercomTesting = ({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     report: "",
@@ -76,11 +80,16 @@ const RefugeIntercomTesting = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
   });
+
+  // NEW: Use the exact Site Check site, matching Air Conditioning.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -99,15 +108,35 @@ const RefugeIntercomTesting = ({
   const [checkStatus, setCheckStatus] = useState('Open');
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
+  const [lastEngineerId, setLastEngineerId] = useState(null);
   const [siteCheckDetails, setSiteCheckDetails] = useState(null);
   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
   const navigate = useNavigate();
 
+  // NEW: Shared engineer behaviour copied from Air Conditioning.
+  const { engineerOptions, selectedEngineer, isLoadingEngineers, engineerLoadError } =
+    useSiteCheckEngineers({
+      users, getUsers, siteId: authoritativeSiteId, loggedInUserData,
+      status: checkStatus, selectedEngineerId: formData.engineer,
+      selectedEngineerUser: formData.user, lastEngineerId,
+    });
+
+  useEffect(() => {
+    setLastEngineerId(null);
+    setFormData((prev) => ({
+      ...prev,
+      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
+      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
+      inspectionDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.inspectionDate,
+      signedDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.signedDate,
+    }));
+  }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
+
   const isInternalUserTaggedWithSite = true;
 
-  const fetchInspectionData = async () => {
+  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
     try {
       if (!checkId) return;
 
@@ -118,6 +147,9 @@ const RefugeIntercomTesting = ({
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
+        setLastEngineerId(mostRecentItem.engineer || null);
+        const isCurrentOpenInspection = siteCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
         const selectedAsset = siteAssets.find(
             (asset) => asset.assetId === mostRecentItem.assetId
         );
@@ -147,7 +179,11 @@ const RefugeIntercomTesting = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          // OLD: inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
+          // NEW: Open = current UK date; Done = saved date.
+          inspectionDate: siteCheckStatus === "Open"
+            ? getUkLocalDate()
+            : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
@@ -155,10 +191,26 @@ const RefugeIntercomTesting = ({
           param2: mostRecentItem.param2 || prev.param2,
           param3: mostRecentItem.param3 || prev.param3,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD engineer/user mapping retained for review.
+          // engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          // user: engineerUser || loggedInUserData || prev.user,
+          // NEW: same Open/Done engineer behaviour as Air Conditioning.
+          engineer: siteCheckStatus === "Open"
+            ? (isCurrentOpenInspection
+                ? (mostRecentItem.engineer || loggedInUserData?.id || "")
+                : (loggedInUserData?.id || ""))
+            : (mostRecentItem.engineer || prev.engineer || ""),
+          user: siteCheckStatus === "Open"
+            ? (isCurrentOpenInspection
+                ? (engineerUser || loggedInUserData || {})
+                : (loggedInUserData || {}))
+            : (engineerUser || prev.user || {}),
           selectedAsset: selectedAsset || prev.selectedAsset,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          // OLD: signedDate: mostRecentItem.signedDate || prev.signedDate,
+          // NEW: Open = current UK date; Done = saved date.
+          signedDate: siteCheckStatus === "Open"
+            ? getUkLocalDate()
+            : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
@@ -196,9 +248,9 @@ const RefugeIntercomTesting = ({
         setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
             action.checkId === currentCheckId
@@ -288,9 +340,18 @@ const RefugeIntercomTesting = ({
   useEffect(() => {
     const fetchSiteCheckData = async () => {
       try {
-        if (!siteSelectedForGlobal?.siteId) return;
-
-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
+          setCurrentCheckId(siteCheck.checkId);
+          setCheckStatus(siteCheck.status);
+          setSiteCheckDetails(siteCheck);
+          const isDone = siteCheck.status === "Done";
+          setIsFormEditable(!isDone);
+          setIsSubmitted(isDone);
+          setShowPdfButton(isDone);
+          return siteCheck;
+        }
+        if (!authoritativeSiteId) return null;
+        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
         if (response && response.length > 0) {
           let refugeIntercomCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
@@ -311,6 +372,7 @@ const RefugeIntercomTesting = ({
             setIsFormEditable(!isDone);
             setIsSubmitted(isDone);
             setShowPdfButton(isDone);
+            return refugeIntercomCheck;
           } else {
             console.log('No matching check found, using checkId from URL:', checkId);
             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
@@ -333,12 +395,12 @@ const RefugeIntercomTesting = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
+          const loadedSiteCheck = await fetchSiteCheckData();
+          await fetchInspectionData(loadedSiteCheck?.status || siteCheck?.status || checkStatus);
 
           if (formData.actionId) {
             const action = await fetchActionById(formData.actionId);
@@ -444,7 +506,7 @@ const RefugeIntercomTesting = ({
           siteContactUser: formData.siteContactUser,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Refuge Intercom',
           category: 'Refuge Intercom Testing',
@@ -474,6 +536,12 @@ const RefugeIntercomTesting = ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
     }));
+  };
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({ ...prev, engineer: newValue?.id || "", user: newValue || {} }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
   const formatDateForBackend = (dateString) => {
@@ -515,7 +583,7 @@ const RefugeIntercomTesting = ({
 
   const getHighestFileVersion = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId) {
         console.warn('No site ID available for file version check');
         return 1;
@@ -553,7 +621,7 @@ const RefugeIntercomTesting = ({
 
   const checkFileExists = async (folderId, fileName) => {
     try {
-      const siteId = siteSelectedForGlobal?.siteId;
+      const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -577,9 +645,10 @@ const RefugeIntercomTesting = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
     try {
       setIsUploading(true);
+      const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -593,10 +662,12 @@ const RefugeIntercomTesting = ({
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      // OLD: const formData = new FormData();
+      // NEW: avoid hiding React formData state.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -604,20 +675,20 @@ const RefugeIntercomTesting = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateForUpload),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `RIT-${new Date().getTime()}`
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -630,18 +701,18 @@ const RefugeIntercomTesting = ({
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
+        uploadFormData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(inspectionDateForUpload),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
             note: 'Refuge Intercom Testing Certificate',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -649,11 +720,11 @@ const RefugeIntercomTesting = ({
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -675,7 +746,7 @@ const RefugeIntercomTesting = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -732,6 +803,7 @@ const RefugeIntercomTesting = ({
 
       const smallFont = 8;
       const mediumFont = 10;
+      const effectiveInspectionDate = inspectionDateOverride || formData.inspectionDate;
 
       // Address and contact information
       const addressLines = (formData.address || '').split(',');
@@ -740,7 +812,9 @@ const RefugeIntercomTesting = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      // OLD: formData.inspectionDate
+      // NEW: exact UK submission date.
+      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
       setTextField('jobNo', formData.job || '', smallFont);
@@ -771,8 +845,10 @@ const RefugeIntercomTesting = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      // OLD signedDate mapping retained for review.
+      // NEW: exact UK submission date.
+      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
+      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -784,7 +860,7 @@ const RefugeIntercomTesting = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -845,12 +921,16 @@ const RefugeIntercomTesting = ({
 
     // Form validation
     const errors = {};
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.engineer) toast.error(errors.engineer);
       return;
     }
 
@@ -858,6 +938,11 @@ const RefugeIntercomTesting = ({
     setIsLoading(true);
 
     try {
+      const submissionInspectionDate = checkStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
+      if (checkStatus === "Open") {
+        setFormData((prev) => ({ ...prev, inspectionDate: submissionInspectionDate, signedDate: submissionInspectionDate }));
+      }
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -871,13 +956,15 @@ const RefugeIntercomTesting = ({
 
       // First update or create the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Plant and Equipment Inspection',
-        category: 'Refuge Intercom Testing',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+        // OLD internal values would break the UI route.
+        // NEW: preserve the original Site Check routing values.
+        subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
+        category: siteCheck?.category || 'Refuge Intercom Testing & Inspection',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -912,10 +999,12 @@ const RefugeIntercomTesting = ({
       // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Refuge Intercom',
@@ -946,7 +1035,7 @@ const RefugeIntercomTesting = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -974,7 +1063,7 @@ const RefugeIntercomTesting = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1048,7 +1137,7 @@ const RefugeIntercomTesting = ({
       const filteredUsers =
           users?.filter((user) =>
               user.taggedSites?.some(
-                  (site) => site.id === siteSelectedForGlobal?.siteId
+                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
               )
           ) || [];
 
@@ -1499,7 +1588,7 @@ const RefugeIntercomTesting = ({
                   ) : (
                       <RiskScoreCard
                           desc={`Inspection - Fire Alarm to meet BS5839 - Refuge Intercom Testing`}
-                          siteId={siteSelectedForGlobal?.siteId}
+                          siteId={authoritativeSiteId}
                           checkId={currentCheckId}
                           createdBy={loggedInUserData?.id}
                           taggedAsset={selectedAsset?.assetId}
@@ -1538,6 +1627,9 @@ const RefugeIntercomTesting = ({
               </div>
             </div>
             <div className="col-md-6">
+              {/* =========================================================
+                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
               <div className="mb-3">
                 <label className="form-label fw-bold">Engineer's Name</label>
                 <input
@@ -1550,6 +1642,19 @@ const RefugeIntercomTesting = ({
                     disabled
                 />
               </div>
+
+              ========================================================= */}
+
+              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+              <SiteCheckEngineerSelector
+                options={engineerOptions}
+                value={selectedEngineer}
+                onChange={handleEngineerSelect}
+                isOpen={checkStatus === "Open"}
+                disabled={isSubmitted || !isFormEditable}
+                loading={isLoadingEngineers}
+                error={validationErrors.engineer || engineerLoadError}
+              />
               <div className="mb-3">
                 <label className="form-label">Date</label>
                 <input

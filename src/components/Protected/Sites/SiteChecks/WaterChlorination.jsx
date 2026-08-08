@@ -22,6 +22,9 @@ import axios from "axios";
 import pdfTemplate from "./pdf/Chlorination Certificate.pdf";
 import RiskScoreCard2 from "./RiskScoreCard2";
 import { PDFDocument } from "pdf-lib";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 const WaterChlorinationCertificate = ({
   sasToken,
@@ -35,6 +38,7 @@ const WaterChlorinationCertificate = ({
   getUsers,
   siteSelectedForGlobal,
   loggedInUserData,
+  siteCheck = {},
 }) => {
   const license = JSON.parse(localStorage.getItem("license"));
 
@@ -49,7 +53,7 @@ The capacity of the tank is ${capacity} litres`;
     site: "",
     clientAddress: license?.companyAddress || "",
     siteContact: "",
-    date: new Date().toISOString().split("T")[0],
+    date: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     report: "" || getDefaultReportTemplate(tankCapacity),
@@ -57,8 +61,8 @@ The capacity of the tank is ${capacity} litres`;
     engineerName: loggedInUserData?.name || "",
     param5Remark: loggedInUserData?.signature || "",
     selectedAsset: null,
-    clientDate: new Date().toISOString().split("T")[0],
-    engineerDate: new Date().toISOString().split("T")[0],
+    clientDate: getUkLocalDate(),
+    engineerDate: getUkLocalDate(),
     param1Remark: "", //sterilant: "",
     param2Remark: "", //neutralisingAgent: "",
     param3Remark: "", //contactPeriod: "",
@@ -98,7 +102,44 @@ The capacity of the tank is ${capacity} litres`;
   const isInternalUserTaggedWithSite = true;
   const [inspectionDetails, setInspectionDetails] = useState(null);
 
+  // NEW: Use the actual Site Check for site/status selection.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
+  const effectiveCheckStatus = siteCheck?.status || state.checkStatus || "Open";
+  const [lastEngineerId, setLastEngineerId] = useState(null);
 
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: effectiveCheckStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Open checks always show today's UK date and default to logged-in engineer.
+  useEffect(() => {
+    if (effectiveCheckStatus !== "Open") return;
+
+    setFormData((prev) => ({
+      ...prev,
+      date: getUkLocalDate(),
+      clientDate: getUkLocalDate(),
+      engineerDate: getUkLocalDate(),
+      engineer: prev.engineer || loggedInUserData?.id || "",
+      engineerName: prev.user?.id ? (prev.user.name || prev.engineerName) : (loggedInUserData?.name || ""),
+      param5Remark: prev.user?.id ? (prev.user.signature || prev.param5Remark) : (loggedInUserData?.signature || ""),
+      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+    }));
+  }, [effectiveCheckStatus, loggedInUserData?.id]);
 
   // Event handlers
 
@@ -201,10 +242,10 @@ The capacity of the tank is ${capacity} litres`;
         setFormData((prev) => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId || !state.currentCheckId) return;
+      if (!authoritativeSiteId || !state.currentCheckId) return;
 
       const response = await get(
-        `/api/site/actions/${siteSelectedForGlobal.siteId}`
+        `/api/site/actions/${authoritativeSiteId}`
       );
       const relevantActions = response?.filter(
         (action) => action.checkId === state.currentCheckId
@@ -246,8 +287,14 @@ The capacity of the tank is ${capacity} litres`;
         const mostRecentItem = apiData[apiData.length - 1];
 
         // Find related users
-        const clientUser = users.find(user => user.id === mostRecentItem.client);
-        const siteContactUser = users.find(user => user.id === mostRecentItem.siteContact);
+        const clientUser = users.find(user => String(user.id) === String(mostRecentItem.client));
+        const siteContactUser = users.find(user => String(user.id) === String(mostRecentItem.siteContact));
+        const savedEngineerId = mostRecentItem.engineer || null;
+        setLastEngineerId(savedEngineerId);
+        const engineerUser = users.find(user => String(user.id) === String(savedEngineerId));
+        const isCurrentOpenInspection =
+          effectiveCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.date);
 
         // Fetch action data if actionId exists
         let existingAction = null;
@@ -261,20 +308,31 @@ The capacity of the tank is ${capacity} litres`;
           site: mostRecentItem.site || prev.site,
           clientAddress: mostRecentItem.clientAddress || license?.companyAddress || "",
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          date: mostRecentItem.date || prev.date,
+          date: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.date || prev.date),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || getDefaultReportTemplate(mostRecentItem.param6Remark || tankCapacity),
           clientName: mostRecentItem.clientName || prev.clientName,
-          engineerName: mostRecentItem.engineerName || loggedInUserData?.name || "",
-          param5Remark: mostRecentItem.param5Remark || loggedInUserData?.signature || "",
+          engineerName: effectiveCheckStatus === "Open"
+            ? (isCurrentOpenInspection ? (engineerUser?.name || mostRecentItem.engineerName || loggedInUserData?.name || "") : (loggedInUserData?.name || ""))
+            : (engineerUser?.name || mostRecentItem.engineerName || prev.engineerName || ""),
+          param5Remark: effectiveCheckStatus === "Open"
+            ? (isCurrentOpenInspection ? (engineerUser?.signature || mostRecentItem.param5Remark || loggedInUserData?.signature || "") : (loggedInUserData?.signature || ""))
+            : (engineerUser?.signature || mostRecentItem.param5Remark || prev.param5Remark || ""),
           param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
           param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
           param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
           param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
           param6Remark: mostRecentItem.param6Remark || tankCapacity,
           param7Remark: mostRecentItem.param7Remark || prev.param7Remark,
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+          engineer: effectiveCheckStatus === "Open"
+            ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+            : (savedEngineerId || prev.engineer || ""),
+          user: effectiveCheckStatus === "Open"
+            ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+            : (engineerUser || prev.user || {}),
+          clientDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.clientDate || prev.clientDate),
+          engineerDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.engineerDate || prev.engineerDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null
@@ -291,14 +349,14 @@ The capacity of the tank is ${capacity} litres`;
       console.error("Error fetching inspection data:", error);
       toast.error("Failed to load inspection data");
     }
-  }, [state.currentCheckId, users, fetchActionById, loggedInUserData, tankCapacity]);
+  }, [state.currentCheckId, users, fetchActionById, loggedInUserData, tankCapacity, effectiveCheckStatus]);
 
   const fetchSiteCheckData = useCallback(async () => {
     try {
-      if (!siteSelectedForGlobal?.siteId) return;
+      if (!authoritativeSiteId) return;
 
       const response = await get(
-        `/api/site-check/site/${siteSelectedForGlobal.siteId}`
+        `/api/site-check/site/${authoritativeSiteId}`
       );
       const chlorinationCheck = checkId
         ? response?.find((check) => check.checkId === parseInt(checkId, 10))
@@ -342,7 +400,7 @@ The capacity of the tank is ${capacity} litres`;
       toast.error("Failed to load site check status");
       setState((prev) => ({ ...prev, isFormEditable: true }));
     }
-  }, [checkId, siteSelectedForGlobal]);
+  }, [checkId, authoritativeSiteId]);
 
   // PDF functions
   const fetchPdfTemplate = useCallback(async () => {
@@ -389,7 +447,7 @@ The capacity of the tank is ${capacity} litres`;
   const getHighestFileVersion = useCallback(
     async (folderId, fileName) => {
       try {
-        const siteId = siteSelectedForGlobal?.siteId;
+        const siteId = authoritativeSiteId;
         if (!siteId) return 1;
 
         const response = await get(
@@ -409,13 +467,13 @@ The capacity of the tank is ${capacity} litres`;
         return 1;
       }
     },
-    [siteSelectedForGlobal]
+    [authoritativeSiteId]
   );
 
   const checkFileExists = useCallback(
     async (folderId, fileName) => {
       try {
-        const siteId = siteSelectedForGlobal?.siteId;
+        const siteId = authoritativeSiteId;
         if (!siteId || !folderId) return { exists: false, file: null };
 
         const response = await get(
@@ -436,7 +494,7 @@ The capacity of the tank is ${capacity} litres`;
         return { exists: false, file: null };
       }
     },
-    [siteSelectedForGlobal]
+    [authoritativeSiteId]
   );
 
   const calculateExpiryDate = (visitDate, repeatFrequency) => {
@@ -458,7 +516,7 @@ The capacity of the tank is ${capacity} litres`;
   };
 
   const uploadPdfToServer = useCallback(
-    async (pdfBlob, fileName) => {
+    async (pdfBlob, fileName, inspectionDateOverride = null) => {
       let exists;
       try {
         setState((prev) => ({ ...prev, isUploading: true }));
@@ -498,9 +556,9 @@ The capacity of the tank is ${capacity} litres`;
             name: fileName.split(".")[0],
             originalFileName: fileName,
             fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.date),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `WTC-${new Date().getTime()}`
@@ -562,7 +620,7 @@ The capacity of the tank is ${capacity} litres`;
 
   console.log('report template -->', formData.report);
   const generatePDF = useCallback(
-    async (uploadToServer = true) => {
+    async (uploadToServer = true, inspectionDateOverride = null) => {
       try {
         setState((prev) => ({ ...prev, isGeneratingPDF: true }));
 
@@ -595,8 +653,8 @@ The capacity of the tank is ${capacity} litres`;
           ).padStart(2, "0")}-${date.getFullYear()}`;
         };
 
-        const formattedDate = formatDateString(formData.date);
-        const engineer = users?.find((u) => u.id === formData.engineer);
+        const formattedDate = formatDateString(inspectionDateOverride || formData.date);
+        const engineer = selectedEngineer || users?.find((u) => String(u.id) === String(formData.engineer));
 
 
 
@@ -648,9 +706,10 @@ The capacity of the tank is ${capacity} litres`;
         //   10
         // );
 
-        if (loggedInUserData?.signature) {
+        if (engineer?.signature || formData.param5Remark) {
           try {
-            const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
+            const signatureBaseUrl = engineer?.signature || formData.param5Remark;
+            const signatureUrl = `${signatureBaseUrl}?${sasToken}`;
             const signatureResponse = await fetch(signatureUrl);
             const signatureImageBytes = await signatureResponse.arrayBuffer();
             const signatureImage = await pdfDoc.embedPng(signatureImageBytes);
@@ -678,7 +737,7 @@ The capacity of the tank is ${capacity} litres`;
 
         let uploadedToServer = false;
         if (uploadToServer) {
-          uploadedToServer = await uploadPdfToServer(blob, fileName);
+          uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.date);
         }
 
         if (uploadedToServer || !uploadToServer) {
@@ -705,18 +764,41 @@ The capacity of the tank is ${capacity} litres`;
     e.preventDefault();
     if (state.isLoading) return;
 
-    setState(prev => ({ ...prev, isLoading: true }));
+    const validationErrors = {};
+    if (!formData.engineer || !selectedEngineer) {
+      validationErrors.engineer = "Please select an active engineer for this Site Check.";
+    }
+    if (Object.keys(validationErrors).length > 0) {
+      setState((prev) => ({ ...prev, validationErrors }));
+      return;
+    }
+
+    setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
     try {
+      const submissionInspectionDate =
+        effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.date;
+
+      if (effectiveCheckStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          date: submissionInspectionDate,
+          clientDate: submissionInspectionDate,
+          engineerDate: submissionInspectionDate,
+        }));
+      }
+
       const finalReport = getDefaultReportTemplate(tankCapacity);
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: "Maintenance",
-        subType: "Chlorination",
-        category: "Water Chlorination",
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || "Inspection",
+        // OLD: Maintenance/Chlorination/Water Chlorination changed the UI route.
+        // NEW: preserve the Site Check routing values.
+        subType: siteCheck?.subType || "Legionella",
+        category: siteCheck?.category || "Water - Storage System Chlorination",
         status: "Done",
-        startDate: new Date().toISOString().split("T")[0] + "T00:00:00",
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: String(loggedInUserData?.id || "0"),
         assistantUserID: String(loggedInUserData?.id || "0"),
       };
@@ -740,11 +822,16 @@ The capacity of the tank is ${capacity} litres`;
 
       const chlorinationPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: '',
         report: finalReport,
         client: formData.clientUser?.id || formData.clientName,
         engineer: formData.engineer,
+        engineerName: selectedEngineer?.name || formData.engineerName || "",
+        param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
+        date: submissionInspectionDate,
+        clientDate: submissionInspectionDate,
+        engineerDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: "Maintenance",
         subType: "Chlorination",
@@ -769,7 +856,7 @@ The capacity of the tank is ${capacity} litres`;
       }
 
 
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -795,11 +882,11 @@ The capacity of the tank is ${capacity} litres`;
     const fetchData = async () => {
       setState((prev) => ({ ...prev, isLoading: true }));
       try {
-        if (siteSelectedForGlobal?.siteId) {
+        if (authoritativeSiteId) {
           await Promise.all([
-            getSiteAssets(siteSelectedForGlobal.siteId),
-            getSiteDetailsById(siteSelectedForGlobal.siteId),
-            fetchFolderStructure(siteSelectedForGlobal.siteId),
+            getSiteAssets(authoritativeSiteId),
+            getSiteDetailsById(authoritativeSiteId),
+            fetchFolderStructure(authoritativeSiteId),
             fetchSiteCheckData(),
             fetchInspectionData(),
           ]);
@@ -809,7 +896,7 @@ The capacity of the tank is ${capacity} litres`;
           }
 
           const currentSite = sites.find(
-            (site) => site.siteId === siteSelectedForGlobal.siteId
+            (site) => Number(site.siteId ?? site.id) === Number(authoritativeSiteId)
           );
           const siteData = currentSite || siteSelectedForGlobal;
 
@@ -827,11 +914,11 @@ The capacity of the tank is ${capacity} litres`;
             setFormData((prev) => ({ ...prev, site: fullAddress }));
           }
 
-          if (siteSelectedForGlobal.siteContact) {
+          if (siteData?.siteContact) {
             setFormData((prev) => ({
               ...prev,
-              siteContact: siteSelectedForGlobal.siteContact.name || "",
-              siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+              siteContact: siteData.siteContact.name || "",
+              siteContactNo: siteData.siteContact.phone || "",
             }));
           }
 
@@ -869,6 +956,7 @@ The capacity of the tank is ${capacity} litres`;
     getUsers,
     isInternalUserTaggedWithSite,
     siteSelectedForGlobal,
+    authoritativeSiteId,
     sites,
     users.length,
   ]);
@@ -909,7 +997,13 @@ The capacity of the tank is ${capacity} litres`;
       // Save the inspection data with the actionId
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
+        engineer: formData.engineer,
+        engineerName: selectedEngineer?.name || formData.engineerName || "",
+        param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
+        date: getUkLocalDate(),
+        clientDate: getUkLocalDate(),
+        engineerDate: getUkLocalDate(),
         checkId: state.currentCheckId,
         actionId: verifiedAction.actionId,
         type: 'Maintenance',
@@ -935,6 +1029,21 @@ The capacity of the tank is ${capacity} litres`;
       console.error("Error handling risk assessment completion:", error);
       toast.error(error.message || "Failed to process action");
     }
+  };
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      engineerName: newValue?.name || "",
+      param5Remark: newValue?.signature || "",
+      user: newValue || {},
+    }));
+    setState((prev) => ({
+      ...prev,
+      validationErrors: { ...prev.validationErrors, engineer: "" },
+    }));
   };
 
   // Render functions
@@ -1196,7 +1305,7 @@ The capacity of the tank is ${capacity} litres`;
             ) : (
               <RiskScoreCard2
                 desc={`Maintenance - Chlorination - Water Chlorination`}
-                siteId={siteSelectedForGlobal?.siteId}
+                siteId={authoritativeSiteId}
                 checkId={state.currentCheckId}
                 createdBy={loggedInUserData?.id}
                 taggedAsset={''}
@@ -1211,6 +1320,9 @@ The capacity of the tank is ${capacity} litres`;
 
         <div className="row mt-4">
           <div className="col-md-5">
+            {/* =========================================================
+                OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
             <div className="mb-3">
               <label className="form-label fw-bold">Engineer's Name</label>
               <input
@@ -1224,6 +1336,19 @@ The capacity of the tank is ${capacity} litres`;
               />
             </div>
 
+            ========================================================= */}
+
+            {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+            <SiteCheckEngineerSelector
+              options={engineerOptions}
+              value={selectedEngineer}
+              onChange={handleEngineerSelect}
+              isOpen={effectiveCheckStatus === "Open"}
+              disabled={state.isSubmitted || !state.isFormEditable}
+              loading={isLoadingEngineers}
+              error={state.validationErrors.engineer || engineerLoadError}
+            />
+
           </div>
           <div className="col-md-2">
             <div className="mb-3">
@@ -1233,7 +1358,7 @@ The capacity of the tank is ${capacity} litres`;
                 width="200"
                 height="50"
                 style={{ border: "1px solid" }}
-                src={loggedInUserData?.signature + "?" + sasToken}
+                src={(selectedEngineer?.signature || formData.param5Remark || "") + "?" + sasToken}
                 alt="Engineer Signature"
               />
             </div>
@@ -1274,7 +1399,7 @@ The capacity of the tank is ${capacity} litres`;
             <div className="text-center">
               <div className="alert alert-success mb-4">
                 Certificate submitted successfully on{" "}
-                {new Date().toISOString().split("T")[0]}
+                {getUkLocalDate()}
               </div>
             </div>
           )}

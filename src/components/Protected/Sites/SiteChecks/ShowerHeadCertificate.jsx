@@ -18,6 +18,9 @@ import pdfTemplate from './pdf/Shower Head Cleaning.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import { PDFDocument } from 'pdf-lib';
 import RiskScoreCard2 from "./RiskScoreCard2";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 const ShowerHeadCertificate = ({
                                    sasToken,
@@ -31,13 +34,14 @@ const ShowerHeadCertificate = ({
                                    getUsers,
                                    siteSelectedForGlobal,
                                    loggedInUserData,
+                                   siteCheck = {},
                                }) => {
     // State initialization
     const [formData, setFormData] = useState({
         address: "",
         assetId: "",
         siteContact: "",
-        inspectionDate: new Date().toISOString().split("T")[0],
+        inspectionDate: getUkLocalDate(),
         siteContactNo: "",
         job: "",
         manufacturer: "",
@@ -48,7 +52,7 @@ const ShowerHeadCertificate = ({
         user: loggedInUserData || {},
         engineer: loggedInUserData?.id || "",
         selectedAsset: null,
-        signedDate: new Date().toISOString().split("T")[0],
+        signedDate: getUkLocalDate(),
         clientUser: null,
         siteContactUser: null,
         actionId: null,
@@ -80,6 +84,41 @@ const ShowerHeadCertificate = ({
     const isInternalUserTaggedWithSite = true;
     const [inspectionDetails, setInspectionDetails] = useState(null);
 
+    // NEW: Use the actual Site Check as the authoritative site/status source.
+    const authoritativeSiteId = siteCheck?.siteId
+        ? Number(siteCheck.siteId)
+        : Number(siteSelectedForGlobal?.siteId) || null;
+    const effectiveCheckStatus = siteCheck?.status || state.checkStatus || "Open";
+    const [lastEngineerId, setLastEngineerId] = useState(null);
+
+    const {
+        engineerOptions,
+        selectedEngineer,
+        isLoadingEngineers,
+        engineerLoadError,
+    } = useSiteCheckEngineers({
+        users,
+        getUsers,
+        siteId: authoritativeSiteId,
+        loggedInUserData,
+        status: effectiveCheckStatus,
+        selectedEngineerId: formData.engineer,
+        selectedEngineerUser: formData.user,
+        lastEngineerId,
+    });
+
+    // NEW: Open checks use today's UK date and logged-in user by default.
+    useEffect(() => {
+        if (effectiveCheckStatus !== "Open") return;
+
+        setFormData((prev) => ({
+            ...prev,
+            inspectionDate: getUkLocalDate(),
+            signedDate: getUkLocalDate(),
+            engineer: prev.engineer || loggedInUserData?.id || "",
+            user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+        }));
+    }, [effectiveCheckStatus, loggedInUserData?.id]);
 
     // Memoized values
     const selectedAsset = React.useMemo(() =>
@@ -209,9 +248,9 @@ const ShowerHeadCertificate = ({
                 setFormData(prev => ({ ...prev, actionId: null }));
             }
 
-            if (!siteSelectedForGlobal?.siteId || !state.currentCheckId) return;
+            if (!authoritativeSiteId || !state.currentCheckId) return;
 
-            const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site/actions/${authoritativeSiteId}`);
             const relevantActions = response?.filter(action =>
                 action.checkId === state.currentCheckId
             );
@@ -236,11 +275,86 @@ const ShowerHeadCertificate = ({
         }
     }, [fetchActionById, formData.actionId, siteSelectedForGlobal, state.currentCheckId]);
 
+    // NEW: Restore the saved engineer/date for Done checks, while Open checks
+    // keep the Air Conditioning behaviour (today + logged-in engineer unless a
+    // same-day temporary Risk Assessment record exists).
+    const fetchInspectionData = useCallback(async () => {
+        try {
+            if (!state.currentCheckId) return;
+
+            const apiData = await get(`/api/site-check/generic-inspection/${state.currentCheckId}`);
+            if (!apiData || apiData.length === 0) return;
+
+            const mostRecentItem = apiData[apiData.length - 1];
+            const savedEngineerId = mostRecentItem.engineer || null;
+            setLastEngineerId(savedEngineerId);
+
+            const engineerUser = users.find(
+                (user) => String(user.id) === String(savedEngineerId)
+            );
+            const clientUser = users.find(
+                (user) => String(user.id) === String(mostRecentItem.client)
+            );
+            const siteContactUser = users.find(
+                (user) => String(user.id) === String(mostRecentItem.siteContact)
+            );
+            const inspectionAsset = siteAssets.find(
+                (asset) => String(asset.assetId) === String(mostRecentItem.assetId)
+            );
+
+            const isCurrentOpenInspection =
+                effectiveCheckStatus === "Open" &&
+                isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
+            setFormData((prev) => ({
+                ...prev,
+                assetId: mostRecentItem.assetId || prev.assetId,
+                siteContact: mostRecentItem.siteContact || prev.siteContact,
+                siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+                job: mostRecentItem.job || prev.job,
+                manufacturer: mostRecentItem.manufacturer || prev.manufacturer,
+                location: mostRecentItem.location || prev.location,
+                param1remark: mostRecentItem.param1remark || prev.param1remark,
+                param2remark: mostRecentItem.param2remark || prev.param2remark,
+                client: mostRecentItem.client || prev.client,
+                engineer: effectiveCheckStatus === "Open"
+                    ? (isCurrentOpenInspection
+                        ? (savedEngineerId || loggedInUserData?.id || "")
+                        : (loggedInUserData?.id || ""))
+                    : (savedEngineerId || prev.engineer || ""),
+                user: effectiveCheckStatus === "Open"
+                    ? (isCurrentOpenInspection
+                        ? (engineerUser || loggedInUserData || {})
+                        : (loggedInUserData || {}))
+                    : (engineerUser || prev.user || {}),
+                inspectionDate: effectiveCheckStatus === "Open"
+                    ? getUkLocalDate()
+                    : (mostRecentItem.inspectionDate || prev.inspectionDate),
+                signedDate: effectiveCheckStatus === "Open"
+                    ? getUkLocalDate()
+                    : (mostRecentItem.signedDate || prev.signedDate),
+                selectedAsset: inspectionAsset || prev.selectedAsset,
+                clientUser: clientUser || prev.clientUser,
+                siteContactUser: siteContactUser || prev.siteContactUser,
+                actionId: mostRecentItem.actionId || prev.actionId,
+            }));
+        } catch (error) {
+            console.error("Error fetching shower head inspection data:", error);
+            toast.error("Failed to load inspection data");
+        }
+    }, [
+        state.currentCheckId,
+        users,
+        siteAssets,
+        effectiveCheckStatus,
+        loggedInUserData,
+    ]);
+
     const fetchSiteCheckData = useCallback(async () => {
         try {
-            if (!siteSelectedForGlobal?.siteId) return;
+            if (!authoritativeSiteId) return;
 
-            const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
+            const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
             const showerHeadCheck = checkId
                 ? response?.find(check => check.checkId === parseInt(checkId, 10))
                 : null;
@@ -348,7 +462,7 @@ const ShowerHeadCertificate = ({
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId) return 1;
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -369,7 +483,7 @@ const ShowerHeadCertificate = ({
 
     const checkFileExists = useCallback(async (folderId, fileName) => {
         try {
-            const siteId = siteSelectedForGlobal?.siteId;
+            const siteId = authoritativeSiteId;
             if (!siteId || !folderId) return { exists: false, file: null };
 
             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
@@ -389,7 +503,7 @@ const ShowerHeadCertificate = ({
         }
     }, [siteSelectedForGlobal]);
 
-   const uploadPdfToServer = useCallback(async (pdfBlob, fileName) => {
+   const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride = null) => {
     let exists;
     try {
         setState(prev => ({ ...prev, isUploading: true }));
@@ -413,7 +527,7 @@ const ShowerHeadCertificate = ({
             ? existingFile.fileVersion + 1
             : await getHighestFileVersion(targetFolderId, fileName);
 
-        const issueDate = new Date(formData.inspectionDate || new Date());
+        const issueDate = new Date(inspectionDateOverride || formData.inspectionDate || new Date());
         const documentRequest = {
             folderId: targetFolderId,
             files: [{
@@ -421,7 +535,7 @@ const ShowerHeadCertificate = ({
                 name: fileName.split('.')[0],
                 originalFileName: fileName,
                 fileVersion,
-                siteId: siteSelectedForGlobal?.siteId || 0,
+                siteId: authoritativeSiteId || 0,
                 issueDate: issueDate.toISOString().replace('T', ' ').split('.')[0],
                 expiryDate: formatDateForBackend(calculateExpiryDate(issueDate, inspectionDetails?.repeatFrequency)),
                 uploaderUserId: loggedInUserData?.id || 0,
@@ -476,7 +590,7 @@ const ShowerHeadCertificate = ({
     state.folderIds
 ]);
 
-    const generatePDF = useCallback(async (uploadToServer = true) => {
+    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride = null) => {
         try {
             setState(prev => ({ ...prev, isGeneratingPDF: true }));
 
@@ -507,8 +621,8 @@ const ShowerHeadCertificate = ({
                 return `${String(date.getDate()).padStart(2, '0')}-${String(date.getMonth() + 1).padStart(2, '0')}-${date.getFullYear()}`;
             };
 
-            const formattedDate = formatDateString(formData.inspectionDate);
-            const engineer = users?.find(u => u.id === formData.engineer);
+            const formattedDate = formatDateString(inspectionDateOverride || formData.inspectionDate);
+            const engineer = selectedEngineer || users?.find(u => String(u.id) === String(formData.engineer));
 
             // Set form fields
             const addressLines = (formData.address || '').split(',');
@@ -545,7 +659,7 @@ const ShowerHeadCertificate = ({
 
             let uploadedToServer = false;
             if (uploadToServer) {
-                uploadedToServer = await uploadPdfToServer(blob, fileName);
+                uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
             }
 
             if (uploadedToServer || !uploadToServer) {
@@ -575,16 +689,38 @@ const ShowerHeadCertificate = ({
         e.preventDefault();
         if (state.isLoading) return;
 
-        setState(prev => ({ ...prev, isLoading: true }));
+        const validationErrors = {};
+        if (!formData.engineer || !selectedEngineer) {
+            validationErrors.engineer = "Please select an active engineer for this Site Check.";
+        }
+        if (Object.keys(validationErrors).length > 0) {
+            setState((prev) => ({ ...prev, validationErrors }));
+            return;
+        }
+
+        setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
         try {
+            const submissionInspectionDate =
+                effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
+
+            if (effectiveCheckStatus === "Open") {
+                setFormData((prev) => ({
+                    ...prev,
+                    inspectionDate: submissionInspectionDate,
+                    signedDate: submissionInspectionDate,
+                }));
+            }
+
             const statusPayload = {
-                siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-                type: 'Maintenance',
-                subType: 'Cleaning',
-                category: 'Shower Head Cleaning',
+                siteId: parseInt(authoritativeSiteId, 10),
+                type: siteCheck?.type || 'Inspection',
+                // OLD: Maintenance/Cleaning/Shower Head Cleaning changed the Site Check route.
+                // NEW: preserve the original UI route.
+                subType: siteCheck?.subType || 'Legionella',
+                category: siteCheck?.category || 'Periodic Shower Head Cleaning',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                startDate: `${submissionInspectionDate}T00:00:00`,
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
@@ -602,10 +738,12 @@ const ShowerHeadCertificate = ({
 
             const cleaningPayload = {
                 ...formData,
-                siteId: siteSelectedForGlobal?.siteId,
+                siteId: authoritativeSiteId,
                 assetId: formData.selectedAsset?.assetId || formData.assetId,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
+                inspectionDate: submissionInspectionDate,
+                signedDate: submissionInspectionDate,
                 siteContact: formData.siteContactUser?.id || formData.siteContact,
                 type: 'Maintenance',
                 subType: 'Cleaning',
@@ -629,7 +767,7 @@ const ShowerHeadCertificate = ({
                 );
             }
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
@@ -655,11 +793,11 @@ const ShowerHeadCertificate = ({
         const fetchData = async () => {
             setState(prev => ({ ...prev, isLoading: true }));
             try {
-                if (siteSelectedForGlobal?.siteId) {
+                if (authoritativeSiteId) {
                     await Promise.all([
-                        getSiteAssets(siteSelectedForGlobal.siteId),
-                        getSiteDetailsById(siteSelectedForGlobal.siteId),
-                        fetchFolderStructure(siteSelectedForGlobal.siteId),
+                        getSiteAssets(authoritativeSiteId),
+                        getSiteDetailsById(authoritativeSiteId),
+                        fetchFolderStructure(authoritativeSiteId),
                         fetchSiteCheckData()
                     ]);
 
@@ -667,10 +805,15 @@ const ShowerHeadCertificate = ({
                         await getUsers();
                     }
 
+                    await fetchInspectionData();
+
                     const currentSite = sites.find(
-                        site => site.siteId === siteSelectedForGlobal.siteId
+                        site => Number(site.siteId) === Number(authoritativeSiteId)
                     );
-                    const siteData = currentSite || siteSelectedForGlobal;
+                    const siteData = currentSite ||
+                        (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
+                            ? siteSelectedForGlobal
+                            : null);
 
                     if (siteData) {
                         const addressParts = [
@@ -686,11 +829,11 @@ const ShowerHeadCertificate = ({
                         setFormData((prev) => ({ ...prev, address: fullAddress }));
                     }
 
-                    if (siteSelectedForGlobal.siteContact) {
+                    if (siteData?.siteContact) {
                         setFormData(prev => ({
                             ...prev,
-                            siteContact: siteSelectedForGlobal.siteContact.name || "",
-                            siteContactNo: siteSelectedForGlobal.siteContact.phone || "",
+                            siteContact: siteData.siteContact.name || "",
+                            siteContactNo: siteData.siteContact.phone || "",
                         }));
                     }
 
@@ -723,6 +866,7 @@ const ShowerHeadCertificate = ({
         fetchExistingActions,
         fetchFolderStructure,
         fetchSiteCheckData,
+        fetchInspectionData,
         getSiteAssets,
         getSiteDetailsById,
         getUsers,
@@ -768,7 +912,10 @@ const ShowerHeadCertificate = ({
         // Save the inspection data with the actionId
         const inspectionPayload = {
             ...formData,
-            siteId: siteSelectedForGlobal?.siteId,
+            siteId: authoritativeSiteId,
+            engineer: formData.engineer,
+            inspectionDate: getUkLocalDate(),
+            signedDate: getUkLocalDate(),
             checkId: state.currentCheckId,
             actionId: verifiedAction.actionId,
             type: 'Maintenance',
@@ -797,12 +944,25 @@ const ShowerHeadCertificate = ({
 };
 
 
+    // NEW: Shared engineer dropdown selection.
+    const handleEngineerSelect = (event, newValue) => {
+        setFormData((prev) => ({
+            ...prev,
+            engineer: newValue?.id || "",
+            user: newValue || {},
+        }));
+        setState((prev) => ({
+            ...prev,
+            validationErrors: { ...prev.validationErrors, engineer: "" },
+        }));
+    };
+
     // Render functions
     const renderClientNameField = () => {
         if (isInternalUserTaggedWithSite) {
             const filteredUsers = users?.filter(user =>
                 user.taggedSites?.some(
-                    site => site.id === siteSelectedForGlobal?.siteId
+                    site => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
                 )
             ) || [];
 
@@ -865,7 +1025,7 @@ const ShowerHeadCertificate = ({
         if (isInternalUserTaggedWithSite) {
             const filteredUsers = users?.filter(user =>
                 user.taggedSites?.some(
-                    site => site.id === siteSelectedForGlobal?.siteId
+                    site => Number(site.id ?? site.siteId) === Number(authoritativeSiteId)
                 )
             ) || [];
 
@@ -1152,7 +1312,7 @@ const ShowerHeadCertificate = ({
                         ) : (
                             <RiskScoreCard2
                                 desc={`Maintenance - Cleaning - Shower Head Cleaning`}
-                                siteId={siteSelectedForGlobal?.siteId}
+                                siteId={authoritativeSiteId}
                                 checkId={state.currentCheckId}
                                 createdBy={loggedInUserData?.id}
                                 taggedAsset={selectedAsset?.assetId}
@@ -1186,6 +1346,9 @@ const ShowerHeadCertificate = ({
                         </div>
                     </div>
                     <div className="col-md-6">
+                        {/* =========================================================
+                            OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
                         <div className="mb-3">
                             <label className="form-label fw-bold">Engineer's Name</label>
                             <input
@@ -1198,6 +1361,19 @@ const ShowerHeadCertificate = ({
                                 disabled
                             />
                         </div>
+
+                        ========================================================= */}
+
+                        {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+                        <SiteCheckEngineerSelector
+                            options={engineerOptions}
+                            value={selectedEngineer}
+                            onChange={handleEngineerSelect}
+                            isOpen={effectiveCheckStatus === "Open"}
+                            disabled={state.isSubmitted || !state.isFormEditable}
+                            loading={isLoadingEngineers}
+                            error={state.validationErrors.engineer || engineerLoadError}
+                        />
                         <div className="mb-3">
                             <label className="form-label">Date</label>
                             <input
@@ -1241,7 +1417,7 @@ const ShowerHeadCertificate = ({
                     ) : (
                         <div className="text-center">
                             <div className="alert alert-success mb-4">
-                                Certificate submitted successfully on {new Date().toISOString().split("T")[0]}
+                                Certificate submitted successfully on {getUkLocalDate()}
                             </div>
                         </div>
                     )}

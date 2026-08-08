@@ -19,6 +19,9 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
+import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -59,12 +62,13 @@ const StorageTankService = ({
   getUsers,
   siteSelectedForGlobal,
   loggedInUserData,
+  siteCheck = {},
 }) => {
   const [formData, setFormData] = useState({
     address: "",
     assetId: "",
     siteContact: "",
-    inspectionDate: new Date().toISOString().split("T")[0],
+    inspectionDate: getUkLocalDate(),
     siteContactNo: "",
     job: "",
     manufacturer: "",
@@ -84,7 +88,7 @@ const StorageTankService = ({
     user: loggedInUserData || {},
     engineer: loggedInUserData?.id || "",
     selectedAsset: null,
-    signedDate: new Date().toISOString().split("T")[0],
+    signedDate: getUkLocalDate(),
     clientUser: null,
     siteContactUser: null,
     actionId: null,
@@ -116,6 +120,43 @@ const StorageTankService = ({
   const [actionRaised, setActionRaised] = useState(false);
   const [existingAction, setExistingAction] = useState(null);
   const navigate = useNavigate();
+
+  // NEW: Use the Site Check itself as the authoritative site/status source.
+  const authoritativeSiteId = siteCheck?.siteId
+    ? Number(siteCheck.siteId)
+    : Number(siteSelectedForGlobal?.siteId) || null;
+  const [lastEngineerId, setLastEngineerId] = useState(null);
+  const effectiveCheckStatus = siteCheck?.status || checkStatus || "Open";
+
+  // NEW: Shared engineer list/selection matching Air Conditioning.
+  const {
+    engineerOptions,
+    selectedEngineer,
+    isLoadingEngineers,
+    engineerLoadError,
+  } = useSiteCheckEngineers({
+    users,
+    getUsers,
+    siteId: authoritativeSiteId,
+    loggedInUserData,
+    status: effectiveCheckStatus,
+    selectedEngineerId: formData.engineer,
+    selectedEngineerUser: formData.user,
+    lastEngineerId,
+  });
+
+  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
+  useEffect(() => {
+    if (effectiveCheckStatus !== "Open") return;
+
+    setFormData((prev) => ({
+      ...prev,
+      inspectionDate: getUkLocalDate(),
+      signedDate: getUkLocalDate(),
+      engineer: prev.engineer || loggedInUserData?.id || "",
+      user: prev.user?.id ? prev.user : (loggedInUserData || {}),
+    }));
+  }, [effectiveCheckStatus, loggedInUserData?.id]);
 
   const isInternalUserTaggedWithSite =
     (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
@@ -182,6 +223,12 @@ const StorageTankService = ({
 
         setUploadedPhotos(photosFromApi);
 
+        const savedEngineerId = mostRecentItem.engineer || null;
+        setLastEngineerId(savedEngineerId);
+        const isCurrentOpenInspection =
+          effectiveCheckStatus === "Open" &&
+          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+
         // Fetch action data if actionId exists
         let existingAction = null;
         if (mostRecentItem.actionId) {
@@ -197,7 +244,7 @@ const StorageTankService = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          signedDate: mostRecentItem.signedDate || prev.signedDate,
+          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
           report: mostRecentItem.report || prev.report,
@@ -209,8 +256,17 @@ const StorageTankService = ({
           param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
           param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
           client: mostRecentItem.client || "",
-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
-          user: engineerUser || loggedInUserData || prev.user,
+          // OLD: engineer/user always preferred the saved record, even while Open.
+          // NEW: same Open/Done behaviour as Air Conditioning.
+          engineer: effectiveCheckStatus === "Open"
+            ? (isCurrentOpenInspection ? (savedEngineerId || loggedInUserData?.id || "") : (loggedInUserData?.id || ""))
+            : (savedEngineerId || prev.engineer || ""),
+          user: effectiveCheckStatus === "Open"
+            ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
+            : (engineerUser || prev.user || {}),
+          inspectionDate: effectiveCheckStatus === "Open"
+            ? getUkLocalDate()
+            : (mostRecentItem.inspectionDate || prev.inspectionDate),
           selectedAsset: selectedAsset || prev.selectedAsset,
           clientDate: mostRecentItem.clientDate || prev.clientDate,
           engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
@@ -248,9 +304,9 @@ const StorageTankService = ({
         setFormData(prev => ({ ...prev, actionId: null }));
       }
 
-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !currentCheckId) return;
 
-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
+      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
       if (response && response.length > 0) {
         const relevantActions = response.filter(action =>
           action.checkId === currentCheckId
@@ -392,10 +448,10 @@ const StorageTankService = ({
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (siteSelectedForGlobal?.siteId) {
-          await getSiteAssets(siteSelectedForGlobal?.siteId);
-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+        if (authoritativeSiteId) {
+          await getSiteAssets(authoritativeSiteId);
+          await getSiteDetailsById(authoritativeSiteId);
+          await fetchFolderStructure(authoritativeSiteId);
           await fetchSiteCheckData();
           await fetchInspectionData();
 
@@ -445,6 +501,7 @@ const StorageTankService = ({
 
     fetchData();
   }, [
+    authoritativeSiteId,
     siteSelectedForGlobal,
     getSiteAssets,
     users.length,
@@ -508,7 +565,7 @@ const StorageTankService = ({
           user: formData.user,
           actionId: verifiedAction.actionId,
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Storage Tank',
           category: 'Storage Tank Service',
@@ -567,7 +624,7 @@ const StorageTankService = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
     try {
       setIsUploading(true);
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
@@ -584,10 +641,10 @@ const StorageTankService = ({
 
       // First check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -595,20 +652,20 @@ const StorageTankService = ({
             name: fileName,
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1, // Increment version
-            siteId: siteSelectedForGlobal?.siteId || 0,
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            siteId: authoritativeSiteId || 0,
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -621,18 +678,18 @@ const StorageTankService = ({
           return true;
         }
       } else {
-        formData.append('files', pdfFile);
+        uploadFormData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               note: 'Storage Tank Service Report',
             fileVersion: fileVersion,
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
@@ -640,11 +697,11 @@ const StorageTankService = ({
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -720,7 +777,7 @@ const StorageTankService = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -793,7 +850,8 @@ const StorageTankService = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
+      const effectiveInspectionDate = inspectionDateOverride || formData.inspectionDate;
+      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
       setTextField('Job No', formData.job || '', smallFont);
@@ -824,8 +882,8 @@ const StorageTankService = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', dateFormat(formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
 
       // Handle image embedding for PDF fields
       const imageFields = [
@@ -900,7 +958,7 @@ const StorageTankService = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName);
+        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
       }
 
       toast.success('PDF generated successfully!');
@@ -937,7 +995,7 @@ const StorageTankService = ({
       const uploadResults = await Promise.all(
         filesToUpload.map(async (file, index) => {
           const response = await uploadSiteCheckDoc({
-            siteId: siteSelectedForGlobal?.siteId || 0,
+            siteId: authoritativeSiteId || 0,
             file: file
           });
 
@@ -978,7 +1036,7 @@ const StorageTankService = ({
       if (currentCheckId) {
         const payload = {
           checkId: currentCheckId,
-          siteId: siteSelectedForGlobal?.siteId,
+          siteId: authoritativeSiteId,
           type: 'Inspection',
           subType: 'Storage Tank',
           category: 'Storage Tank Service',
@@ -1020,7 +1078,7 @@ const StorageTankService = ({
     if (currentCheckId && photoToRemove.paramKey) {
       const payload = {
         checkId: currentCheckId,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         type: 'Inspection',
         subType: 'Storage Tank',
         category: 'Storage Tank Service',
@@ -1073,6 +1131,9 @@ const StorageTankService = ({
 
     // Form validation
     const errors = {};
+    if (!formData.engineer || !selectedEngineer) {
+      errors.engineer = "Please select an active engineer for this Site Check.";
+    }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
@@ -1083,6 +1144,18 @@ const StorageTankService = ({
     setIsLoading(true);
 
     try {
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate =
+        effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
+
+      if (effectiveCheckStatus === "Open") {
+        setFormData((prev) => ({
+          ...prev,
+          inspectionDate: submissionInspectionDate,
+          signedDate: submissionInspectionDate,
+        }));
+      }
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -1096,13 +1169,15 @@ const StorageTankService = ({
 
       // First update or create the site check status
       const statusPayload = {
-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
-        type: 'Inspection',
-        subType: 'Storage Tank',
-        category: 'Storage Tank Service',
+        siteId: parseInt(authoritativeSiteId, 10),
+        type: siteCheck?.type || 'Inspection',
+        // OLD: subType/category used internal generic-inspection values.
+        // NEW: preserve the UI routing values of the Site Check.
+        subType: siteCheck?.subType || 'Legionella',
+        category: siteCheck?.category || 'Water - Visual Inspection of Storage Tank',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: `${submissionInspectionDate}T00:00:00`,
+        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1137,10 +1212,12 @@ const StorageTankService = ({
       // Then update or create the generic inspection record
       const inspectionPayload = {
         ...formData,
-        siteId: siteSelectedForGlobal?.siteId,
+        siteId: authoritativeSiteId,
         assetId: formData.selectedAsset?.assetId || formData.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        inspectionDate: submissionInspectionDate,
+        signedDate: submissionInspectionDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Storage Tank',
@@ -1171,7 +1248,7 @@ const StorageTankService = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1370,6 +1447,16 @@ const StorageTankService = ({
     );
   };
 
+
+  // NEW: Shared engineer dropdown selection.
+  const handleEngineerSelect = (event, newValue) => {
+    setFormData((prev) => ({
+      ...prev,
+      engineer: newValue?.id || "",
+      user: newValue || {},
+    }));
+    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
+  };
 
   const filteredAssets =
     siteAssets?.filter(
@@ -1881,6 +1968,9 @@ const StorageTankService = ({
             </div>
           </div>
           <div className="col-md-6">
+            {/* =========================================================
+                OLD ENGINEER FIELD - COMMENTED FOR REVIEW
+
             <div className="mb-3">
               <label className="form-label fw-bold">Engineer's Name</label>
               <input
@@ -1893,6 +1983,19 @@ const StorageTankService = ({
                 disabled
               />
             </div>
+
+            ========================================================= */}
+
+            {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
+            <SiteCheckEngineerSelector
+              options={engineerOptions}
+              value={selectedEngineer}
+              onChange={handleEngineerSelect}
+              isOpen={effectiveCheckStatus === "Open"}
+              disabled={isSubmitted || !isFormEditable}
+              loading={isLoadingEngineers}
+              error={validationErrors.engineer || engineerLoadError}
+            />
             <div className="mb-3">
               <label className="form-label">Date</label>
               <input
@@ -1940,7 +2043,7 @@ const StorageTankService = ({
         ) : (
           <div className="text-center print-hide">
             <div className="alert alert-success mb-4">
-              Report submitted successfully on {new Date().toISOString().split("T")[0]}
+              Report submitted successfully on {formatDate(formData.inspectionDate)}
             </div>
             {showPdfButton && generatedPdfBlob && (
               <button

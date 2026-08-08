@@ -1,0 +1,2161 @@
+--- a/src/components/Protected/Sites/SiteChecks/IntruderAlarmCertificate.jsx
++++ b/src/components/Protected/Sites/SiteChecks/IntruderAlarmCertificate.jsx
+@@ -17,6 +17,12 @@
+ import RiskScoreCard from "./RiskScoreCard";
+ import moment from "moment";
+ import axios from "axios";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import {
++  getUkLocalDate,
++  isCurrentUkInspectionDate,
++} from "./shared/siteCheckDateUtils";
+ 
+ let PDFLib;
+ 
+@@ -51,6 +57,7 @@
+                                     checkId,
+                                     subType,
+                                     category,
++                                    siteCheck,
+                                     siteDetailsById,
+                                     getSiteDetailsById,
+                                     siteAssets,
+@@ -64,7 +71,7 @@
+     address: "",
+     assetId: "",
+     siteContact: "",
+-    inspectionDate: new Date().toISOString().split("T")[0],
++    inspectionDate: getUkLocalDate(),
+     siteContactNo: "",
+     job: "",
+     report: "",
+@@ -81,13 +88,18 @@
+     user: loggedInUserData || {},
+     engineer: loggedInUserData?.id || "",
+     selectedAsset: null,
+-    signedDate: new Date().toISOString().split("T")[0],
++    signedDate: getUkLocalDate(),
+     clientUser: null,
+     siteContactUser: null,
+     actionId: null,
+   });
+ 
+   const sites = useSelector((state) => state.site.sites);
++
++  // NEW: Use the exact Site Check site, matching Air Conditioning.
++  const authoritativeSiteId = siteCheck?.siteId
++    ? Number(siteCheck.siteId)
++    : Number(siteSelectedForGlobal?.siteId) || null;
+   const [isSubmitted, setIsSubmitted] = useState(false);
+   const [isLoading, setIsLoading] = useState(false);
+   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+@@ -105,12 +117,43 @@
+   const [checkStatus, setCheckStatus] = useState('Open');
+   const [isFormEditable, setIsFormEditable] = useState(true);
+   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
++  const [lastEngineerId, setLastEngineerId] = useState(null);
+   const [siteCheckDetails, setSiteCheckDetails] = useState(null);
+   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+   const [actionRaised, setActionRaised] = useState(false);
+   const [existingAction, setExistingAction] = useState(null);
+   const navigate = useNavigate();
+ 
++  // NEW: Shared engineer behaviour copied from the approved Air Conditioning form.
++  const {
++    engineerOptions,
++    selectedEngineer,
++    isLoadingEngineers,
++    engineerLoadError,
++  } = useSiteCheckEngineers({
++    users,
++    getUsers,
++    siteId: authoritativeSiteId,
++    loggedInUserData,
++    status: checkStatus,
++    selectedEngineerId: formData.engineer,
++    selectedEngineerUser: formData.user,
++    lastEngineerId,
++  });
++
++  // NEW: Open checks start with the logged-in engineer and current UK date.
++  // Done checks are restored from the saved inspection record.
++  useEffect(() => {
++    setLastEngineerId(null);
++    setFormData((prev) => ({
++      ...prev,
++      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
++      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
++      inspectionDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.inspectionDate,
++      signedDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.signedDate,
++    }));
++  }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
++
+   const [popup, setPopup] = useState({
+     show: false,
+     content: "",
+@@ -137,14 +180,14 @@
+   const isInternalUserTaggedWithSite =
+       (loggedInUserData?.userType === "Internal" || loggedInUserData?.userType === "External") &&
+       loggedInUserData?.taggedSites?.some(
+-          (site) => site.id === siteSelectedForGlobal?.siteId
++          (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
+       );
+ 
+   const selectedAsset = siteAssets.find(
+       (asset) => asset.assetId === formData.assetId
+   );
+ 
+-  const fetchInspectionData = async () => {
++  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
+     try {
+       if (!checkId) return;
+ 
+@@ -155,6 +198,11 @@
+       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+       if (apiData && apiData.length > 0) {
+         const mostRecentItem = apiData[apiData.length - 1];
++        setLastEngineerId(mostRecentItem.engineer || null);
++
++        const isCurrentOpenInspection =
++          siteCheckStatus === "Open" &&
++          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+         const selectedAsset = siteAssets.find(
+             (asset) => asset.assetId === mostRecentItem.assetId
+         );
+@@ -184,7 +232,12 @@
+           address: prev.address,
+           assetId: mostRecentItem.assetId || prev.assetId,
+           siteContact: mostRecentItem.siteContact || prev.siteContact,
+-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
++          // OLD: inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
++          // NEW: Open = current UK date; Done = saved historical date.
++          inspectionDate:
++            siteCheckStatus === "Open"
++              ? getUkLocalDate()
++              : (mostRecentItem.inspectionDate || prev.inspectionDate),
+           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+           job: mostRecentItem.job || prev.job,
+           report: mostRecentItem.report || prev.report,
+@@ -198,10 +251,29 @@
+           param8: mostRecentItem.param8 || prev.param8,
+ 
+           client: mostRecentItem.client || "",
+-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+-          user: engineerUser || loggedInUserData || prev.user,
++          // OLD:
++          // engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
++          // user: engineerUser || loggedInUserData || prev.user,
++          // NEW: same Open/Done engineer behaviour as Air Conditioning.
++          engineer:
++            siteCheckStatus === "Open"
++              ? (isCurrentOpenInspection
++                  ? (mostRecentItem.engineer || loggedInUserData?.id || "")
++                  : (loggedInUserData?.id || ""))
++              : (mostRecentItem.engineer || prev.engineer || ""),
++          user:
++            siteCheckStatus === "Open"
++              ? (isCurrentOpenInspection
++                  ? (engineerUser || loggedInUserData || {})
++                  : (loggedInUserData || {}))
++              : (engineerUser || prev.user || {}),
+           selectedAsset: selectedAsset || prev.selectedAsset,
+-          signedDate: mostRecentItem.signedDate || prev.signedDate,
++          // OLD: signedDate: mostRecentItem.signedDate || prev.signedDate,
++          // NEW: Open = current UK date; Done = saved historical date.
++          signedDate:
++            siteCheckStatus === "Open"
++              ? getUkLocalDate()
++              : (mostRecentItem.signedDate || prev.signedDate),
+           clientUser: clientUser || null,
+           siteContactUser: siteContactUser || null,
+           actionId: mostRecentItem.actionId || null,
+@@ -236,9 +308,9 @@
+         setFormData(prev => ({ ...prev, actionId: null }));
+       }
+ 
+-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
++      if (!authoritativeSiteId || !currentCheckId) return;
+ 
+-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+       if (response && response.length > 0) {
+         const relevantActions = response.filter(action =>
+             action.checkId === currentCheckId
+@@ -326,9 +398,21 @@
+   useEffect(() => {
+     const fetchSiteCheckData = async () => {
+       try {
+-        if (!siteSelectedForGlobal?.siteId) return;
++        // NEW: Prefer the exact check already loaded by UpdateSiteCheck.
++        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
++          setCurrentCheckId(siteCheck.checkId);
++          setCheckStatus(siteCheck.status);
++          setSiteCheckDetails(siteCheck);
++          const isDone = siteCheck.status === "Done";
++          setIsFormEditable(!isDone);
++          setIsSubmitted(isDone);
++          setShowPdfButton(isDone);
++          return siteCheck;
++        }
++
++        if (!authoritativeSiteId) return null;
+ 
+-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
++        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+         if (response && response.length > 0) {
+           let intruderAlarmCheck = checkId
+               ? response.find(check => check.checkId === parseInt(checkId, 10))
+@@ -343,6 +427,7 @@
+             setIsFormEditable(!isDone);
+             setIsSubmitted(isDone);
+             setShowPdfButton(isDone);
++            return intruderAlarmCheck;
+           } else {
+             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+             setIsFormEditable(true);
+@@ -364,12 +449,14 @@
+     const fetchData = async () => {
+       setIsLoading(true);
+       try {
+-        if (siteSelectedForGlobal?.siteId) {
+-          await getSiteAssets(siteSelectedForGlobal?.siteId);
+-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+-          await fetchSiteCheckData();
+-          await fetchInspectionData();
++        if (authoritativeSiteId) {
++          await getSiteAssets(authoritativeSiteId);
++          await getSiteDetailsById(authoritativeSiteId);
++          await fetchFolderStructure(authoritativeSiteId);
++          const loadedSiteCheck = await fetchSiteCheckData();
++          await fetchInspectionData(
++            loadedSiteCheck?.status || siteCheck?.status || checkStatus
++          );
+ 
+           if (formData.actionId) {
+             const action = await fetchActionById(formData.actionId);
+@@ -481,7 +568,7 @@
+           siteContactUser: formData.siteContactUser,
+           actionId: verifiedAction.actionId,
+           checkId: currentCheckId,
+-          siteId: siteSelectedForGlobal?.siteId,
++          siteId: authoritativeSiteId,
+           type: 'Inspection',
+           subType: 'Intruder Alarm',
+           category: 'Intruder Alarm Service',
+@@ -513,6 +600,16 @@
+     }));
+   };
+ 
++  // NEW: Shared engineer dropdown selection.
++  const handleEngineerSelect = (event, newValue) => {
++    setFormData((prev) => ({
++      ...prev,
++      engineer: newValue?.id || "",
++      user: newValue || {},
++    }));
++    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
++  };
++
+   const formatDateForBackend = (dateString) => {
+     if (!dateString) return null;
+     const date = new Date(dateString);
+@@ -552,7 +649,7 @@
+ 
+   const getHighestFileVersion = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId) {
+         console.warn('No site ID available for file version check');
+         return 1;
+@@ -590,7 +687,7 @@
+ 
+   const checkFileExists = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId || !folderId) return { exists: false, file: null };
+ 
+       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -614,9 +711,10 @@
+     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+   }
+ 
+-  const uploadPdfToServer = async (pdfBlob, fileName) => {
++  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
+     try {
+       setIsUploading(true);
++      const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
+       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+       if (!savedLocally) {
+         throw new Error('Failed to save PDF locally');
+@@ -630,10 +728,13 @@
+       }
+ 
+       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+-      const formData = new FormData();
++
++      // OLD: const formData = new FormData();
++      // NEW: avoid hiding the React formData state.
++      const uploadFormData = new FormData();
+ 
+       if (exists && existingFile) {
+-        formData.append('file', pdfFile);
++        uploadFormData.append('file', pdfFile);
+         const documentRequestString = {
+           folderId: targetFolderId,
+           files: [{
+@@ -641,20 +742,20 @@
+             name: fileName,
+             originalFileName: fileName,
+             fileVersion: existingFile.fileVersion + 1,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
++            siteId: authoritativeSiteId || 0,
++            issueDate: formatDateForBackend(inspectionDateForUpload),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+             referenceNumber: `IntruderAlarm-${new Date().getTime()}`
+           }]
+         };
+ 
+-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
++        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+         const response = await axios({
+           method: 'put',
+           url: '/api/document/file/newVersion/upload',
+-          data: formData,
++          data: uploadFormData,
+           headers: {
+             'Content-Type': 'multipart/form-data',
+             'Authorization': `Bearer ${localStorage.getItem('token')}`,
+@@ -667,18 +768,18 @@
+           return true;
+         }
+       } else {
+-        formData.append('files', pdfFile);
++        uploadFormData.append('files', pdfFile);
+         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+ 
+         const documentRequestString = {
+           folderId: targetFolderId,
+           files: [{
+             name: fileName.split('.')[0],
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
++            issueDate: formatDateForBackend(inspectionDateForUpload),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
+             note: 'Intruder Alarm Service Certificate',
+             fileVersion: fileVersion,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
++            siteId: authoritativeSiteId || 0,
+             originalFileName: fileName,
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+@@ -686,11 +787,11 @@
+           }]
+         };
+ 
+-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
++        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+         const response = await axios({
+           method: 'post',
+           url: '/api/document/files/upload',
+-          data: formData,
++          data: uploadFormData,
+           headers: {
+             'Content-Type': 'multipart/form-data',
+             'Authorization': `Bearer ${localStorage.getItem('token')}`
+@@ -712,7 +813,7 @@
+     }
+   };
+ 
+-  const generatePDF = async (uploadToServer = true) => {
++  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
+     try {
+       setIsGeneratingPDF(true);
+ 
+@@ -769,6 +870,7 @@
+ 
+       const smallFont = 8;
+       const mediumFont = 10;
++      const effectiveInspectionDate = inspectionDateOverride || formData.inspectionDate;
+ 
+       // Address and contact information
+       const addressLines = (formData.address || '').split(',');
+@@ -777,7 +879,9 @@
+       setTextField('Address_3', addressLines[2] || '', smallFont);
+       setTextField('Address_4', addressLines[3] || '', smallFont);
+ 
+-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
++      // OLD: setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
++      // NEW: exact UK submission date.
++      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
+       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
+       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
+       setTextField('Job No', formData.job || '', smallFont);
+@@ -814,8 +918,12 @@
+ 
+       setTextField('Clients Name', clientName, smallFont);
+       setTextField('Engineers Name', engineerName, smallFont);
+-      setTextField('on', dateFormat(formData.signedDate), smallFont);
+-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
++      // OLD signature-date mapping retained for review.
++      // setTextField('on', dateFormat(formData.signedDate), smallFont);
++      // setTextField('on_2', dateFormat(formData.signedDate), smallFont);
++      // NEW: exact UK submission date.
++      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
++      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
+ 
+       // Flatten and save
+       form.flatten();
+@@ -827,7 +935,7 @@
+       setShowPdfButton(true);
+ 
+       if (uploadToServer) {
+-        await uploadPdfToServer(blob, fileName);
++        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
+       }
+ 
+       toast.success('PDF generated successfully!');
+@@ -890,6 +998,9 @@
+ 
+     // Form validation
+     const errors = {};
++    if (!formData.engineer || !selectedEngineer) {
++      errors.engineer = "Please select an active engineer for this Site Check.";
++    }
+     if (!formData.param1) errors.param1 = "Please select one option";
+     if (!formData.param2) errors.param2 = "Please select one option";
+     if (!formData.param3) errors.param3 = "Please select one option";
+@@ -901,6 +1012,7 @@
+ 
+     if (Object.keys(errors).length > 0) {
+       setValidationErrors(errors);
++      if (errors.engineer) toast.error(errors.engineer);
+       return;
+     }
+ 
+@@ -908,6 +1020,18 @@
+     setIsLoading(true);
+ 
+     try {
++      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
++      const submissionInspectionDate =
++        checkStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
++
++      if (checkStatus === "Open") {
++        setFormData((prev) => ({
++          ...prev,
++          inspectionDate: submissionInspectionDate,
++          signedDate: submissionInspectionDate,
++        }));
++      }
++
+       // First check if we have an existing inspection
+       let existingInspection = null;
+       if (currentCheckId) {
+@@ -921,13 +1045,15 @@
+ 
+       // First update or create the site check status
+       const statusPayload = {
+-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-        type: 'Inspection',
+-        subType: 'Intruder Alarm',
+-        category: 'Intruder Alarm Service',
++        siteId: parseInt(authoritativeSiteId, 10),
++        type: siteCheck?.type || 'Inspection',
++        // OLD: subType: 'Intruder Alarm', category: 'Intruder Alarm Service'
++        // NEW: preserve the routing values of the Site Check.
++        subType: siteCheck?.subType || 'Intruder Alarm',
++        category: siteCheck?.category || 'Intruder Alarm Servicing & Inspection',
+         status: 'Done',
+-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
++        startDate: `${submissionInspectionDate}T00:00:00`,
++        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
+         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+       };
+@@ -962,10 +1088,12 @@
+       // Then update or create the generic inspection record
+       const inspectionPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         assetId: formData.selectedAsset?.assetId || formData.assetId,
+         client: formData.clientUser?.id || formData.client,
+         engineer: formData.engineer,
++        inspectionDate: submissionInspectionDate,
++        signedDate: submissionInspectionDate,
+         siteContact: formData.siteContactUser?.id || formData.siteContact,
+         type: 'Inspection',
+         subType: 'Intruder Alarm',
+@@ -996,7 +1124,7 @@
+       console.log('Inspection data saved successfully:', saveResponse.data);
+ 
+       // Generate PDF
+-      const pdfResult = await generatePDF(true);
++      const pdfResult = await generatePDF(true, submissionInspectionDate);
+       if (!pdfResult.success) {
+         throw new Error(pdfResult.error || "Failed to generate PDF");
+       }
+@@ -1024,7 +1152,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => site.id === authoritativeSiteId
+               )
+           ) || [];
+ 
+@@ -1098,7 +1226,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => site.id === authoritativeSiteId
+               )
+           ) || [];
+ 
+@@ -1806,7 +1934,7 @@
+                   ) : (
+                       <RiskScoreCard
+                           desc={`Inspection - Intruder Alarm System Service`}
+-                          siteId={siteSelectedForGlobal?.siteId}
++                          siteId={authoritativeSiteId}
+                           checkId={currentCheckId}
+                           createdBy={loggedInUserData?.id}
+                           taggedAsset={selectedAsset?.assetId}
+@@ -1845,6 +1973,9 @@
+               </div>
+             </div>
+             <div className="col-md-6">
++              {/* =========================================================
++                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+               <div className="mb-3">
+                 <label className="form-label fw-bold">Engineer's Name</label>
+                 <input
+@@ -1857,6 +1988,19 @@
+                     disabled
+                 />
+               </div>
++
++              ========================================================= */}
++
++              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++              <SiteCheckEngineerSelector
++                options={engineerOptions}
++                value={selectedEngineer}
++                onChange={handleEngineerSelect}
++                isOpen={checkStatus === "Open"}
++                disabled={isSubmitted || !isFormEditable}
++                loading={isLoadingEngineers}
++                error={validationErrors.engineer || engineerLoadError}
++              />
+               <div className="mb-3">
+                 <label className="form-label">Date</label>
+                 <input
+@@ -1906,7 +2050,7 @@
+             ) : (
+                 <div className="text-center">
+                   <div className="alert alert-success mb-4">
+-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
++                    Report submitted successfully on {getUkLocalDate()}
+                   </div>
+                 </div>
+             )}
+--- a/src/components/Protected/Sites/SiteChecks/SounderAudibility.jsx
++++ b/src/components/Protected/Sites/SiteChecks/SounderAudibility.jsx
+@@ -18,6 +18,9 @@
+ import RiskScoreCard from "./RiskScoreCard";
+ import moment from "moment";
+ import axios from "axios";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+ 
+ let PDFLib;
+ 
+@@ -52,6 +55,7 @@
+                                  checkId,
+                                  subType,
+                                  category,
++                                 siteCheck,
+                                  getSiteDetailsById,
+                                  siteDetailsById,
+                                  siteAssets,
+@@ -65,7 +69,7 @@
+     address: "",
+     assetId: "",
+     siteContact: "",
+-    date: new Date().toISOString().split("T")[0],
++    date: getUkLocalDate(),
+     siteContactNo: "",
+     job: "",
+     manufacturer: "",
+@@ -80,8 +84,8 @@
+     clientName: "",
+     engineerName: loggedInUserData?.name || "",
+     selectedAsset: null,
+-    clientDate: new Date().toISOString().split("T")[0],
+-    engineerDate: new Date().toISOString().split("T")[0],
++    clientDate: getUkLocalDate(),
++    engineerDate: getUkLocalDate(),
+     client: "",
+     user: loggedInUserData || {},
+     engineer: loggedInUserData?.id || "",
+@@ -90,6 +94,11 @@
+     actionId: null,
+   });
+ 
++  // NEW: Use the Site Check's own site, matching Air Conditioning.
++  const authoritativeSiteId = siteCheck?.siteId
++    ? Number(siteCheck.siteId)
++    : Number(siteSelectedForGlobal?.siteId) || null;
++
+   const [isSubmitted, setIsSubmitted] = useState(false);
+   const [isLoading, setIsLoading] = useState(false);
+   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+@@ -107,19 +116,49 @@
+   const [checkStatus, setCheckStatus] = useState('Open');
+   const [isFormEditable, setIsFormEditable] = useState(true);
+   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
++  const [lastEngineerId, setLastEngineerId] = useState(null);
+   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+   const [actionRaised, setActionRaised] = useState(false);
+   const [existingAction, setExistingAction] = useState(null);
+     const [inspectionDetails, setInspectionDetails] = useState(null);
+ 
++  // NEW: Shared engineer behaviour copied from Air Conditioning.
++  const {
++    engineerOptions,
++    selectedEngineer,
++    isLoadingEngineers,
++    engineerLoadError,
++  } = useSiteCheckEngineers({
++    users,
++    getUsers,
++    siteId: authoritativeSiteId,
++    loggedInUserData,
++    status: checkStatus,
++    selectedEngineerId: formData.engineer,
++    selectedEngineerUser: formData.user,
++    lastEngineerId,
++  });
++
++  useEffect(() => {
++    setLastEngineerId(null);
++    setFormData((prev) => ({
++      ...prev,
++      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
++      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
++      engineerName: siteCheck?.status === "Done" ? "" : (loggedInUserData?.name || ""),
++      date: siteCheck?.status === "Open" ? getUkLocalDate() : prev.date,
++      clientDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.clientDate,
++      engineerDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.engineerDate,
++    }));
++  }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
+ 
+     // Check if user is internal and tagged with selected site
+   const isInternalUserTaggedWithSite =
+       loggedInUserData?.taggedSites?.some(
+-          (site) => site.id === siteSelectedForGlobal?.siteId
++          (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
+       );
+ 
+-  const fetchInspectionData = async () => {
++  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
+     try {
+       if (!checkId) return;
+ 
+@@ -130,6 +169,10 @@
+       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+       if (apiData && apiData.length > 0) {
+         const mostRecentItem = apiData[apiData.length - 1];
++        setLastEngineerId(mostRecentItem.engineer || null);
++        const isCurrentOpenInspection =
++          siteCheckStatus === "Open" &&
++          isCurrentUkInspectionDate(mostRecentItem.date);
+         const selectedAsset = siteAssets.find(
+             (asset) => asset.assetId === mostRecentItem.assetId
+         );
+@@ -159,16 +202,45 @@
+           address: prev.address,
+           assetId: mostRecentItem.assetId || prev.assetId,
+           siteContact: mostRecentItem.siteContact || prev.siteContact,
+-          date: mostRecentItem.date || prev.date,
++          // OLD: date: mostRecentItem.date || prev.date,
++          // NEW: Open = current UK date; Done = saved date.
++          date: siteCheckStatus === "Open"
++            ? getUkLocalDate()
++            : (mostRecentItem.date || prev.date),
+           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+           job: mostRecentItem.job || prev.job,
+           locations: mostRecentItem.locations || prev.locations,
+           client: mostRecentItem.client || "",
+-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+-          user: engineerUser || loggedInUserData || prev.user,
++          // OLD engineer/user mapping retained for review.
++          // engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
++          // user: engineerUser || loggedInUserData || prev.user,
++          // NEW: same Open/Done engineer behaviour as Air Conditioning.
++          engineer: siteCheckStatus === "Open"
++            ? (isCurrentOpenInspection
++                ? (mostRecentItem.engineer || loggedInUserData?.id || "")
++                : (loggedInUserData?.id || ""))
++            : (mostRecentItem.engineer || prev.engineer || ""),
++          user: siteCheckStatus === "Open"
++            ? (isCurrentOpenInspection
++                ? (engineerUser || loggedInUserData || {})
++                : (loggedInUserData || {}))
++            : (engineerUser || prev.user || {}),
++          engineerName: siteCheckStatus === "Open"
++            ? (isCurrentOpenInspection
++                ? (engineerUser?.name || loggedInUserData?.name || "")
++                : (loggedInUserData?.name || ""))
++            : (engineerUser?.name || prev.engineerName || ""),
+           selectedAsset: selectedAsset || prev.selectedAsset,
+-          clientDate: mostRecentItem.clientDate || prev.clientDate,
+-          engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
++          // OLD:
++          // clientDate: mostRecentItem.clientDate || prev.clientDate,
++          // engineerDate: mostRecentItem.engineerDate || prev.engineerDate,
++          // NEW: Open = current UK date; Done = saved dates.
++          clientDate: siteCheckStatus === "Open"
++            ? getUkLocalDate()
++            : (mostRecentItem.clientDate || prev.clientDate),
++          engineerDate: siteCheckStatus === "Open"
++            ? getUkLocalDate()
++            : (mostRecentItem.engineerDate || prev.engineerDate),
+           clientUser: clientUser || null,
+           siteContactUser: siteContactUser || null,
+           actionId: mostRecentItem.actionId || null,
+@@ -206,9 +278,9 @@
+         setFormData(prev => ({ ...prev, actionId: null }));
+       }
+ 
+-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
++      if (!authoritativeSiteId || !currentCheckId) return;
+ 
+-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+       if (response && response.length > 0) {
+         const relevantActions = response.filter(action =>
+             action.checkId === currentCheckId
+@@ -296,9 +368,19 @@
+   useEffect(() => {
+     const fetchSiteCheckData = async () => {
+       try {
+-        if (!siteSelectedForGlobal?.siteId) return;
++        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
++          setCurrentCheckId(siteCheck.checkId);
++          setCheckStatus(siteCheck.status);
++          setInspectionDetails(siteCheck);
++          const isDone = siteCheck.status === "Done";
++          setIsFormEditable(!isDone);
++          setIsSubmitted(isDone);
++          setShowPdfButton(isDone);
++          return siteCheck;
++        }
++        if (!authoritativeSiteId) return null;
+ 
+-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
++        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+         if (response && response.length > 0) {
+           let sounderAudibilityCheck = checkId
+               ? response.find(check => check.checkId === parseInt(checkId, 10))
+@@ -312,6 +394,7 @@
+             setIsFormEditable(!isDone);
+             setIsSubmitted(isDone);
+             setShowPdfButton(isDone);
++            return sounderAudibilityCheck;
+           }
+           else {
+             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+@@ -334,12 +417,12 @@
+     const fetchData = async () => {
+       setIsLoading(true);
+       try {
+-        if (siteSelectedForGlobal?.siteId) {
+-          await getSiteAssets(siteSelectedForGlobal?.siteId);
+-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+-          await fetchSiteCheckData();
+-          await fetchInspectionData();
++        if (authoritativeSiteId) {
++          await getSiteAssets(authoritativeSiteId);
++          await getSiteDetailsById(authoritativeSiteId);
++          await fetchFolderStructure(authoritativeSiteId);
++          const loadedSiteCheck = await fetchSiteCheckData();
++          await fetchInspectionData(loadedSiteCheck?.status || siteCheck?.status || checkStatus);
+ 
+           if (formData.actionId) {
+             const action = await fetchActionById(formData.actionId);
+@@ -431,7 +514,7 @@
+       if (currentCheckId) {
+         const inspectionPayload = {
+           ...formData,
+-          siteId: siteSelectedForGlobal?.siteId,
++          siteId: authoritativeSiteId,
+           assetId: formData.selectedAsset?.assetId || formData.assetId,
+           client: formData.clientUser?.id || formData.client,
+           engineer: formData.engineer,
+@@ -482,7 +565,7 @@
+ 
+   const getHighestFileVersion = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId) {
+         console.warn('No site ID available for file version check');
+         return 1;
+@@ -512,7 +595,7 @@
+ 
+   const checkFileExists = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId || !folderId) return { exists: false, file: null };
+ 
+       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -550,9 +633,10 @@
+         return date;
+     };
+ 
+-  const uploadPdfToServer = async (pdfBlob, fileName) => {
++  const uploadPdfToServer = async (pdfBlob, fileName, dateOverride) => {
+     try {
+       setIsUploading(true);
++      const dateForUpload = dateOverride || formData.date;
+       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+       if (!savedLocally) {
+         throw new Error('Failed to save PDF locally');
+@@ -566,10 +650,12 @@
+       }
+ 
+       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+-      const formData = new FormData();
++      // OLD: const formData = new FormData();
++      // NEW: avoid hiding React formData state.
++      const uploadFormData = new FormData();
+ 
+       if (exists && existingFile) {
+-        formData.append('file', pdfFile);
++        uploadFormData.append('file', pdfFile);
+         const documentRequestString = {
+           folderId: targetFolderId,
+           files: [{
+@@ -577,20 +663,20 @@
+             name: fileName,
+             originalFileName: fileName,
+             fileVersion: existingFile.fileVersion + 1,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
+-            issueDate: formatDateForBackend(formData.date),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
++            siteId: authoritativeSiteId || 0,
++            issueDate: formatDateForBackend(dateForUpload),
++            expiryDate: formatDateForBackend(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
+               uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+             referenceNumber: `SAR-${new Date().getTime()}`
+           }]
+         };
+ 
+-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
++        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+         const response = await axios({
+           method: 'put',
+           url: '/api/document/file/newVersion/upload',
+-          data: formData,
++          data: uploadFormData,
+           headers: {
+             'Content-Type': 'multipart/form-data',
+             'Authorization': `Bearer ${localStorage.getItem('token')}`,
+@@ -603,18 +689,18 @@
+           return true;
+         }
+       } else {
+-        formData.append('files', pdfFile);
++        uploadFormData.append('files', pdfFile);
+         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+ 
+         const documentRequestString = {
+           folderId: targetFolderId,
+           files: [{
+             name: fileName.split('.')[0],
+-            issueDate: formatDateForBackend(formData.date),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
++            issueDate: formatDateForBackend(dateForUpload),
++            expiryDate: formatDateForBackend(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
+               note: 'Sounder Audibility Report',
+             fileVersion: fileVersion,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
++            siteId: authoritativeSiteId || 0,
+             originalFileName: fileName,
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+@@ -622,11 +708,11 @@
+           }]
+         };
+ 
+-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
++        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+         const response = await axios({
+           method: 'post',
+           url: '/api/document/files/upload',
+-          data: formData,
++          data: uploadFormData,
+           headers: {
+             'Content-Type': 'multipart/form-data',
+             'Authorization': `Bearer ${localStorage.getItem('token')}`
+@@ -648,7 +734,7 @@
+     }
+   };
+ 
+-  const generatePDF = async (uploadToServer = true) => {
++  const generatePDF = async (uploadToServer = true, submissionDateOverride) => {
+     try {
+       setIsGeneratingPDF(true);
+ 
+@@ -692,6 +778,7 @@
+       };
+ 
+       const smallFont = 8;
++      const effectiveDate = submissionDateOverride || formData.date;
+ 
+       // Address and contact information
+       const addressLines = (formData.address || '').split(',');
+@@ -700,7 +787,9 @@
+       setTextField('Address_3', addressLines[2] || '', smallFont);
+       setTextField('Address_4', addressLines[3] || '', smallFont);
+ 
+-      setTextField('Date', moment(formData.date).format('DD/MM/YYYY'), smallFont);
++      // OLD: formData.date
++      // NEW: exact UK submission date.
++      setTextField('Date', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
+       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
+       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
+       setTextField('Job No', formData.job || '', smallFont);
+@@ -728,8 +817,10 @@
+ 
+       setTextField('Clients Name', clientName, smallFont);
+       setTextField('Engineers Name', engineerName, smallFont);
+-      setTextField('on', moment(formData.clientDate).format('DD/MM/YYYY'), smallFont);
+-      setTextField('on_2', moment(formData.engineerDate).format('DD/MM/YYYY'), smallFont);
++      // OLD: clientDate / engineerDate saved separately from the submission date.
++      // NEW: Open completion uses the same current UK date.
++      setTextField('on', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
++      setTextField('on_2', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
+ 
+       // Flatten and save
+       form.flatten();
+@@ -741,7 +832,7 @@
+       setShowPdfButton(true);
+ 
+       if (uploadToServer) {
+-        await uploadPdfToServer(blob, fileName);
++        await uploadPdfToServer(blob, fileName, effectiveDate);
+       }
+ 
+       toast.success('PDF generated successfully!');
+@@ -764,6 +855,17 @@
+     }));
+   };
+ 
++  // NEW: Shared engineer dropdown selection.
++  const handleEngineerSelect = (event, newValue) => {
++    setFormData((prev) => ({
++      ...prev,
++      engineer: newValue?.id || "",
++      user: newValue || {},
++      engineerName: newValue?.name || "",
++    }));
++    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
++  };
++
+   const handleAssetSelect = (event, newValue) => {
+     if (newValue) {
+       setFormData((prev) => ({
+@@ -834,9 +936,13 @@
+ 
+     // Form validation
+     const errors = {};
++    if (!formData.engineer || !selectedEngineer) {
++      errors.engineer = "Please select an active engineer for this Site Check.";
++    }
+ 
+     if (Object.keys(errors).length > 0) {
+       setValidationErrors(errors);
++      if (errors.engineer) toast.error(errors.engineer);
+       return;
+     }
+ 
+@@ -844,6 +950,16 @@
+     setIsLoading(true);
+ 
+     try {
++      const submissionDate = checkStatus === "Open" ? getUkLocalDate() : formData.date;
++      if (checkStatus === "Open") {
++        setFormData((prev) => ({
++          ...prev,
++          date: submissionDate,
++          clientDate: submissionDate,
++          engineerDate: submissionDate,
++        }));
++      }
++
+       // First check if we have an existing inspection
+       let existingInspection = null;
+       if (currentCheckId) {
+@@ -857,13 +973,15 @@
+ 
+       // First update or create the site check status
+       const statusPayload = {
+-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-        type: 'Inspection',
+-        subType: 'Sounder Audibility',
+-        category: 'Sounder Audibility Report',
++        siteId: parseInt(authoritativeSiteId, 10),
++        type: siteCheck?.type || 'Inspection',
++        // OLD: subType/category used internal values and broke UI routing.
++        // NEW: preserve the original Site Check routing values.
++        subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
++        category: siteCheck?.category || 'Fire Alarm Sounder Audibilty',
+         status: 'Done',
+-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
++        startDate: `${submissionDate}T00:00:00`,
++        dueDate: formatLocalDateTime(calculateExpiryDate(submissionDate, inspectionDetails?.repeatFrequency)),
+         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+       };
+@@ -898,10 +1016,13 @@
+       // Then update or create the generic inspection record
+       const inspectionPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         assetId: formData.selectedAsset?.assetId || formData.assetId,
+         client: formData.clientUser?.id || formData.client,
+         engineer: formData.engineer,
++        date: submissionDate,
++        clientDate: submissionDate,
++        engineerDate: submissionDate,
+         siteContact: formData.siteContactUser?.id || formData.siteContact,
+         type: 'Inspection',
+         subType: 'Sounder Audibility',
+@@ -932,7 +1053,7 @@
+       console.log('Inspection data saved successfully:', saveResponse.data);
+ 
+       // Generate PDF
+-      const pdfResult = await generatePDF(true);
++      const pdfResult = await generatePDF(true, submissionDate);
+       if (!pdfResult.success) {
+         throw new Error(pdfResult.error || "Failed to generate PDF");
+       }
+@@ -956,7 +1077,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
+               )
+           ) || [];
+ 
+@@ -1021,7 +1142,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
+               )
+           ) || [];
+ 
+@@ -1400,7 +1521,7 @@
+                   ) : (
+                       <RiskScoreCard
+                           desc={`Inspection - Fire Alarm to meet BS5839 - Fire Alarm Sounder Audibilty`}
+-                          siteId={siteSelectedForGlobal?.siteId}
++                          siteId={authoritativeSiteId}
+                           checkId={currentCheckId}
+                           createdBy={loggedInUserData?.id}
+                           taggedAsset={selectedAsset?.assetId}
+@@ -1439,6 +1560,9 @@
+               </div>
+             </div>
+             <div className="col-md-6">
++              {/* =========================================================
++                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+               <div className="mb-3">
+                 <label className="form-label fw-bold">Engineer's Name</label>
+                 <input
+@@ -1451,6 +1575,19 @@
+                     disabled
+                 />
+               </div>
++
++              ========================================================= */}
++
++              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++              <SiteCheckEngineerSelector
++                options={engineerOptions}
++                value={selectedEngineer}
++                onChange={handleEngineerSelect}
++                isOpen={checkStatus === "Open"}
++                disabled={isSubmitted || !isFormEditable}
++                loading={isLoadingEngineers}
++                error={validationErrors.engineer || engineerLoadError}
++              />
+               <div className="mb-3">
+                 <label className="form-label">Date</label>
+                 <input
+--- a/src/components/Protected/Sites/SiteChecks/RefugeIntercomTesting.jsx
++++ b/src/components/Protected/Sites/SiteChecks/RefugeIntercomTesting.jsx
+@@ -18,6 +18,9 @@
+ import RiskScoreCard from "./RiskScoreCard";
+ import moment from "moment";
+ import axios from "axios";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+ 
+ let PDFLib;
+ 
+@@ -52,6 +55,7 @@
+                                  checkId,
+                                  subType,
+                                  category,
++                                 siteCheck,
+                                  getSiteDetailsById,
+                                  siteDetailsById,
+                                  siteAssets,
+@@ -65,7 +69,7 @@
+     address: "",
+     assetId: "",
+     siteContact: "",
+-    inspectionDate: new Date().toISOString().split("T")[0],
++    inspectionDate: getUkLocalDate(),
+     siteContactNo: "",
+     job: "",
+     report: "",
+@@ -76,12 +80,17 @@
+     user: loggedInUserData || {},
+     engineer: loggedInUserData?.id || "",
+     selectedAsset: null,
+-    signedDate: new Date().toISOString().split("T")[0],
++    signedDate: getUkLocalDate(),
+     clientUser: null,
+     siteContactUser: null,
+     actionId: null,
+   });
+ 
++  // NEW: Use the exact Site Check site, matching Air Conditioning.
++  const authoritativeSiteId = siteCheck?.siteId
++    ? Number(siteCheck.siteId)
++    : Number(siteSelectedForGlobal?.siteId) || null;
++
+   const [isSubmitted, setIsSubmitted] = useState(false);
+   const [isLoading, setIsLoading] = useState(false);
+   const [submissionSuccess, setSubmissionSuccess] = useState(false);
+@@ -99,15 +108,35 @@
+   const [checkStatus, setCheckStatus] = useState('Open');
+   const [isFormEditable, setIsFormEditable] = useState(true);
+   const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
++  const [lastEngineerId, setLastEngineerId] = useState(null);
+   const [siteCheckDetails, setSiteCheckDetails] = useState(null);
+   const [showRiskAssessment, setShowRiskAssessment] = useState(false);
+   const [actionRaised, setActionRaised] = useState(false);
+   const [existingAction, setExistingAction] = useState(null);
+   const navigate = useNavigate();
+ 
++  // NEW: Shared engineer behaviour copied from Air Conditioning.
++  const { engineerOptions, selectedEngineer, isLoadingEngineers, engineerLoadError } =
++    useSiteCheckEngineers({
++      users, getUsers, siteId: authoritativeSiteId, loggedInUserData,
++      status: checkStatus, selectedEngineerId: formData.engineer,
++      selectedEngineerUser: formData.user, lastEngineerId,
++    });
++
++  useEffect(() => {
++    setLastEngineerId(null);
++    setFormData((prev) => ({
++      ...prev,
++      engineer: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
++      user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
++      inspectionDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.inspectionDate,
++      signedDate: siteCheck?.status === "Open" ? getUkLocalDate() : prev.signedDate,
++    }));
++  }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
++
+   const isInternalUserTaggedWithSite = true;
+ 
+-  const fetchInspectionData = async () => {
++  const fetchInspectionData = async (siteCheckStatus = checkStatus) => {
+     try {
+       if (!checkId) return;
+ 
+@@ -118,6 +147,9 @@
+       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+       if (apiData && apiData.length > 0) {
+         const mostRecentItem = apiData[apiData.length - 1];
++        setLastEngineerId(mostRecentItem.engineer || null);
++        const isCurrentOpenInspection = siteCheckStatus === "Open" &&
++          isCurrentUkInspectionDate(mostRecentItem.inspectionDate);
+         const selectedAsset = siteAssets.find(
+             (asset) => asset.assetId === mostRecentItem.assetId
+         );
+@@ -147,7 +179,11 @@
+           address: prev.address,
+           assetId: mostRecentItem.assetId || prev.assetId,
+           siteContact: mostRecentItem.siteContact || prev.siteContact,
+-          inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
++          // OLD: inspectionDate: mostRecentItem.inspectionDate || prev.inspectionDate,
++          // NEW: Open = current UK date; Done = saved date.
++          inspectionDate: siteCheckStatus === "Open"
++            ? getUkLocalDate()
++            : (mostRecentItem.inspectionDate || prev.inspectionDate),
+           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
+           job: mostRecentItem.job || prev.job,
+           report: mostRecentItem.report || prev.report,
+@@ -155,10 +191,26 @@
+           param2: mostRecentItem.param2 || prev.param2,
+           param3: mostRecentItem.param3 || prev.param3,
+           client: mostRecentItem.client || "",
+-          engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
+-          user: engineerUser || loggedInUserData || prev.user,
++          // OLD engineer/user mapping retained for review.
++          // engineer: mostRecentItem.engineer || prev.engineer || loggedInUserData?.id,
++          // user: engineerUser || loggedInUserData || prev.user,
++          // NEW: same Open/Done engineer behaviour as Air Conditioning.
++          engineer: siteCheckStatus === "Open"
++            ? (isCurrentOpenInspection
++                ? (mostRecentItem.engineer || loggedInUserData?.id || "")
++                : (loggedInUserData?.id || ""))
++            : (mostRecentItem.engineer || prev.engineer || ""),
++          user: siteCheckStatus === "Open"
++            ? (isCurrentOpenInspection
++                ? (engineerUser || loggedInUserData || {})
++                : (loggedInUserData || {}))
++            : (engineerUser || prev.user || {}),
+           selectedAsset: selectedAsset || prev.selectedAsset,
+-          signedDate: mostRecentItem.signedDate || prev.signedDate,
++          // OLD: signedDate: mostRecentItem.signedDate || prev.signedDate,
++          // NEW: Open = current UK date; Done = saved date.
++          signedDate: siteCheckStatus === "Open"
++            ? getUkLocalDate()
++            : (mostRecentItem.signedDate || prev.signedDate),
+           clientUser: clientUser || null,
+           siteContactUser: siteContactUser || null,
+           actionId: mostRecentItem.actionId || null,
+@@ -196,9 +248,9 @@
+         setFormData(prev => ({ ...prev, actionId: null }));
+       }
+ 
+-      if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
++      if (!authoritativeSiteId || !currentCheckId) return;
+ 
+-      const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+       if (response && response.length > 0) {
+         const relevantActions = response.filter(action =>
+             action.checkId === currentCheckId
+@@ -288,9 +340,18 @@
+   useEffect(() => {
+     const fetchSiteCheckData = async () => {
+       try {
+-        if (!siteSelectedForGlobal?.siteId) return;
+-
+-        const response = await get(`/api/site-check/site/${siteSelectedForGlobal.siteId}`);
++        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
++          setCurrentCheckId(siteCheck.checkId);
++          setCheckStatus(siteCheck.status);
++          setSiteCheckDetails(siteCheck);
++          const isDone = siteCheck.status === "Done";
++          setIsFormEditable(!isDone);
++          setIsSubmitted(isDone);
++          setShowPdfButton(isDone);
++          return siteCheck;
++        }
++        if (!authoritativeSiteId) return null;
++        const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+         if (response && response.length > 0) {
+           let refugeIntercomCheck = checkId
+               ? response.find(check => check.checkId === parseInt(checkId, 10))
+@@ -311,6 +372,7 @@
+             setIsFormEditable(!isDone);
+             setIsSubmitted(isDone);
+             setShowPdfButton(isDone);
++            return refugeIntercomCheck;
+           } else {
+             console.log('No matching check found, using checkId from URL:', checkId);
+             setCurrentCheckId(checkId ? parseInt(checkId, 10) : null);
+@@ -333,12 +395,12 @@
+     const fetchData = async () => {
+       setIsLoading(true);
+       try {
+-        if (siteSelectedForGlobal?.siteId) {
+-          await getSiteAssets(siteSelectedForGlobal?.siteId);
+-          await getSiteDetailsById(siteSelectedForGlobal?.siteId);
+-          await fetchFolderStructure(siteSelectedForGlobal.siteId);
+-          await fetchSiteCheckData();
+-          await fetchInspectionData();
++        if (authoritativeSiteId) {
++          await getSiteAssets(authoritativeSiteId);
++          await getSiteDetailsById(authoritativeSiteId);
++          await fetchFolderStructure(authoritativeSiteId);
++          const loadedSiteCheck = await fetchSiteCheckData();
++          await fetchInspectionData(loadedSiteCheck?.status || siteCheck?.status || checkStatus);
+ 
+           if (formData.actionId) {
+             const action = await fetchActionById(formData.actionId);
+@@ -444,7 +506,7 @@
+           siteContactUser: formData.siteContactUser,
+           actionId: verifiedAction.actionId,
+           checkId: currentCheckId,
+-          siteId: siteSelectedForGlobal?.siteId,
++          siteId: authoritativeSiteId,
+           type: 'Inspection',
+           subType: 'Refuge Intercom',
+           category: 'Refuge Intercom Testing',
+@@ -476,6 +538,12 @@
+     }));
+   };
+ 
++  // NEW: Shared engineer dropdown selection.
++  const handleEngineerSelect = (event, newValue) => {
++    setFormData((prev) => ({ ...prev, engineer: newValue?.id || "", user: newValue || {} }));
++    setValidationErrors((prev) => ({ ...prev, engineer: "" }));
++  };
++
+   const formatDateForBackend = (dateString) => {
+     if (!dateString) return null;
+     const date = new Date(dateString);
+@@ -515,7 +583,7 @@
+ 
+   const getHighestFileVersion = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId) {
+         console.warn('No site ID available for file version check');
+         return 1;
+@@ -553,7 +621,7 @@
+ 
+   const checkFileExists = async (folderId, fileName) => {
+     try {
+-      const siteId = siteSelectedForGlobal?.siteId;
++      const siteId = authoritativeSiteId;
+       if (!siteId || !folderId) return { exists: false, file: null };
+ 
+       const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -577,9 +645,10 @@
+     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
+   }
+ 
+-  const uploadPdfToServer = async (pdfBlob, fileName) => {
++  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
+     try {
+       setIsUploading(true);
++      const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
+       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
+       if (!savedLocally) {
+         throw new Error('Failed to save PDF locally');
+@@ -593,10 +662,12 @@
+       }
+ 
+       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+-      const formData = new FormData();
++      // OLD: const formData = new FormData();
++      // NEW: avoid hiding React formData state.
++      const uploadFormData = new FormData();
+ 
+       if (exists && existingFile) {
+-        formData.append('file', pdfFile);
++        uploadFormData.append('file', pdfFile);
+         const documentRequestString = {
+           folderId: targetFolderId,
+           files: [{
+@@ -604,20 +675,20 @@
+             name: fileName,
+             originalFileName: fileName,
+             fileVersion: existingFile.fileVersion + 1,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
++            siteId: authoritativeSiteId || 0,
++            issueDate: formatDateForBackend(inspectionDateForUpload),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+             referenceNumber: `RIT-${new Date().getTime()}`
+           }]
+         };
+ 
+-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
++        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+         const response = await axios({
+           method: 'put',
+           url: '/api/document/file/newVersion/upload',
+-          data: formData,
++          data: uploadFormData,
+           headers: {
+             'Content-Type': 'multipart/form-data',
+             'Authorization': `Bearer ${localStorage.getItem('token')}`,
+@@ -630,18 +701,18 @@
+           return true;
+         }
+       } else {
+-        formData.append('files', pdfFile);
++        uploadFormData.append('files', pdfFile);
+         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+ 
+         const documentRequestString = {
+           folderId: targetFolderId,
+           files: [{
+             name: fileName.split('.')[0],
+-            issueDate: formatDateForBackend(formData.inspectionDate),
+-            expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
++            issueDate: formatDateForBackend(inspectionDateForUpload),
++            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
+             note: 'Refuge Intercom Testing Certificate',
+             fileVersion: fileVersion,
+-            siteId: siteSelectedForGlobal?.siteId || 0,
++            siteId: authoritativeSiteId || 0,
+             originalFileName: fileName,
+             uploaderUserId: loggedInUserData?.id || 0,
+             reviewerUserId: loggedInUserData?.id || 0,
+@@ -649,11 +720,11 @@
+           }]
+         };
+ 
+-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
++        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
+         const response = await axios({
+           method: 'post',
+           url: '/api/document/files/upload',
+-          data: formData,
++          data: uploadFormData,
+           headers: {
+             'Content-Type': 'multipart/form-data',
+             'Authorization': `Bearer ${localStorage.getItem('token')}`
+@@ -675,7 +746,7 @@
+     }
+   };
+ 
+-  const generatePDF = async (uploadToServer = true) => {
++  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
+     try {
+       setIsGeneratingPDF(true);
+ 
+@@ -732,6 +803,7 @@
+ 
+       const smallFont = 8;
+       const mediumFont = 10;
++      const effectiveInspectionDate = inspectionDateOverride || formData.inspectionDate;
+ 
+       // Address and contact information
+       const addressLines = (formData.address || '').split(',');
+@@ -740,7 +812,9 @@
+       setTextField('Address_3', addressLines[2] || '', smallFont);
+       setTextField('Address_4', addressLines[3] || '', smallFont);
+ 
+-      setTextField('Date', dateFormat(formData.inspectionDate), smallFont);
++      // OLD: formData.inspectionDate
++      // NEW: exact UK submission date.
++      setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
+       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
+       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
+       setTextField('jobNo', formData.job || '', smallFont);
+@@ -771,8 +845,10 @@
+ 
+       setTextField('Clients Name', clientName, smallFont);
+       setTextField('Engineers Name', engineerName, smallFont);
+-      setTextField('on', dateFormat(formData.signedDate), smallFont);
+-      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
++      // OLD signedDate mapping retained for review.
++      // NEW: exact UK submission date.
++      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
++      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
+ 
+       // Flatten and save
+       form.flatten();
+@@ -784,7 +860,7 @@
+       setShowPdfButton(true);
+ 
+       if (uploadToServer) {
+-        await uploadPdfToServer(blob, fileName);
++        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
+       }
+ 
+       toast.success('PDF generated successfully!');
+@@ -845,12 +921,16 @@
+ 
+     // Form validation
+     const errors = {};
++    if (!formData.engineer || !selectedEngineer) {
++      errors.engineer = "Please select an active engineer for this Site Check.";
++    }
+     if (!formData.param1) errors.param1 = "Please select one option";
+     if (!formData.param2) errors.param2 = "Please select one option";
+     if (!formData.param3) errors.param3 = "Please select one option";
+ 
+     if (Object.keys(errors).length > 0) {
+       setValidationErrors(errors);
++      if (errors.engineer) toast.error(errors.engineer);
+       return;
+     }
+ 
+@@ -858,6 +938,11 @@
+     setIsLoading(true);
+ 
+     try {
++      const submissionInspectionDate = checkStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
++      if (checkStatus === "Open") {
++        setFormData((prev) => ({ ...prev, inspectionDate: submissionInspectionDate, signedDate: submissionInspectionDate }));
++      }
++
+       // First check if we have an existing inspection
+       let existingInspection = null;
+       if (currentCheckId) {
+@@ -871,13 +956,15 @@
+ 
+       // First update or create the site check status
+       const statusPayload = {
+-        siteId: parseInt(siteSelectedForGlobal?.siteId, 10),
+-        type: 'Inspection',
+-        subType: 'Plant and Equipment Inspection',
+-        category: 'Refuge Intercom Testing',
++        siteId: parseInt(authoritativeSiteId, 10),
++        type: siteCheck?.type || 'Inspection',
++        // OLD internal values would break the UI route.
++        // NEW: preserve the original Site Check routing values.
++        subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
++        category: siteCheck?.category || 'Refuge Intercom Testing & Inspection',
+         status: 'Done',
+-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+-        dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
++        startDate: `${submissionInspectionDate}T00:00:00`,
++        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
+         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
+         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
+       };
+@@ -912,10 +999,12 @@
+       // Then update or create the generic inspection record
+       const inspectionPayload = {
+         ...formData,
+-        siteId: siteSelectedForGlobal?.siteId,
++        siteId: authoritativeSiteId,
+         assetId: formData.selectedAsset?.assetId || formData.assetId,
+         client: formData.clientUser?.id || formData.client,
+         engineer: formData.engineer,
++        inspectionDate: submissionInspectionDate,
++        signedDate: submissionInspectionDate,
+         siteContact: formData.siteContactUser?.id || formData.siteContact,
+         type: 'Inspection',
+         subType: 'Refuge Intercom',
+@@ -946,7 +1035,7 @@
+       console.log('Inspection data saved successfully:', saveResponse.data);
+ 
+       // Generate PDF
+-      const pdfResult = await generatePDF(true);
++      const pdfResult = await generatePDF(true, submissionInspectionDate);
+       if (!pdfResult.success) {
+         throw new Error(pdfResult.error || "Failed to generate PDF");
+       }
+@@ -974,7 +1063,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
+               )
+           ) || [];
+ 
+@@ -1048,7 +1137,7 @@
+       const filteredUsers =
+           users?.filter((user) =>
+               user.taggedSites?.some(
+-                  (site) => site.id === siteSelectedForGlobal?.siteId
++                  (site) => Number(site.id ?? site.siteId) === authoritativeSiteId
+               )
+           ) || [];
+ 
+@@ -1499,7 +1588,7 @@
+                   ) : (
+                       <RiskScoreCard
+                           desc={`Inspection - Fire Alarm to meet BS5839 - Refuge Intercom Testing`}
+-                          siteId={siteSelectedForGlobal?.siteId}
++                          siteId={authoritativeSiteId}
+                           checkId={currentCheckId}
+                           createdBy={loggedInUserData?.id}
+                           taggedAsset={selectedAsset?.assetId}
+@@ -1538,6 +1627,9 @@
+               </div>
+             </div>
+             <div className="col-md-6">
++              {/* =========================================================
++                  OLD ENGINEER FIELD - COMMENTED FOR REVIEW
++
+               <div className="mb-3">
+                 <label className="form-label fw-bold">Engineer's Name</label>
+                 <input
+@@ -1550,6 +1642,19 @@
+                     disabled
+                 />
+               </div>
++
++              ========================================================= */}
++
++              {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++              <SiteCheckEngineerSelector
++                options={engineerOptions}
++                value={selectedEngineer}
++                onChange={handleEngineerSelect}
++                isOpen={checkStatus === "Open"}
++                disabled={isSubmitted || !isFormEditable}
++                loading={isLoadingEngineers}
++                error={validationErrors.engineer || engineerLoadError}
++              />
+               <div className="mb-3">
+                 <label className="form-label">Date</label>
+                 <input
+--- a/src/components/Protected/Sites/SiteChecks/InspectionFireCertificate.jsx
++++ b/src/components/Protected/Sites/SiteChecks/InspectionFireCertificate.jsx
+@@ -9,12 +9,20 @@
+ import pdfTemplate from './pdf/Fire Alarm.pdf';
+ import RiskScoreCard from "./RiskScoreCard";
+ import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
++import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
++import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
++import {
++    getUkLocalDate,
++    getUkLocalDateAsDate,
++    isCurrentUkInspectionDate,
++} from "./shared/siteCheckDateUtils";
+ 
+ const InspectionFireCertificate = ({
+                                        checkId,
+                                        sasToken,
+                                        siteAssets = [],
+                                        getSiteAssets,
++                                       getUsers,
+                                        siteSelectedForGlobal = {},
+                                        loggedInUserData = {},
+                                        siteCheck = {},
+@@ -35,6 +43,13 @@
+     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+     const users = useSelector((state) => state.site.users || []);
+ 
++    // NEW: Use the Site Check's own site and Open/Done status.
++    const authoritativeSiteId = siteCheck?.siteId
++        ? Number(siteCheck.siteId)
++        : Number(siteSelectedForGlobal?.siteId) || null;
++    const checkStatus = inspectionDetails?.status || siteCheck?.status || "Open";
++    const [lastEngineerId, setLastEngineerId] = useState(null);
++
+     const [folderIds, setFolderIds] = useState({
+         logBooks: null,
+         fireLogBook: null,
+@@ -111,7 +126,7 @@
+         additionalComments: "",
+         additionalComments1: "",
+         additionalComments2: "",
+-        inspectionDate: new Date(),
++        inspectionDate: getUkLocalDateAsDate(),
+         installationName: "",
+         installationAddress: "",
+         inspectionBy: loggedInUserData?.id,
+@@ -140,6 +155,43 @@
+         actionId: null,
+     });
+ 
++    // NEW: Shared engineer behaviour copied from Air Conditioning.
++    const {
++        engineerOptions,
++        selectedEngineer,
++        isLoadingEngineers,
++        engineerLoadError,
++    } = useSiteCheckEngineers({
++        users,
++        getUsers,
++        siteId: authoritativeSiteId,
++        loggedInUserData,
++        status: checkStatus,
++        selectedEngineerId: formData.inspectionBy,
++        selectedEngineerUser: formData.user,
++        lastEngineerId,
++    });
++
++    // NEW: Open = logged-in engineer/current UK date. Done is restored from API.
++    useEffect(() => {
++        if (siteCheck && Number(siteCheck.checkId) === Number(checkId)) {
++            setInspectionDetails(siteCheck);
++            const done = siteCheck.status === "Done";
++            setIsSubmitted(done);
++            setIsFormEditable(!done);
++        }
++
++        setLastEngineerId(null);
++        setFormData((prev) => ({
++            ...prev,
++            inspectionBy: siteCheck?.status === "Done" ? "" : (loggedInUserData?.id || ""),
++            user: siteCheck?.status === "Done" ? {} : (loggedInUserData || {}),
++            inspectionDate: siteCheck?.status === "Open"
++                ? getUkLocalDateAsDate()
++                : prev.inspectionDate,
++        }));
++    }, [checkId, authoritativeSiteId, siteCheck?.status, loggedInUserData?.id]);
++
+     // Helper function to fetch PDF as ArrayBuffer
+     const fetchPdfTemplate = async () => {
+         try {
+@@ -225,10 +277,10 @@
+             // Save the inspection data with the actionId
+             const inspectionPayload = {
+                 ...formData,
+-                siteId: siteSelectedForGlobal?.siteId,
++                siteId: authoritativeSiteId,
+                 checkId: currentCheckId,
+                 actionId: verifiedAction.actionId,
+-                inspectionBy: loggedInUserData.id,
++                inspectionBy: formData.inspectionBy,
+                 type: 'Inspection',
+                 subType: 'Fire Alarm',
+                 category: inspectionDetails?.category || 'Fire Alarm'
+@@ -289,9 +341,9 @@
+                 setFormData(prev => ({ ...prev, actionId: null }));
+             }
+ 
+-            if (!siteSelectedForGlobal?.siteId || !currentCheckId) return;
++            if (!authoritativeSiteId || !currentCheckId) return;
+ 
+-            const response = await get(`/api/site/actions/${siteSelectedForGlobal.siteId}`);
++            const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+             if (response && response.length > 0) {
+                 const relevantActions = response.filter(action =>
+                     Number(action.checkId) === Number(currentCheckId)
+@@ -316,7 +368,7 @@
+     };
+ 
+     // Generate PDF function
+-    const generatePDF = async () => {
++    const generatePDF = async (inspectionDateOverride) => {
+         try {
+             setIsGeneratingPDF(true);
+ 
+@@ -326,6 +378,11 @@
+                 inspectionDetails = await fetchInspectionDetails(currentCheckId);
+             }
+ 
++            // NEW: Use the exact engineer/date selected for this submission.
++            const effectiveInspectionDate =
++                inspectionDateOverride || formData.inspectionDate;
++            const effectiveEngineer = formData.user || selectedEngineer || loggedInUserData || {};
++
+             // Generate PDF content
+             const { PDFDocument } = await import('pdf-lib');
+             const pdfBytes = await fetchPdfTemplate();
+@@ -379,12 +436,12 @@
+             setTextField('Address_2', formData.installationAddress || '');
+ 
+             // Set inspection company info
+-            setTextField('inspectionTest', loggedInUserData?.companyName || '');
+-            setTextField('Address_3', loggedInUserData?.companyAddress || '');
++            setTextField('inspectionTest', effectiveEngineer?.companyName || loggedInUserData?.companyName || '');
++            setTextField('Address_3', effectiveEngineer?.companyAddress || loggedInUserData?.companyAddress || '');
+ 
+             // Set inspection date
+-            const formattedDate = formData.inspectionDate
+-                ? new Date(formData.inspectionDate).toLocaleDateString('en-GB')
++            const formattedDate = effectiveInspectionDate
++                ? new Date(effectiveInspectionDate).toLocaleDateString('en-GB')
+                 : '';
+             setTextField('Date', formattedDate);
+ 
+@@ -438,15 +495,18 @@
+             setTextField('additionalComments1', formData.additionalComments1 || '');
+             setTextField('additionalComments2', formData.additionalComments2 || '');
+ 
+-            // Set inspector details
+-            const inspector = users.find(u => u.id === loggedInUserData?.id);
+-            setTextField('Engineer', inspector?.name || loggedInUserData?.name || '');
+-            setTextField('Position', loggedInUserData?.role || '');
++            // OLD:
++            // const inspector = users.find(u => u.id === loggedInUserData?.id);
++            // Engineer/position/signature all came from the logged-in user.
++            // NEW: use the selected inspection engineer.
++            const inspector = effectiveEngineer;
++            setTextField('Engineer', inspector?.name || '');
++            setTextField('Position', inspector?.role || '');
+ 
+-            // Add signature if available
+-            if (loggedInUserData?.signature) {
++            // Add the selected engineer signature if available.
++            if (inspector?.signature) {
+                 try {
+-                    const signatureUrl = `${loggedInUserData.signature}?${sasToken}`;
++                    const signatureUrl = `${inspector.signature}?${sasToken}`;
+                     const signatureResponse = await fetch(signatureUrl);
+                     const signatureImageBytes = await signatureResponse.arrayBuffer();
+ 
+@@ -496,7 +556,8 @@
+             await uploadPdfToServer(
+                 blob,
+                 fileName,
+-                inspectionDetails?.category || 'Fire Alarm'
++                inspectionDetails?.category || 'Fire Alarm',
++                effectiveInspectionDate
+             );
+ 
+             return { success: true, fileName };
+@@ -643,15 +704,17 @@
+         return date.toISOString().replace('T', ' ').split('.')[0];
+     };
+ 
+-    const uploadPdfToServer = async (pdfBlob, fileName, category) => {
++    const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride) => {
+         try {
+             setIsUploading(true);
++            const inspectionDateForUpload =
++                inspectionDateOverride || formData.inspectionDate;
+ 
+             // First save locally
+             await savePdfToLocal(pdfBlob, fileName);
+ 
+             // Ensure we have the latest folder structure
+-            const targetFolderId = await fetchFolderStructure(siteSelectedForGlobal?.siteId, category);
++            const targetFolderId = await fetchFolderStructure(authoritativeSiteId, category);
+             if (!targetFolderId) {
+                 throw new Error('Could not determine target folder for PDF upload');
+             }
+@@ -673,9 +736,9 @@
+                         name: fileName,
+                         originalFileName: fileName,
+                         fileVersion: (existingFile.fileVersion || 1) + 1,
+-                        siteId: siteSelectedForGlobal?.siteId,
+-                        issueDate: formatDateForBackend(formData.inspectionDate),
+-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++                        siteId: authoritativeSiteId,
++                        issueDate: formatDateForBackend(inspectionDateForUpload),
++                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+                         uploaderUserId: loggedInUserData?.id,
+                         reviewerUserId: loggedInUserData?.id,
+                         referenceNumber: `FA-${new Date().getTime()}`
+@@ -711,9 +774,9 @@
+                         name: fileName.split('.')[0],
+                         originalFileName: fileName,
+                         fileVersion: fileVersion,
+-                        siteId: siteSelectedForGlobal?.siteId,
+-                        issueDate: formatDateForBackend(formData.inspectionDate),
+-                        expiryDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++                        siteId: authoritativeSiteId,
++                        issueDate: formatDateForBackend(inspectionDateForUpload),
++                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+                         uploaderUserId: loggedInUserData?.id,
+                         reviewerUserId: loggedInUserData?.id,
+                         referenceNumber: `FA-${new Date().getTime()}`
+@@ -749,7 +812,7 @@
+ 
+     const checkFileExists = async (folderId, fileName) => {
+         try {
+-            const siteId = siteSelectedForGlobal?.siteId;
++            const siteId = authoritativeSiteId;
+             if (!siteId || !folderId) return { exists: false, file: null };
+ 
+             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -772,7 +835,7 @@
+ 
+     const getHighestFileVersion = async (folderId, fileName) => {
+         try {
+-            const siteId = siteSelectedForGlobal?.siteId;
++            const siteId = authoritativeSiteId;
+             if (!siteId || !folderId) return 1;
+ 
+             const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+@@ -826,6 +889,14 @@
+                     apiChecksMap[check.check] = check;
+                 });
+ 
++                const savedEngineerId = apiData?.inspectionBy || apiData?.inspectionByUser?.id || null;
++                setLastEngineerId(savedEngineerId);
++                const engineerUser = apiData?.inspectionByUser ||
++                    users.find((u) => String(u.id) === String(savedEngineerId));
++                const isCurrentOpenInspection =
++                    checkStatus === "Open" &&
++                    isCurrentUkInspectionDate(apiData?.inspectionDate);
++
+                 setFormData(prev => ({
+                     ...prev,
+                     id: apiData?.id || prev.id,
+@@ -852,7 +923,24 @@
+                     additionalComments1: apiData?.additionalComments1 || prev.additionalComments1,
+                     additionalComments2: apiData?.additionalComments2 || prev.additionalComments2,
+                     files: apiData?.files || prev.files,
+-                    user: apiData?.inspectionByUser || prev.user,
++
++                    // OLD: user: apiData?.inspectionByUser || prev.user,
++                    // NEW: same Open/Done engineer/date behaviour as Air Conditioning.
++                    inspectionBy: checkStatus === "Open"
++                        ? (isCurrentOpenInspection
++                            ? (savedEngineerId || loggedInUserData?.id || "")
++                            : (loggedInUserData?.id || ""))
++                        : (savedEngineerId || prev.inspectionBy || ""),
++                    user: checkStatus === "Open"
++                        ? (isCurrentOpenInspection
++                            ? (engineerUser || loggedInUserData || {})
++                            : (loggedInUserData || {}))
++                        : (engineerUser || prev.user || {}),
++                    inspectionDate: checkStatus === "Open"
++                        ? getUkLocalDateAsDate()
++                        : (apiData?.inspectionDate
++                            ? new Date(`${String(apiData.inspectionDate).slice(0, 10)}T12:00:00`)
++                            : prev.inspectionDate),
+                 }));
+ 
+ 
+@@ -908,8 +996,8 @@
+     useEffect(() => {
+         const fetchData = async () => {
+             getUsers();
+-            if (siteSelectedForGlobal?.siteId) {
+-                await fetchFolderStructure(siteSelectedForGlobal.siteId, 'Fire Alarm');
++            if (authoritativeSiteId) {
++                await fetchFolderStructure(authoritativeSiteId, 'Fire Alarm');
+             }
+ 
+             if (checkId) {
+@@ -918,13 +1006,13 @@
+ 
+             await fetchExistingActions();
+ 
+-            if (siteSelectedForGlobal?.siteId) {
+-                getSiteAssets(siteSelectedForGlobal.siteId);
++            if (authoritativeSiteId) {
++                getSiteAssets(authoritativeSiteId);
+             }
+         };
+ 
+         fetchData();
+-    }, [siteSelectedForGlobal?.siteId, checkId]);
++    }, [authoritativeSiteId, checkId]);
+ 
+     useEffect(() => {
+         if (license?.companyName) {
+@@ -975,11 +1063,20 @@
+     };
+ 
+     const handleDateChange = (date) => {
+-        setFormData(prev => ({ ...prev, inspectionDate: date || new Date() }));
++        setFormData(prev => ({ ...prev, inspectionDate: date || getUkLocalDateAsDate() }));
+     };
+ 
+ 
+ 
++    // NEW: Shared engineer dropdown selection.
++    const handleEngineerSelect = (event, newValue) => {
++        setFormData((prev) => ({
++            ...prev,
++            inspectionBy: newValue?.id || "",
++            user: newValue || {},
++        }));
++    };
++
+     const submitInspection = async (e) => {
+         e.preventDefault();
+ 
+@@ -993,6 +1090,11 @@
+             return;
+         }
+ 
++        if (!formData.inspectionBy || !selectedEngineer) {
++            toast.error("Please select an active engineer for this Site Check.");
++            return;
++        }
++
+ 
+ 
+         const hasAdditionalComments = formData.additionalComments.trim().length > 0;
+@@ -1005,15 +1107,29 @@
+         setIsLoading(true);
+ 
+         try {
++            const submissionInspectionDate = checkStatus === "Open"
++                ? getUkLocalDateAsDate()
++                : formData.inspectionDate;
++            const submissionDateString = getUkLocalDate(submissionInspectionDate);
++
++            if (checkStatus === "Open") {
++                setFormData((prev) => ({
++                    ...prev,
++                    inspectionDate: submissionInspectionDate,
++                }));
++            }
++
+             // 1. First create/update site check record
+             const statusPayload = {
+-                siteId: siteSelectedForGlobal?.siteId,
+-                type: 'Inspection',
+-                subType: 'Fire Alarm',
+-                category: 'Fire Alarm',
++                siteId: authoritativeSiteId,
++                type: siteCheck?.type || 'Inspection',
++                // OLD: subType/category were replaced with generic Fire Alarm values.
++                // NEW: preserve the original UpdateSiteCheck routing values.
++                subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
++                category: siteCheck?.category || inspectionDetails?.category || 'Fire Alarm',
+                 status: 'Done',
+-                startDate: new Date().toISOString(),
+-                dueDate: formatLocalDateTime(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
++                startDate: `${submissionDateString}T00:00:00`,
++                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+                 leadUserID: loggedInUserData?.id,
+                 assistantUserID: loggedInUserData?.id
+             };
+@@ -1031,9 +1147,10 @@
+             // 2. Save inspection data
+             const inspectionPayload = {
+                 ...formData,
+-                siteId: siteSelectedForGlobal?.siteId,
++                siteId: authoritativeSiteId,
+                 checkId: checkIdToUse,
+-                inspectionBy: loggedInUserData?.id,
++                inspectionBy: formData.inspectionBy,
++                inspectionDate: submissionInspectionDate,
+                 actionId: existingAction?.actionId || formData.actionId,
+                 batteryTestResults: formData.batteryTestResults.slice(0, formData.batteryCount)
+             };
+@@ -1043,7 +1160,7 @@
+                 : await post("/api/site-check/fire-alarm-inspection", inspectionPayload);
+ 
+             // 3. Generate and upload PDF
+-            const pdfResult = await generatePDF();
++            const pdfResult = await generatePDF(submissionInspectionDate);
+             if (!pdfResult.success) {
+                 console.error("PDF generation/upload failed");
+             }
+@@ -1453,7 +1570,7 @@
+                                 ) : (
+                                     <RiskScoreCard
+                                         desc={`Inspection - Fire Alarm to meet BS5839 - ${inspectionDetails?.category || ''}`}
+-                                        siteId={siteSelectedForGlobal?.siteId}
++                                        siteId={authoritativeSiteId}
+                                         checkId={currentCheckId}
+                                         createdBy={loggedInUserData?.id}
+                                         onRiskAssessmentComplete={handleRiskAssessmentComplete}
+@@ -1518,6 +1635,9 @@
+                     <h5 className="mb-3">For the Inspection & Test of the system:</h5>
+                     <div className="row mb-3">
+                         <div className="col-md-4">
++                            {/* =========================================================
++                                OLD ENGINEER NAME FIELD - COMMENTED FOR REVIEW
++
+                             <div className="mb-3">
+                                 <label className="form-label">Name</label>
+                                 <input
+@@ -1527,6 +1647,20 @@
+                                     disabled
+                                 />
+                             </div>
++
++                            ========================================================= */}
++
++                            {/* NEW SHARED ENGINEER CONTROL - MATCHES AIR CONDITIONING */}
++                            <SiteCheckEngineerSelector
++                                options={engineerOptions}
++                                value={selectedEngineer}
++                                onChange={handleEngineerSelect}
++                                isOpen={checkStatus === "Open"}
++                                disabled={isSubmitted || !isFormEditable}
++                                loading={isLoadingEngineers}
++                                error={engineerLoadError}
++                                label="Name"
++                            />
+                         </div>
+                         <div className="col-md-4">
+                             <div className="mb-3">
+@@ -1598,7 +1732,6 @@
+     siteAssets: state.site.siteAssets || [],
+     siteSelectedForGlobal: state.site.siteSelectedForGlobal || {},
+     loggedInUserData: state.site.loggedInUserData || {},
+-    siteCheck: state.site.siteCheck || {},
+ });
+ 
+ export default connect(mapStateToProps, { getSiteAssets, getUsers })(
+--- a/src/components/Protected/Sites/SiteChecks/UpdateSiteCheck.jsx
++++ b/src/components/Protected/Sites/SiteChecks/UpdateSiteCheck.jsx
+@@ -649,6 +649,7 @@
+                                     sasToken={sasToken}
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck?.category}
++                                    siteCheck={siteCheck}
+                                     leadUserID={siteCheck?.leadUserID}
+                                 />
+                             </Item>
+@@ -660,6 +661,7 @@
+                                     sasToken={sasToken}
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck?.category}
++                                    siteCheck={siteCheck}
+                                     leadUserID={siteCheck?.leadUserID}
+                                 />
+                             </Item>
+@@ -773,6 +775,7 @@
+                                     sasToken={sasToken}
+                                     subType={siteCheck?.subType}
+                                     category={siteCheck.category}
++                                    siteCheck={siteCheck}
+                                     leadUserID={siteCheck?.leadUserID}
+                                 />
+                             </Item>
+--- a/src/components/Protected/Sites/SiteChecks/shared/siteCheckDateUtils.js
++++ b/src/components/Protected/Sites/SiteChecks/shared/siteCheckDateUtils.js
+@@ -34,3 +34,15 @@
+  */
+ export const isCurrentUkInspectionDate = (inspectionDate) =>
+   String(inspectionDate || "").slice(0, 10) === getUkLocalDate();
++
++/**
++ * Date-object version of the current UK calendar date.
++ * Midday avoids browser/DST midnight edge cases when used by DatePicker.
++ */
++export const getUkLocalDateAsDate = (date = new Date()) => {
++  const [year, month, day] = getUkLocalDate(date)
++    .split("-")
++    .map(Number);
++
++  return new Date(year, month - 1, day, 12, 0, 0, 0);
++};
+--- a/src/components/Protected/Sites/SiteChecks/shared/siteCheckDateUtils.test.js
++++ b/src/components/Protected/Sites/SiteChecks/shared/siteCheckDateUtils.test.js
+@@ -1,6 +1,7 @@
+ import {
+   getSiteCheckDateByStatus,
+   getUkLocalDate,
++  getUkLocalDateAsDate,
+   isCurrentUkInspectionDate,
+ } from "./siteCheckDateUtils";
+ 
+@@ -23,6 +24,16 @@
+     );
+   });
+ 
++  test("returns a Date object for DatePicker using the UK calendar date", () => {
++    const value = getUkLocalDateAsDate(
++      new Date("2026-08-06T23:30:00.000Z")
++    );
++
++    expect(value.getFullYear()).toBe(2026);
++    expect(value.getMonth()).toBe(7);
++    expect(value.getDate()).toBe(7);
++  });
++
+   test("recognises an inspection saved on the current UK date", () => {
+     expect(
+       isCurrentUkInspectionDate(`${getUkLocalDate()}T00:00:00`)
