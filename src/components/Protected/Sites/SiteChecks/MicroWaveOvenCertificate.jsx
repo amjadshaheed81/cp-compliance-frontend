@@ -23,6 +23,8 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import {
   getUkLocalDate,
   isCurrentUkInspectionDate,
+  toJavaLocalDateTime,
+  toJavaLocalDate,
 } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
@@ -133,6 +135,7 @@ const MicroWaveOvenCertificate = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Reset only the shared engineer/date fields when another Site Check opens.
@@ -721,12 +724,6 @@ const MicroWaveOvenCertificate = ({
     }));
   };
 
-  const formatDateForBackend = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toISOString().replace('T', ' ').split('.')[0];
-  };
-
   const calculateExpiryDate = (visitDate, repeatFrequency) => {
     const date = new Date(visitDate);
     switch (repeatFrequency) {
@@ -850,7 +847,7 @@ const MicroWaveOvenCertificate = ({
        * OLD CODE - COMMENTED FOR REVIEW
        *
        * const formData = new FormData();
-       * issueDate: formatDateForBackend(formData.inspectionDate)
+       * issueDate: toJavaLocalDateTime(formData.inspectionDate)
        *
        * The local FormData variable hid the React formData state, so the
        * document issue and expiry dates could be created from undefined.
@@ -871,10 +868,10 @@ const MicroWaveOvenCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(
+            issueDate: toJavaLocalDateTime(
               inspectionDateForUpload
             ),
-            expiryDate: formatDateForBackend(
+            expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
                 siteCheckDetails?.repeatFrequency
@@ -920,10 +917,10 @@ const MicroWaveOvenCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(
+            issueDate: toJavaLocalDateTime(
               inspectionDateForUpload
             ),
-            expiryDate: formatDateForBackend(
+            expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
                 siteCheckDetails?.repeatFrequency
@@ -1196,8 +1193,11 @@ const MicroWaveOvenCertificate = ({
     console.log('All validations passed, proceeding with submission...');
 
     try {
-      // Open status only controls the default date shown in the form.
-      // Submit uses the values currently held by the form controls.
+      // NEW: Match Air Conditioning. An Open check is submitted using
+      // today's UK date instead of an older inspection record date.
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       // Debug: Log current form data
       console.log('Current form data:', JSON.stringify(formData, null, 2));
 
@@ -1241,7 +1241,12 @@ const MicroWaveOvenCertificate = ({
 
         // NEW: Use the same UK date throughout the completed check.
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(
+          calculateExpiryDate(
+            submissionInspectionDate,
+            siteCheckDetails?.repeatFrequency
+          )
+        ),
         leadUserID: loggedInUserData?.id
           ? String(loggedInUserData.id)
           : '0',
@@ -1289,9 +1294,9 @@ const MicroWaveOvenCertificate = ({
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
 
-        // Save the date values currently selected in the form.
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        // NEW: Explicitly override stale React state with the submission date.
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
 
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
@@ -1327,14 +1332,20 @@ const MicroWaveOvenCertificate = ({
 
       // Generate PDF - with test mode
       console.log('Generating PDF...');
-      const testPdfResult = await generatePDF(false); // First generate without upload for testing
+      const testPdfResult = await generatePDF(
+        false,
+        submissionInspectionDate
+      ); // First generate without upload for testing
       if (!testPdfResult.success) {
         console.error('PDF generation test failed:', testPdfResult.error);
         throw new Error(testPdfResult.error || "Failed to generate PDF");
       }
       console.log('PDF generation test successful, now uploading...');
 
-      const pdfResult = await generatePDF(true); // Now generate with upload
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate
+      ); // Now generate with upload
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate and upload PDF");
       }

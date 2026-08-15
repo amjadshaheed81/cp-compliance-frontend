@@ -24,7 +24,7 @@ import RiskScoreCard2 from "./RiskScoreCard2";
 import { PDFDocument } from "pdf-lib";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime } from "./shared/siteCheckDateUtils";
 
 const WaterChlorinationCertificate = ({
   sasToken,
@@ -123,6 +123,7 @@ The capacity of the tank is ${capacity} litres`;
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Open checks always show today's UK date and default to logged-in engineer.
@@ -509,12 +510,6 @@ The capacity of the tank is ${capacity} litres`;
     return date;
   };
 
-  const formatDateForBackend = (dateVal) => {
-    if (!dateVal) return null;
-    const d = new Date(dateVal);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
-  };
-
   const uploadPdfToServer = useCallback(
     async (pdfBlob, fileName, inspectionDateOverride = null) => {
       let exists;
@@ -557,8 +552,8 @@ The capacity of the tank is ${capacity} litres`;
             originalFileName: fileName,
             fileVersion,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.date),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `WTC-${new Date().getTime()}`
@@ -776,8 +771,10 @@ The capacity of the tank is ${capacity} litres`;
     setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
     try {
-      // Open status only controls the default date shown in the form.
-      // Submission uses the current formData values below.
+      const submissionInspectionDate = formData.date;
+      const submissionClientDate = formData.clientDate;
+      const submissionEngineerDate = formData.engineerDate;
+
       const finalReport = getDefaultReportTemplate(tankCapacity);
       const statusPayload = {
         siteId: parseInt(authoritativeSiteId, 10),
@@ -788,7 +785,7 @@ The capacity of the tank is ${capacity} litres`;
         category: siteCheck?.category || "Water - Storage System Chlorination",
         status: "Done",
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: String(loggedInUserData?.id || "0"),
         assistantUserID: String(loggedInUserData?.id || "0"),
       };
@@ -819,9 +816,9 @@ The capacity of the tank is ${capacity} litres`;
         engineer: formData.engineer,
         engineerName: selectedEngineer?.name || formData.engineerName || "",
         param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
-        date: formData.date,
-        clientDate: formData.clientDate,
-        engineerDate: formData.engineerDate,
+        date: submissionInspectionDate,
+        clientDate: submissionClientDate,
+        engineerDate: submissionEngineerDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: "Maintenance",
         subType: "Chlorination",
@@ -846,7 +843,7 @@ The capacity of the tank is ${capacity} litres`;
       }
 
 
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

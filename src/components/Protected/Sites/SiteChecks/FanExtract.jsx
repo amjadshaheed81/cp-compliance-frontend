@@ -20,7 +20,7 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -138,6 +138,7 @@ const FanExtract = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
@@ -364,11 +365,6 @@ const FanExtract = ({
       return null;
     }
   };
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
 
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
@@ -701,8 +697,8 @@ const FanExtract = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `EF-${new Date().getTime()}`
@@ -733,8 +729,8 @@ const FanExtract = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               note: 'Extract Fan Certificate',
             fileVersion: fileVersion,
             siteId: authoritativeSiteId || 0,
@@ -869,8 +865,8 @@ const FanExtract = ({
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
@@ -941,7 +937,10 @@ const FanExtract = ({
     setIsLoading(true);
 
     try {
-      // Open status only controls the default date shown in the form; Submit uses formData.
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -962,7 +961,7 @@ const FanExtract = ({
         category: siteCheck?.category || 'Extract Fan Cleaning',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1001,8 +1000,8 @@ const FanExtract = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Extract Fan',
@@ -1034,7 +1033,7 @@ const FanExtract = ({
 
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

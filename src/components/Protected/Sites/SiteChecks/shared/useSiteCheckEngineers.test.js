@@ -9,6 +9,13 @@ describe("buildSiteCheckEngineerOptions", () => {
     taggedSites: [],
   };
 
+  const leadEngineer = {
+    id: 5,
+    name: "Zed Lead Engineer",
+    status: "Active",
+    taggedSites: [{ id: siteId }],
+  };
+
   const activeSiteEngineer = {
     id: 2,
     name: "Alex Engineer",
@@ -30,29 +37,25 @@ describe("buildSiteCheckEngineerOptions", () => {
     taggedSites: [{ id: 99 }],
   };
 
-  test("Open includes the logged-in user and active users for the Site Check site", () => {
+  test("Open orders logged-in engineer first, lead engineer second, then remaining site engineers alphabetically", () => {
     const result = buildSiteCheckEngineerOptions({
-      users: [
-        activeSiteEngineer,
-        inactiveSiteEngineer,
-        otherSiteEngineer,
-      ],
+      users: [leadEngineer, activeSiteEngineer, inactiveSiteEngineer, otherSiteEngineer],
       siteId,
       loggedInUserData: loggedInUser,
       status: "Open",
-      lastEngineerId: null,
+      leadEngineerId: leadEngineer.id,
     });
 
-    expect(result.map((user) => user.id)).toEqual([1, 2]);
+    expect(result.map((user) => user.id)).toEqual([1, 5, 2]);
   });
 
-  test("Open keeps a same-day previously selected engineer near the top", () => {
+  test("Open does not duplicate the lead when the logged-in engineer is also the lead", () => {
     const result = buildSiteCheckEngineerOptions({
       users: [activeSiteEngineer],
       siteId,
       loggedInUserData: loggedInUser,
       status: "Open",
-      lastEngineerId: activeSiteEngineer.id,
+      leadEngineerId: loggedInUser.id,
     });
 
     expect(result.map((user) => user.id)).toEqual([1, 2]);

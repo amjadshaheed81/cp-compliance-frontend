@@ -22,6 +22,8 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import {
   getUkLocalDate,
   isCurrentUkInspectionDate,
+  toJavaLocalDateTime,
+  toJavaLocalDate,
 } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
@@ -139,6 +141,7 @@ const CctvAlarmCertificate = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Reset the common engineer/date fields when another Site Check opens.
@@ -751,12 +754,6 @@ const CctvAlarmCertificate = ({
     }));
   };
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -887,7 +884,7 @@ const CctvAlarmCertificate = ({
        * OLD CODE - COMMENTED FOR REVIEW
        *
        * const formData = new FormData();
-       * issueDate: formatDateForBackend(formData.inspectionDate)
+       * issueDate: toJavaLocalDateTime(formData.inspectionDate)
        *
        * The local FormData variable hid the React formData state.
        */
@@ -907,10 +904,10 @@ const CctvAlarmCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(
+            issueDate: toJavaLocalDateTime(
               inspectionDateForUpload
             ),
-            expiryDate: formatDateForBackend(
+            expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
                 inspectionDetails?.repeatFrequency
@@ -956,10 +953,10 @@ const CctvAlarmCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(
+            issueDate: toJavaLocalDateTime(
               inspectionDateForUpload
             ),
-            expiryDate: formatDateForBackend(
+            expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
                 inspectionDetails?.repeatFrequency
@@ -1117,7 +1114,11 @@ const CctvAlarmCertificate = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      // Signature date comes from the signedDate form control.
+      // OLD:
+      // setTextField('on', dateFormat(formData.signedDate), smallFont);
+      // setTextField('on_2', dateFormat(formData.signedDate), smallFont);
+
+      // NEW: Open submission uses today's UK date consistently.
       setTextField('on', dateFormat(formData.signedDate), smallFont);
       setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
@@ -1224,8 +1225,11 @@ const CctvAlarmCertificate = ({
     setIsLoading(true);
 
     try {
-      // Open status only controls the default date shown in the form.
-      // Submit uses the values currently held by the form controls.
+      // NEW: Match Air Conditioning. An Open check is completed using
+      // today's UK date rather than an older inspection record date.
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       let existingInspection = null;
       if (currentCheckId) {
         try {
@@ -1261,9 +1265,14 @@ const CctvAlarmCertificate = ({
         //     )
         //   ),
 
-        // Preserve original Site Check date behaviour; due date is based on the inspection control.
+        // NEW: Use one current UK date throughout the completed check.
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(
+          calculateExpiryDate(
+            submissionInspectionDate,
+            inspectionDetails?.repeatFrequency
+          )
+        ),
         leadUserID: loggedInUserData?.id
           ? String(loggedInUserData.id)
           : '0',
@@ -1306,9 +1315,9 @@ const CctvAlarmCertificate = ({
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
 
-        // Save the date values currently selected in the form.
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        // NEW: Explicitly save the UK submission date, not stale state.
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
 
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
@@ -1339,7 +1348,10 @@ const CctvAlarmCertificate = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

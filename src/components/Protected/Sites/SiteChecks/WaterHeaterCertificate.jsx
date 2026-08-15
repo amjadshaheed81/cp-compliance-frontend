@@ -21,7 +21,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -142,6 +142,7 @@ const WaterHeaterCertificate = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
@@ -594,12 +595,6 @@ const WaterHeaterCertificate = ({
     }
   };
 
-  const formatDateForBackend = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toISOString().replace('T', ' ').split('.')[0];
-  };
-
   const calculateExpiryDate = (visitDate, repeatFrequency) => {
     const date = new Date(visitDate);
     switch (repeatFrequency) {
@@ -674,8 +669,8 @@ const WaterHeaterCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `WHR-${new Date().getTime()}`
@@ -706,8 +701,8 @@ const WaterHeaterCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
             note: 'Water Heater Service Report',
             fileVersion: fileVersion,
             siteId: authoritativeSiteId || 0,
@@ -908,8 +903,8 @@ const WaterHeaterCertificate = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Handle image embedding for PDF fields
       const imageFields = [
@@ -1155,7 +1150,10 @@ const WaterHeaterCertificate = ({
     setIsLoading(true);
 
     try {
-      // Open status only controls the default date shown in the form; Submit uses formData.
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       let existingInspection = null;
       if (currentCheckId) {
         try {
@@ -1175,7 +1173,7 @@ const WaterHeaterCertificate = ({
         category: siteCheck?.category || 'Water Heater Inspection & Service',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1211,8 +1209,8 @@ const WaterHeaterCertificate = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Water Heater',
@@ -1240,7 +1238,7 @@ const WaterHeaterCertificate = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1475,6 +1473,7 @@ const WaterHeaterCertificate = ({
                 <input
                     type="date"
                     className="form-control"
+                    name="inspectionDate"
                     value={formatDate(formData.inspectionDate)}
                     onChange={handleInputChange}
                     required
@@ -1991,6 +1990,7 @@ const WaterHeaterCertificate = ({
                 <input
                     type="date"
                     className="form-control"
+                    name="signedDate"
                     value={formatDate(formData.signedDate)}
                     onChange={handleInputChange}
                     required
@@ -2037,6 +2037,7 @@ const WaterHeaterCertificate = ({
                 <input
                     type="date"
                     className="form-control"
+                    name="signedDate"
                     value={formatDate(formData.signedDate)}
                     onChange={handleInputChange}
                     required

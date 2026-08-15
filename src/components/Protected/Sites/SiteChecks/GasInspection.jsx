@@ -20,7 +20,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -181,6 +181,7 @@ const GasSafetyRecord = ({
         selectedEngineerId: formData.engineer,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     const getPostCodeFromAddress = (address) =>
@@ -619,8 +620,8 @@ const GasSafetyRecord = ({
                     engineer: formData.engineer,
                     engineerName: formData.user?.name || formData.engineerName,
                     gasSafeRegNo: formData.user?.gasSafetyRegNo || formData.gasSafeRegNo,
-                    date: formData.date,
-                    engineerSignatureDate: formData.engineerSignatureDate,
+                    date: toJavaLocalDate(formData.date),
+                    engineerSignatureDate: toJavaLocalDate(formData.engineerSignatureDate),
                 };
 
                 const existingInspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
@@ -807,8 +808,8 @@ const GasSafetyRecord = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: authoritativeSiteId,
-                        issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.date),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -842,8 +843,8 @@ const GasSafetyRecord = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: authoritativeSiteId,
-                        issueDate: formatDateForBackend(inspectionDateOverride || formData.date),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.date),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -1090,7 +1091,7 @@ const GasSafetyRecord = ({
                 }
             };
 
-            // Use the selected/saved engineer and the date currently held by the form control.
+            // NEW: Use the exact submission date and selected/saved engineer.
             const effectiveInspectionDate = inspectionDateOverride || formData.date;
             const effectiveEngineer = selectedEngineer || (formData.user?.id ? formData.user : null) || loggedInUserData || {};
 
@@ -1346,8 +1347,11 @@ const GasSafetyRecord = ({
         setIsLoading(true);
 
         try {
-            // Open status only controls the default date shown in the form.
-            // Submission uses the current formData values below.
+            // NEW: Open checks submit with today's UK date.
+            const submissionInspectionDate = formData.date;
+            const submissionEngineerSignatureDate = formData.engineerSignatureDate;
+            const submissionReceivedByDate = formData.receivedByDate;
+
             let existingInspection = null;
             if (currentCheckId) {
                 try {
@@ -1366,8 +1370,8 @@ const GasSafetyRecord = ({
                 subType: siteCheck?.subType || 'Gas',
                 category: siteCheck?.category || 'Gas Safety Annual Inspection',
                 status: 'Done',
-                startDate: new Date().toISOString(),
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+                startDate: toJavaLocalDateTime(new Date()),
+                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1385,7 +1389,7 @@ const GasSafetyRecord = ({
             const inspectionPayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                date: formData.date,
+                date: toJavaLocalDate(submissionInspectionDate),
                 engineer: formData.engineer,
                 engineerName: selectedEngineer?.name || formData.engineerName,
                 gasSafeRegNo: selectedEngineer?.gasSafetyRegNo || formData.gasSafeRegNo,
@@ -1397,7 +1401,7 @@ const GasSafetyRecord = ({
                 actionId: formData.actionId,
                 operatingPressure: formData.operatingPressure ? parseFloat(formData.operatingPressure) : null,
                 combustionAnalyserReading: formData.combustionAnalyserReading ? parseFloat(formData.combustionAnalyserReading) : null,
-                engineerSignatureDate: formData.engineerSignatureDate,
+                engineerSignatureDate: toJavaLocalDate(submissionEngineerSignatureDate),
                 checkId: checkIdToUse
             };
 
@@ -1418,7 +1422,7 @@ const GasSafetyRecord = ({
                 throw new Error('Failed to save inspection data');
             }
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }

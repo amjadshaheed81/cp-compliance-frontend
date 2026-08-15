@@ -11,6 +11,7 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
+import { toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
@@ -209,16 +210,20 @@ const AirConditioning = ({
   const loggedInEngineerOption = selectableEngineers.find(
     (user) => String(user.id) === String(loggedInUserData?.id)
   );
-  const lastEngineerOption = selectableEngineers.find(
+  const leadEngineerOption = uniqueUsersById([
+    ...(users || []),
+    ...selectableEngineers,
+  ]).find(
     (user) =>
-      String(user.id) === String(lastEngineerId) &&
+      isActiveUser(user) &&
+      String(user.id) === String(siteCheck?.leadUserID) &&
       String(user.id) !== String(loggedInUserData?.id)
   );
 
   const engineerOptions = checkStatus === "Open"
     ? uniqueUsersById([
         loggedInEngineerOption,
-        lastEngineerOption,
+        leadEngineerOption,
         ...selectableEngineers,
       ])
     : uniqueUsersById([
@@ -316,7 +321,8 @@ const AirConditioning = ({
 
   const fetchInspectionData = async (
       siteCheckStatus = checkStatus,
-      assetsForSite = siteCheckAssets
+      assetsForSite = siteCheckAssets,
+      preserveOpenFormValues = false
   ) => {
     try {
       if (!checkId) return;
@@ -368,7 +374,7 @@ const AirConditioning = ({
           assetId: restoredAsset?.assetId || "",
           siteContact: mostRecentItem.siteContact || prev.siteContact,
           inspectionDate: siteCheckStatus === "Open"
-              ? getUkLocalDate()
+              ? (preserveOpenFormValues ? prev.inspectionDate : getUkLocalDate())
               : (mostRecentItem.inspectionDate || prev.inspectionDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           job: mostRecentItem.job || prev.job,
@@ -398,16 +404,18 @@ const AirConditioning = ({
           param6Remark: mostRecentItem.param6Remark || prev.param6Remark,
           client: mostRecentItem.client || "",
           engineer: siteCheckStatus === "Open"
-              ? (isCurrentOpenInspection
-                  ? (mostRecentItem.engineer || loggedInUserData?.id || "")
-                  : (loggedInUserData?.id || ""))
+              ? (preserveOpenFormValues
+                  ? (prev.engineer || loggedInUserData?.id || "")
+                  : (isCurrentOpenInspection
+                      ? (mostRecentItem.engineer || loggedInUserData?.id || "")
+                      : (loggedInUserData?.id || "")))
               : (mostRecentItem.engineer || prev.engineer || ""),
           user: siteCheckStatus === "Open"
-              ? openInspectionEngineer
+              ? (preserveOpenFormValues ? (prev.user || loggedInUserData || {}) : openInspectionEngineer)
               : (engineerUser || prev.user || {}),
           selectedAsset: restoredAsset || null,
           signedDate: siteCheckStatus === "Open"
-              ? getUkLocalDate()
+              ? (preserveOpenFormValues ? prev.signedDate : getUkLocalDate())
               : (mostRecentItem.signedDate || prev.signedDate),
           clientUser: clientUser || null,
           siteContactUser: siteContactUser || null,
@@ -675,7 +683,10 @@ const AirConditioning = ({
           `/api/site-check/generic-inspection`,
           buildInspectionPayload(currentCheckId, verifiedAction.actionId)
         );
-        await fetchInspectionData();
+        // Keep the values currently shown in the Open form after the
+        // intermediate Risk Assessment save. Re-fetching must not reset a
+        // date or engineer that the user has already selected.
+        await fetchInspectionData(checkStatus, siteCheckAssets, true);
         toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
     } catch (error) {
@@ -696,12 +707,6 @@ const AirConditioning = ({
     }));
   };
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -719,11 +724,11 @@ const AirConditioning = ({
     return `${expiry.toISOString().split('T')[0]}T00:00:00`;
   };
 
-  const buildInspectionPayload = (checkIdOverride, actionIdOverride, inspectionDateOverride) => ({
+  const buildInspectionPayload = (checkIdOverride, actionIdOverride, inspectionDateOverride, signedDateOverride) => ({
     address: formData.address,
     assetId: formData.selectedAsset?.assetId || formData.assetId,
     siteContact: formData.siteContactUser?.id || formData.siteContact,
-    inspectionDate: inspectionDateOverride || formData.inspectionDate,
+    inspectionDate: toJavaLocalDate(inspectionDateOverride || formData.inspectionDate),
     siteContactNo: formData.siteContactNo,
     job: formData.job,
     manufacturer: formData.manufacturer || formData.selectedAsset?.manufacturer,
@@ -752,7 +757,7 @@ const AirConditioning = ({
     param6Remark: formData.param6Remark,
     client: formData.clientUser?.id || formData.client,
     engineer: formData.engineer,
-    signedDate: inspectionDateOverride || formData.signedDate,
+    signedDate: toJavaLocalDate(signedDateOverride || formData.signedDate),
     actionId: actionIdOverride ?? formData.actionId,
     siteId: authoritativeSiteId,
     type: 'Inspection',
@@ -891,8 +896,8 @@ const AirConditioning = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: authoritativeSiteId || 0,
-                        issueDate: formatDateForBackend(inspectionDateForUpload),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `AC-${new Date().getTime()}`
@@ -923,8 +928,8 @@ const AirConditioning = ({
                     folderId: targetFolderId,
                     files: [{
                         name: fileName.split('.')[0],
-                        issueDate: formatDateForBackend(inspectionDateForUpload),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         note: 'Air Conditioning Certificate',
                         fileVersion: fileVersion,
                         siteId: authoritativeSiteId || 0,
@@ -968,7 +973,7 @@ const AirConditioning = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride, signedDateOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -1078,8 +1083,8 @@ const AirConditioning = ({
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
-      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), smallFont);
+      setTextField('on', dateFormat(signedDateOverride || formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(signedDateOverride || formData.signedDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -1172,6 +1177,11 @@ const AirConditioning = ({
     setIsLoading(true);
 
     try {
+      // The Open form may default to today's UK date, but once the user edits
+      // the control its value is authoritative for API/PDF persistence.
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       const statusPayload = {
         siteId: parseInt(authoritativeSiteId, 10),
         type: 'Inspection',
@@ -1179,7 +1189,7 @@ const AirConditioning = ({
         category: 'Air Conditioning Service',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatSiteCheckDueDate(formData.inspectionDate, inspectionDetails?.repeatFrequency),
+        dueDate: formatSiteCheckDueDate(submissionInspectionDate, inspectionDetails?.repeatFrequency),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1214,7 +1224,9 @@ const AirConditioning = ({
         `/api/site-check/generic-inspection`,
         buildInspectionPayload(
             checkIdForSave || statusResponse?.data?.checkId,
-            undefined
+            undefined,
+            submissionInspectionDate,
+            submissionSignedDate
         )
       );
 
@@ -1223,7 +1235,7 @@ const AirConditioning = ({
       }
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate, submissionSignedDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

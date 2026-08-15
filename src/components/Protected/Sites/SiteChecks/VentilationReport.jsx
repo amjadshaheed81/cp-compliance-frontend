@@ -20,7 +20,7 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -138,6 +138,7 @@ const VentilationReport = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
@@ -362,12 +363,6 @@ const VentilationReport = ({
       return null;
     }
   };
-
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
 
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
@@ -695,8 +690,8 @@ const VentilationReport = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `VENT-${new Date().getTime()}`
@@ -727,8 +722,8 @@ const VentilationReport = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               note: 'Ventilation System Certificate',
             fileVersion: fileVersion,
             siteId: authoritativeSiteId || 0,
@@ -863,8 +858,8 @@ const VentilationReport = ({
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(inspectionDateOverride || formData.signedDate), mediumFont);
-      setTextField('on_2', dateFormat(inspectionDateOverride || formData.signedDate), mediumFont);
+      setTextField('on', dateFormat(formData.signedDate), mediumFont);
+      setTextField('on_2', dateFormat(formData.signedDate), mediumFont);
 
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
@@ -943,6 +938,8 @@ const VentilationReport = ({
     setIsLoading(true);
 
     try {
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
 
       // First check if we have an existing inspection
       let existingInspection = null;
@@ -965,7 +962,7 @@ const VentilationReport = ({
         category: siteCheck?.category || category || 'Ventilation System(s) Servicing',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1000,8 +997,8 @@ const VentilationReport = ({
       const inspectionPayload = {
         ...formData,
         siteId: authoritativeSiteId,
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
@@ -1032,7 +1029,7 @@ const VentilationReport = ({
       }
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

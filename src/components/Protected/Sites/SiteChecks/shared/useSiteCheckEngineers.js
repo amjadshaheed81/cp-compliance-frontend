@@ -49,7 +49,7 @@ export const buildSiteCheckEngineerOptions = ({
   loggedInUserData,
   status,
   selectedEngineerUser,
-  lastEngineerId,
+  leadEngineerId,
 }) => {
   const selectableEngineers = sortUsersByName(
     uniqueUsersById([
@@ -65,16 +65,23 @@ export const buildSiteCheckEngineerOptions = ({
     (user) => String(user.id) === String(loggedInUserData?.id)
   );
 
-  const lastEngineerOption = selectableEngineers.find(
+  const leadEngineerOption = uniqueUsersById([
+    ...users,
+    ...selectableEngineers,
+  ]).find(
     (user) =>
-      String(user.id) === String(lastEngineerId) &&
+      isActiveUser(user) &&
+      String(user.id) === String(leadEngineerId) &&
       String(user.id) !== String(loggedInUserData?.id)
   );
 
   if (status === "Open") {
+    // Required order: logged-in engineer first, Site Check lead engineer
+    // second (when different), then the remaining active site engineers
+    // alphabetically. uniqueUsersById removes duplicates.
     return uniqueUsersById([
       loggedInEngineerOption,
-      lastEngineerOption,
+      leadEngineerOption,
       ...selectableEngineers,
     ]);
   }
@@ -104,7 +111,7 @@ const useSiteCheckEngineers = ({
   status,
   selectedEngineerId,
   selectedEngineerUser,
-  lastEngineerId,
+  leadEngineerId,
 }) => {
   const [isLoadingEngineers, setIsLoadingEngineers] = useState(false);
   const [engineerLoadError, setEngineerLoadError] = useState("");
@@ -148,7 +155,7 @@ const useSiteCheckEngineers = ({
         loggedInUserData,
         status,
         selectedEngineerUser,
-        lastEngineerId,
+        leadEngineerId,
       }),
     [
       users,
@@ -156,7 +163,7 @@ const useSiteCheckEngineers = ({
       loggedInUserData,
       status,
       selectedEngineerUser,
-      lastEngineerId,
+      leadEngineerId,
     ]
   );
 

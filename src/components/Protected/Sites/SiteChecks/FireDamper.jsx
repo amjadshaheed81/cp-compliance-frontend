@@ -21,7 +21,7 @@ import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -148,6 +148,7 @@ const FireDamper = ({
         selectedEngineerId: formData.engineer,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     useEffect(() => {
@@ -608,12 +609,6 @@ const FireDamper = ({
         return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
     }
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -805,8 +800,8 @@ const FireDamper = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: authoritativeSiteId || 0,
-                        issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `FD-${new Date().getTime()}`
@@ -837,8 +832,8 @@ const FireDamper = ({
                     folderId: targetFolderId,
                     files: [{
                         name: fileName.split('.')[0],
-                        issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         note: 'Fire Damper Inspection Report',
                         fileVersion: fileVersion,
                         siteId: authoritativeSiteId || 0,
@@ -1270,6 +1265,7 @@ const FireDamper = ({
         setIsLoading(true);
 
         try {
+            const submissionInspectionDate = formData.inspectionDate;
 
             let existingInspection = null;
             if (currentCheckId) {
@@ -1290,7 +1286,7 @@ const FireDamper = ({
                 category: siteCheck?.category || category || 'Passive Fire - Fire Damper Inspection',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };
@@ -1323,8 +1319,8 @@ const FireDamper = ({
             const inspectionPayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                inspectionDate: formData.inspectionDate,
-                signedDate: formData.signedDate,
+                inspectionDate: toJavaLocalDate(submissionInspectionDate),
+                signedDate: toJavaLocalDate(formData.signedDate),
                 assetId: formData.selectedAsset?.assetId || formData.assetId || null,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
@@ -1355,7 +1351,7 @@ const FireDamper = ({
 
             console.log('Inspection data saved successfully:', saveResponse.data);
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }

@@ -19,7 +19,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, getUkLocalDateTimeInput, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, getUkLocalDateTimeInput, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -260,6 +260,7 @@ const GasBoilerService = ({
         selectedEngineerId: formData.engineer,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     const getPostCodeFromAddress = (address) =>
@@ -577,12 +578,6 @@ const GasBoilerService = ({
         }
     };
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -723,8 +718,8 @@ const GasBoilerService = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: authoritativeSiteId,
-                        issueDate: formatDateForBackend(dateTimeOverride || formData.dateTimeOfIssue),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(dateTimeOverride || formData.dateTimeOfIssue),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -758,8 +753,8 @@ const GasBoilerService = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: authoritativeSiteId,
-                        issueDate: formatDateForBackend(dateTimeOverride || formData.dateTimeOfIssue),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(dateTimeOverride || formData.dateTimeOfIssue),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `GBS-${new Date().getTime()}`
@@ -837,7 +832,7 @@ const GasBoilerService = ({
                     console.warn(`Error setting checkbox ${fieldName}:`, error.message);
                 }
             };
-            // Use the selected/saved engineer and the date/time currently held by the form controls.
+            // NEW: Use the selected/saved engineer and exact submission date.
             const effectiveEngineer = selectedEngineer || (formData.user?.id ? formData.user : null) || loggedInUserData || {};
             const effectiveDateTimeOfIssue = dateTimeOverride || formData.dateTimeOfIssue;
             const effectiveEngineerPostCode = getPostCodeFromAddress(effectiveEngineer?.companyAddress);
@@ -932,7 +927,7 @@ const GasBoilerService = ({
             setTextField('Print Name', formData.siteContactUser?.name);
             setTextField('Date', formatDate(formData.customerSignatureDate));
             setTextField('Print Name_2', effectiveEngineer?.name || formData.engineerName || '');
-            setTextField('Date_2', formatDate(dateTimeOverride ? getUkLocalDate() : formData.engineerSignatureDate));
+            setTextField('Date_2', formatDate(formData.engineerSignatureDate));
 
             if (effectiveEngineer?.signature) {
                 try {
@@ -1019,9 +1014,9 @@ const GasBoilerService = ({
                 engineer: formData.engineer,
                 engineerName: formData.user?.name || formData.engineerName,
                 inspectionByUser: formData.user || selectedEngineer || loggedInUserData,
-                dateTimeOfIssue: formData.dateTimeOfIssue,
-                engineerSignatureDate: formData.engineerSignatureDate,
-                customerSignatureDate: formData.customerSignatureDate,
+                dateTimeOfIssue: toJavaLocalDate(formData.dateTimeOfIssue),
+                engineerSignatureDate: toJavaLocalDate(formData.engineerSignatureDate),
+                customerSignatureDate: toJavaLocalDate(formData.customerSignatureDate),
                 type: 'Inspection',
                 subType: 'Gas Boiler',
                 category: 'Gas Boiler Service'
@@ -1104,7 +1099,12 @@ const GasBoilerService = ({
         setIsLoading(true);
 
         try {
-            // Open status only controls the default date/time shown in the form; Submit uses the three controls.
+            // Values are initialised when the Open form loads. Submit must use
+            // exactly what is currently in each editable form control.
+            const submissionDateTime = formData.dateTimeOfIssue;
+            const submissionCustomerSignatureDate = formData.customerSignatureDate;
+            const submissionEngineerSignatureDate = formData.engineerSignatureDate;
+
             let existingInspection = null;
             if (currentCheckId) {
                 try {
@@ -1123,8 +1123,8 @@ const GasBoilerService = ({
                 subType: siteCheck?.subType || 'Gas',
                 category: siteCheck?.category || 'Boiler Service / Maintenance Checklist',
                 status: 'Done',
-                startDate: new Date().toISOString(),
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
+                startDate: toJavaLocalDateTime(new Date()),
+                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionDateTime, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1151,9 +1151,9 @@ const GasBoilerService = ({
                 rentedAccommodation: formData.rentedAccommodation,
                 engineer: formData.engineer,
                 engineerName: selectedEngineer?.name || formData.engineerName,
-                dateTimeOfIssue: formData.dateTimeOfIssue,
-                customerSignatureDate: formData.customerSignatureDate,
-                engineerSignatureDate: formData.engineerSignatureDate,
+                dateTimeOfIssue: toJavaLocalDate(submissionDateTime),
+                customerSignatureDate: toJavaLocalDate(submissionCustomerSignatureDate),
+                engineerSignatureDate: toJavaLocalDate(submissionEngineerSignatureDate),
                 // Include all check data
                 applianceChecks: formData.applianceChecks.map(check => ({
                     id: check.id,
@@ -1195,7 +1195,7 @@ const GasBoilerService = ({
             }
 
             // Generate and upload PDF
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionDateTime);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }

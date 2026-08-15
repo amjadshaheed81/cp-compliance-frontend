@@ -20,7 +20,7 @@ import moment from "moment";
 import axios from "axios";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -137,6 +137,7 @@ const SounderAudibilityForm = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   useEffect(() => {
@@ -615,12 +616,6 @@ const SounderAudibilityForm = ({
     }
   };
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -664,8 +659,8 @@ const SounderAudibilityForm = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(dateForUpload),
-            expiryDate: formatDateForBackend(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(dateForUpload),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `SAR-${new Date().getTime()}`
@@ -696,8 +691,8 @@ const SounderAudibilityForm = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(dateForUpload),
-            expiryDate: formatDateForBackend(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(dateForUpload),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
               note: 'Sounder Audibility Report',
             fileVersion: fileVersion,
             siteId: authoritativeSiteId || 0,
@@ -787,7 +782,8 @@ const SounderAudibilityForm = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      // Primary certificate date comes from the Date form control.
+      // OLD: formData.date
+      // NEW: exact UK submission date.
       setTextField('Date', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
@@ -816,7 +812,8 @@ const SounderAudibilityForm = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      // Client and engineer signature dates remain independent form-control values.
+      // OLD: clientDate / engineerDate saved separately from the submission date.
+      // NEW: Open completion uses the same current UK date.
       setTextField('on', moment(formData.clientDate).format('DD/MM/YYYY'), smallFont);
       setTextField('on_2', moment(formData.engineerDate).format('DD/MM/YYYY'), smallFont);
 
@@ -948,6 +945,10 @@ const SounderAudibilityForm = ({
     setIsLoading(true);
 
     try {
+      const submissionDate = formData.date;
+      const submissionClientDate = formData.clientDate;
+      const submissionEngineerDate = formData.engineerDate;
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -969,7 +970,7 @@ const SounderAudibilityForm = ({
         category: siteCheck?.category || 'Fire Alarm Sounder Audibilty',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1008,9 +1009,9 @@ const SounderAudibilityForm = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        date: formData.date,
-        clientDate: formData.clientDate,
-        engineerDate: formData.engineerDate,
+        date: submissionDate,
+        clientDate: submissionClientDate,
+        engineerDate: submissionEngineerDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Sounder Audibility',
@@ -1041,7 +1042,7 @@ const SounderAudibilityForm = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

@@ -10,7 +10,7 @@ import moment from "moment";
 import pdfTemplate from './pdf/airConditionRecurrencCheck.pdf';
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -135,6 +135,7 @@ const AirConditioningRecurrenceCheck = ({
         selectedEngineerId: formData.engineer,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     useEffect(() => {
@@ -860,12 +861,6 @@ const AirConditioningRecurrenceCheck = ({
         return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
     }
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -907,8 +902,8 @@ const AirConditioningRecurrenceCheck = ({
                         originalFileName: fileName,
                         fileVersion: existingFile.fileVersion + 1,
                         siteId: authoritativeSiteId || 0,
-                        issueDate: formatDateForBackend(signedDateOverride || formData.signedDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(signedDateOverride || formData.signedDate),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: `AC-${new Date().getTime()}`
@@ -940,8 +935,8 @@ const AirConditioningRecurrenceCheck = ({
                     folderId: targetFolderId,
                     files: [{
                         name: fileName.split('.')[0],
-                        issueDate: formatDateForBackend(signedDateOverride || formData.signedDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(signedDateOverride || formData.signedDate),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
                         note: 'Air Conditioning F-Gas Report',
                         fileVersion: fileVersion,
                         siteId: authoritativeSiteId || 0,
@@ -1163,6 +1158,7 @@ const AirConditioningRecurrenceCheck = ({
         setIsLoading(true);
 
         try {
+            const submissionSignedDate = formData.signedDate;
 
             // First update or create the site check status
             const statusPayload = {
@@ -1174,7 +1170,7 @@ const AirConditioningRecurrenceCheck = ({
                 category: siteCheck?.category || category || 'Air Conditioning F-Gas Report',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
+                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionSignedDate, siteCheckDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };
@@ -1225,7 +1221,7 @@ const AirConditioningRecurrenceCheck = ({
             const recurrencePayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                signedDate: formData.signedDate,
+                signedDate: toJavaLocalDate(submissionSignedDate),
                 assetId: selectedAsset?.assetId,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
@@ -1251,7 +1247,7 @@ const AirConditioningRecurrenceCheck = ({
             console.log('Recurrence check data saved successfully:', saveResponse.data);
 
             // Generate PDF
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionSignedDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }

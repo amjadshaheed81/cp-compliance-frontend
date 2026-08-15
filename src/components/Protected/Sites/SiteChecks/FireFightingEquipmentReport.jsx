@@ -18,7 +18,7 @@ import { PDFDocument } from 'pdf-lib';
 import RiskScoreCard2 from "./RiskScoreCard2";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 // NOTE: You must have a PDF template at this path for the PDF generation to work correctly.
 import pdfTemplate from './pdf/FireFightingEquippement.pdf';
@@ -118,6 +118,7 @@ should be carried out more frequently.`;
         selectedEngineerId: formData.engineer,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     useEffect(() => {
@@ -545,12 +546,6 @@ should be carried out more frequently.`;
         }
     }, []);
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -637,8 +632,8 @@ should be carried out more frequently.`;
                     originalFileName: fileName,
                     fileVersion,
                     siteId: authoritativeSiteId || 0,
-                    issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-                    expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                    issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+                    expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                     uploaderUserId: loggedInUserData?.id || 0,
                     reviewerUserId: loggedInUserData?.id || 0,
                     referenceNumber: `FFR-${new Date().getTime()}`
@@ -831,6 +826,8 @@ should be carried out more frequently.`;
         setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
         try {
+            const submissionInspectionDate = formData.inspectionDate;
+            const submissionSignedDate = formData.signedDate;
             const statusPayload = {
                 siteId: authoritativeSiteId,
                 type: siteCheck?.type || 'Inspection',
@@ -840,7 +837,7 @@ should be carried out more frequently.`;
                 category: siteCheck?.category || category || 'Fire Extinguisher Inspection & Service',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
@@ -860,8 +857,8 @@ should be carried out more frequently.`;
             const inspectionPayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                inspectionDate: formData.inspectionDate,
-                signedDate: formData.signedDate,
+                inspectionDate: toJavaLocalDate(submissionInspectionDate),
+                signedDate: toJavaLocalDate(submissionSignedDate),
                 type: 'Inspection',
                 subType: 'Fire Equipment',
                 category: 'Fire Fighting Equipment',
@@ -882,7 +879,7 @@ should be carried out more frequently.`;
                 );
             }
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }

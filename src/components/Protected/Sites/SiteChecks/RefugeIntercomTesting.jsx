@@ -20,7 +20,7 @@ import moment from "moment";
 import axios from "axios";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
 
@@ -121,6 +121,7 @@ const RefugeIntercomTesting = ({
       users, getUsers, siteId: authoritativeSiteId, loggedInUserData,
       status: checkStatus, selectedEngineerId: formData.engineer,
       selectedEngineerUser: formData.user, lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
   useEffect(() => {
@@ -544,12 +545,6 @@ const RefugeIntercomTesting = ({
     setValidationErrors((prev) => ({ ...prev, engineer: "" }));
   };
 
-  const formatDateForBackend = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toISOString().replace('T', ' ').split('.')[0];
-  };
-
   const calculateExpiryDate = (visitDate, repeatFrequency) => {
     const date = new Date(visitDate);
     switch (repeatFrequency) {
@@ -676,8 +671,8 @@ const RefugeIntercomTesting = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(inspectionDateForUpload),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
             referenceNumber: `RIT-${new Date().getTime()}`
@@ -708,8 +703,8 @@ const RefugeIntercomTesting = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(inspectionDateForUpload),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, siteCheckDetails?.repeatFrequency)),
             note: 'Refuge Intercom Testing Certificate',
             fileVersion: fileVersion,
             siteId: authoritativeSiteId || 0,
@@ -812,7 +807,8 @@ const RefugeIntercomTesting = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      // Inspection date comes from the inspectionDate form control.
+      // OLD: formData.inspectionDate
+      // NEW: exact UK submission date.
       setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
@@ -844,7 +840,8 @@ const RefugeIntercomTesting = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      // Signature date comes from the signedDate form control.
+      // OLD signedDate mapping retained for review.
+      // NEW: exact UK submission date.
       setTextField('on', dateFormat(formData.signedDate), smallFont);
       setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
@@ -936,6 +933,9 @@ const RefugeIntercomTesting = ({
     setIsLoading(true);
 
     try {
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -957,7 +957,7 @@ const RefugeIntercomTesting = ({
         category: siteCheck?.category || 'Refuge Intercom Testing & Inspection',
         status: 'Done',
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -996,8 +996,8 @@ const RefugeIntercomTesting = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Refuge Intercom',
@@ -1028,7 +1028,7 @@ const RefugeIntercomTesting = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

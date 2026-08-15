@@ -69,3 +69,59 @@ export const getUkLocalDateTimeInput = (date = new Date()) => {
 
   return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}`;
 };
+
+/**
+ * Serialize a date/date-time value for Java LocalDateTime without replacing
+ * the value selected in the form control.
+ *
+ * Examples:
+ * - 2026-07-24            -> 2026-07-24T00:00:00
+ * - 2026-07-24T14:35      -> 2026-07-24T14:35:00
+ * - 2026-07-24 14:35:00   -> 2026-07-24T14:35:00
+ */
+export const toJavaLocalDateTime = (value) => {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return null;
+    return value.toISOString().split(".")[0];
+  }
+
+  const raw = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    return `${raw}T00:00:00`;
+  }
+
+  const localValue = raw.replace(" ", "T");
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(localValue)) {
+    return `${localValue}:00`;
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(localValue)) {
+    return localValue.slice(0, 19);
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString().split(".")[0];
+};
+
+/**
+ * Serialize a form value for a Java LocalDate field.
+ * The form control remains the source of truth; only the API representation
+ * is normalised here.
+ */
+export const toJavaLocalDate = (value) => {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return getUkLocalDate(value);
+  }
+
+  const raw = String(value).trim();
+  const match = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return match ? match[1] : raw;
+};
+

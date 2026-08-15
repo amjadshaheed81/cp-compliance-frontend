@@ -20,7 +20,7 @@ import { PDFDocument } from 'pdf-lib';
 import RiskScoreCard2 from "./RiskScoreCard2";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 const ShowerHeadCertificate = ({
                                    sasToken,
@@ -105,6 +105,7 @@ const ShowerHeadCertificate = ({
         selectedEngineerId: formData.engineer,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     // NEW: Open checks use today's UK date and logged-in user by default.
@@ -441,13 +442,6 @@ const ShowerHeadCertificate = ({
         }
     }, []);
 
-    
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -536,8 +530,8 @@ const ShowerHeadCertificate = ({
                 originalFileName: fileName,
                 fileVersion,
                 siteId: authoritativeSiteId || 0,
-                issueDate: issueDate.toISOString().replace('T', ' ').split('.')[0],
-                expiryDate: formatDateForBackend(calculateExpiryDate(issueDate, inspectionDetails?.repeatFrequency)),
+                issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+                expiryDate: toJavaLocalDateTime(calculateExpiryDate(issueDate, inspectionDetails?.repeatFrequency)),
                 uploaderUserId: loggedInUserData?.id || 0,
                 reviewerUserId: loggedInUserData?.id || 0,
                 referenceNumber: `SHC-${new Date().getTime()}`
@@ -701,8 +695,9 @@ const ShowerHeadCertificate = ({
         setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
         try {
-            // Open status only controls the default date shown in the form.
-            // Submission uses the current formData values below.
+            const submissionInspectionDate = formData.inspectionDate;
+            const submissionSignedDate = formData.signedDate;
+
             const statusPayload = {
                 siteId: parseInt(authoritativeSiteId, 10),
                 type: siteCheck?.type || 'Inspection',
@@ -733,8 +728,8 @@ const ShowerHeadCertificate = ({
                 assetId: formData.selectedAsset?.assetId || formData.assetId,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
-                inspectionDate: formData.inspectionDate,
-                signedDate: formData.signedDate,
+                inspectionDate: toJavaLocalDate(submissionInspectionDate),
+                signedDate: toJavaLocalDate(submissionSignedDate),
                 siteContact: formData.siteContactUser?.id || formData.siteContact,
                 type: 'Maintenance',
                 subType: 'Cleaning',
@@ -758,7 +753,7 @@ const ShowerHeadCertificate = ({
                 );
             }
 
-            const pdfResult = await generatePDF(true);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
@@ -905,8 +900,8 @@ const ShowerHeadCertificate = ({
             ...formData,
             siteId: authoritativeSiteId,
             engineer: formData.engineer,
-            inspectionDate: formData.inspectionDate,
-            signedDate: formData.signedDate,
+            inspectionDate: toJavaLocalDate(formData.inspectionDate),
+            signedDate: toJavaLocalDate(formData.signedDate),
             checkId: state.currentCheckId,
             actionId: verifiedAction.actionId,
             type: 'Maintenance',

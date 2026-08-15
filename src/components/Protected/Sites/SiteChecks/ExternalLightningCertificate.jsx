@@ -22,6 +22,8 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import {
   getUkLocalDate,
   isCurrentUkInspectionDate,
+  toJavaLocalDateTime,
+  toJavaLocalDate,
 } from "./shared/siteCheckDateUtils";
 
 let PDFLib;
@@ -157,6 +159,7 @@ const ExternalLightningCertificate = ({
     selectedEngineerId: formData.engineer,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   const handleMouseEnter = (e, content) => {
@@ -844,12 +847,6 @@ const ExternalLightningCertificate = ({
     }
   };
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const calculateExpiryDate = (visitDate, repeatFrequency) => {
         const date = new Date(visitDate);
         switch (repeatFrequency) {
@@ -899,7 +896,7 @@ const ExternalLightningCertificate = ({
        * OLD CODE - COMMENTED FOR REVIEW
        *
        * const formData = new FormData();
-       * issueDate: formatDateForBackend(formData.inspectionDate)
+       * issueDate: toJavaLocalDateTime(formData.inspectionDate)
        *
        * The local FormData variable hid the React formData state, so
        * formData.inspectionDate was undefined during document upload.
@@ -920,10 +917,10 @@ const ExternalLightningCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: formatDateForBackend(
+            issueDate: toJavaLocalDateTime(
               inspectionDateForUpload
             ),
-            expiryDate: formatDateForBackend(
+            expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
                 inspectionDetails?.repeatFrequency
@@ -969,10 +966,10 @@ const ExternalLightningCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: formatDateForBackend(
+            issueDate: toJavaLocalDateTime(
               inspectionDateForUpload
             ),
-            expiryDate: formatDateForBackend(
+            expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
                 inspectionDetails?.repeatFrequency
@@ -1274,8 +1271,11 @@ const ExternalLightningCertificate = ({
     setIsLoading(true);
 
     try {
-      // Open status only controls the default date shown in the form.
-      // Submit uses the values currently held by the form controls.
+      // NEW: Match Air Conditioning. An Open check is always submitted
+      // using the current UK date, not a date from an older inspection.
+      const submissionInspectionDate = formData.inspectionDate;
+      const submissionSignedDate = formData.signedDate;
+
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -1306,9 +1306,14 @@ const ExternalLightningCertificate = ({
         //     )
         //   ),
 
-        // Preserve the original Site Check date behaviour; due date is based on the inspection control.
+        // NEW: Use the same current UK date everywhere.
         startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(
+          calculateExpiryDate(
+            submissionInspectionDate,
+            inspectionDetails?.repeatFrequency
+          )
+        ),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1348,9 +1353,9 @@ const ExternalLightningCertificate = ({
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
 
-        // Save the date values currently selected in the form.
-        inspectionDate: formData.inspectionDate,
-        signedDate: formData.signedDate,
+        // NEW: Explicitly override the stale React state values.
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
+        signedDate: toJavaLocalDate(submissionSignedDate),
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'External Lighting',
@@ -1390,7 +1395,10 @@ const ExternalLightningCertificate = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true);
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

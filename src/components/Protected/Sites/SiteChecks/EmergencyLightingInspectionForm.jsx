@@ -13,7 +13,7 @@ import { formatDate } from "../../../../utils/dateFormat";
 import {Autocomplete, Chip, TextField} from "@mui/material";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, getUkLocalDateAsDate, isCurrentUkInspectionDate } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, getUkLocalDateAsDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 
 const EmergencyLightingInspectionForm = ({
                                            checkId,
@@ -121,6 +121,7 @@ const EmergencyLightingInspectionForm = ({
     selectedEngineerId: formData.inspectionBy,
     selectedEngineerUser: formData.user,
     lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
   });
 
   // NEW: Open checks always show today's UK date and default to the logged-in engineer.
@@ -290,8 +291,8 @@ const EmergencyLightingInspectionForm = ({
         siteId: authoritativeSiteId,
         checkId: currentCheckId,
         actionId: verifiedAction.actionId,
-        inspectionBy: formData.inspectionBy,
-        inspectionDate: formData.inspectionDate,
+        inspectionBy: formData.inspectionBy || loggedInUserData?.id,
+        inspectionDate: getUkLocalDateAsDate(),
         type: 'Inspection',
         subType: 'Emergency Lighting',
         category: inspectionDetails?.category || 'Emergency Lighting'
@@ -699,12 +700,6 @@ const EmergencyLightingInspectionForm = ({
     return date;
   };
 
-  const formatDateForBackend = (dateString) => {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toISOString().replace('T', ' ').split('.')[0];
-  };
-
   // Function to check if a file exists in the folder
   const checkFileExists = async (folderId, fileName) => {
     try {
@@ -804,8 +799,8 @@ const EmergencyLightingInspectionForm = ({
             originalFileName: fileName,
             fileVersion: (existingFile.fileVersion || 1) + 1,
             siteId: authoritativeSiteId,
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
@@ -842,8 +837,8 @@ const EmergencyLightingInspectionForm = ({
             originalFileName: fileName,
             fileVersion: fileVersion,
             siteId: authoritativeSiteId,
-            issueDate: formatDateForBackend(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
@@ -1233,7 +1228,10 @@ const EmergencyLightingInspectionForm = ({
     setIsLoading(true);
 
     try {
-      // Open status only controls the default date shown in the form; Submit uses the DatePicker value.
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      const submissionInspectionDate = formData.inspectionDate;
+
+      // 1. First ensure we have the folder structure loaded
       const category = inspectionDetails?.category || 'Emergency Lighting';
       await fetchFolderStructure(authoritativeSiteId, category);
 
@@ -1246,8 +1244,8 @@ const EmergencyLightingInspectionForm = ({
         subType: siteCheck?.subType || 'Emergency Lighting to meet BS5266',
         category: siteCheck?.category || category,
         status: 'Done',
-        startDate: new Date().toISOString(),
-        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: toJavaLocalDateTime(new Date()),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id,
         assistantUserID: loggedInUserData?.id
       };
@@ -1269,7 +1267,7 @@ const EmergencyLightingInspectionForm = ({
         siteId: authoritativeSiteId,
         checkId: checkIdToUse,
         inspectionBy: formData.inspectionBy,
-        inspectionDate: formData.inspectionDate,
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
         actionId: existingAction?.actionId || formData.actionId
       };
 
@@ -1278,7 +1276,7 @@ const EmergencyLightingInspectionForm = ({
           : await post("/api/site-check/emergency-lighting", inspectionPayload);
 
       // 4. Generate and upload PDF
-      const pdfResult = await generatePDF();
+      const pdfResult = await generatePDF(submissionInspectionDate);
       if (!pdfResult.success) {
         console.error("PDF generation/upload failed");
       }

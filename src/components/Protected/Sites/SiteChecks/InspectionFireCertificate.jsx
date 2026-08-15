@@ -15,6 +15,8 @@ import {
     getUkLocalDate,
     getUkLocalDateAsDate,
     isCurrentUkInspectionDate,
+  toJavaLocalDateTime,
+  toJavaLocalDate,
 } from "./shared/siteCheckDateUtils";
 
 const InspectionFireCertificate = ({
@@ -170,6 +172,7 @@ const InspectionFireCertificate = ({
         selectedEngineerId: formData.inspectionBy,
         selectedEngineerUser: formData.user,
         lastEngineerId,
+    leadEngineerId: siteCheck?.leadUserID,
     });
 
     // NEW: Open = logged-in engineer/current UK date. Done is restored from API.
@@ -698,12 +701,6 @@ const InspectionFireCertificate = ({
         return date;
     };
 
-    const formatDateForBackend = (dateString) => {
-        if (!dateString) return null;
-        const date = new Date(dateString);
-        return date.toISOString().replace('T', ' ').split('.')[0];
-    };
-
     const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride) => {
         try {
             setIsUploading(true);
@@ -737,8 +734,8 @@ const InspectionFireCertificate = ({
                         originalFileName: fileName,
                         fileVersion: (existingFile.fileVersion || 1) + 1,
                         siteId: authoritativeSiteId,
-                        issueDate: formatDateForBackend(inspectionDateForUpload),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `FA-${new Date().getTime()}`
@@ -775,8 +772,8 @@ const InspectionFireCertificate = ({
                         originalFileName: fileName,
                         fileVersion: fileVersion,
                         siteId: authoritativeSiteId,
-                        issueDate: formatDateForBackend(inspectionDateForUpload),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+                        issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+                        expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
                         referenceNumber: `FA-${new Date().getTime()}`
@@ -1107,6 +1104,10 @@ const InspectionFireCertificate = ({
         setIsLoading(true);
 
         try {
+            const submissionInspectionDate = formData.inspectionDate;
+            const submissionDateString = getUkLocalDate(submissionInspectionDate);
+
+            // 1. First create/update site check record
             const statusPayload = {
                 siteId: authoritativeSiteId,
                 type: siteCheck?.type || 'Inspection',
@@ -1115,8 +1116,8 @@ const InspectionFireCertificate = ({
                 subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
                 category: siteCheck?.category || inspectionDetails?.category || 'Fire Alarm',
                 status: 'Done',
-                startDate: new Date().toISOString(),
-                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: toJavaLocalDateTime(new Date()),
+                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1137,7 +1138,7 @@ const InspectionFireCertificate = ({
                 siteId: authoritativeSiteId,
                 checkId: checkIdToUse,
                 inspectionBy: formData.inspectionBy,
-                inspectionDate: formData.inspectionDate,
+                inspectionDate: toJavaLocalDate(submissionInspectionDate),
                 actionId: existingAction?.actionId || formData.actionId,
                 batteryTestResults: formData.batteryTestResults.slice(0, formData.batteryCount)
             };
@@ -1147,7 +1148,7 @@ const InspectionFireCertificate = ({
                 : await post("/api/site-check/fire-alarm-inspection", inspectionPayload);
 
             // 3. Generate and upload PDF
-            const pdfResult = await generatePDF();
+            const pdfResult = await generatePDF(submissionInspectionDate);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }

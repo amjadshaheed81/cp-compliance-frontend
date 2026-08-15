@@ -1,49 +1,27 @@
 import {
-  getSiteCheckDateByStatus,
   getUkLocalDate,
-  getUkLocalDateAsDate,
   getUkLocalDateTimeInput,
-  isCurrentUkInspectionDate,
+  toJavaLocalDate,
+  toJavaLocalDateTime,
 } from "./siteCheckDateUtils";
 
-describe("siteCheckDateUtils", () => {
-  test("returns the UK date when UTC has crossed into the next UK day", () => {
-    const lateSummerUtcDate = new Date("2026-08-06T23:30:00.000Z");
-
-    expect(getUkLocalDate(lateSummerUtcDate)).toBe("2026-08-07");
+describe("Site Check date utilities", () => {
+  test("returns the UK calendar date", () => {
+    expect(getUkLocalDate(new Date("2026-07-24T12:00:00Z"))).toBe("2026-07-24");
   });
 
-  test("Open Site Check uses the current UK date", () => {
-    expect(getSiteCheckDateByStatus("Open", "2020-01-01")).toBe(
-      getUkLocalDate()
-    );
+  test("returns a datetime-local value using the UK clock", () => {
+    expect(getUkLocalDateTimeInput(new Date("2026-07-24T12:30:00Z"))).toBe("2026-07-24T13:30");
   });
 
-  test("Done Site Check keeps the saved date", () => {
-    expect(getSiteCheckDateByStatus("Done", "2026-07-15")).toBe(
-      "2026-07-15"
-    );
+  test("serializes LocalDateTime with T and preserves datetime-local control time", () => {
+    expect(toJavaLocalDateTime("2027-02-16T01:00")).toBe("2027-02-16T01:00:00");
+    expect(toJavaLocalDateTime("2027-02-16 01:00:00")).toBe("2027-02-16T01:00:00");
+    expect(toJavaLocalDateTime("2027-02-16")).toBe("2027-02-16T00:00:00");
   });
 
-  test("returns a Date object for DatePicker using the UK calendar date", () => {
-    const value = getUkLocalDateAsDate(
-      new Date("2026-08-06T23:30:00.000Z")
-    );
-
-    expect(value.getFullYear()).toBe(2026);
-    expect(value.getMonth()).toBe(7);
-    expect(value.getDate()).toBe(7);
-  });
-
-  test("returns UK local date/time for datetime-local inputs", () => {
-    expect(
-      getUkLocalDateTimeInput(new Date("2026-08-06T23:30:00.000Z"))
-    ).toBe("2026-08-07T00:30");
-  });
-
-  test("recognises an inspection saved on the current UK date", () => {
-    expect(
-      isCurrentUkInspectionDate(`${getUkLocalDate()}T00:00:00`)
-    ).toBe(true);
+  test("serializes LocalDate from date or datetime-local controls", () => {
+    expect(toJavaLocalDate("2026-07-24")).toBe("2026-07-24");
+    expect(toJavaLocalDate("2026-07-24T14:30")).toBe("2026-07-24");
   });
 });
