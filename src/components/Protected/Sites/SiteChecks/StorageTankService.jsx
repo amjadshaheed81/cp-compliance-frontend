@@ -10,7 +10,7 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
@@ -1144,18 +1144,7 @@ const StorageTankService = ({
     setIsLoading(true);
 
     try {
-      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
-      const submissionInspectionDate =
-        effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
-
-      if (effectiveCheckStatus === "Open") {
-        setFormData((prev) => ({
-          ...prev,
-          inspectionDate: submissionInspectionDate,
-          signedDate: submissionInspectionDate,
-        }));
-      }
-
+      // Open status only controls the default date shown in the form; Submit uses formData.
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -1176,8 +1165,8 @@ const StorageTankService = ({
         subType: siteCheck?.subType || 'Legionella',
         category: siteCheck?.category || 'Water - Visual Inspection of Storage Tank',
         status: 'Done',
-        startDate: `${submissionInspectionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1216,8 +1205,8 @@ const StorageTankService = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId || null,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        inspectionDate: submissionInspectionDate,
-        signedDate: submissionInspectionDate,
+        inspectionDate: formData.inspectionDate,
+        signedDate: formData.signedDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Storage Tank',
@@ -1248,7 +1237,7 @@ const StorageTankService = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

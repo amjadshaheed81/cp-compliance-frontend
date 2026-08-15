@@ -9,7 +9,7 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import pdfTemplate from './pdf/EmergencyLighting.pdf';
 import RiskScoreCard from "./RiskScoreCard";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import {Autocomplete, Chip, TextField} from "@mui/material";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
@@ -290,8 +290,8 @@ const EmergencyLightingInspectionForm = ({
         siteId: authoritativeSiteId,
         checkId: currentCheckId,
         actionId: verifiedAction.actionId,
-        inspectionBy: formData.inspectionBy || loggedInUserData?.id,
-        inspectionDate: getUkLocalDateAsDate(),
+        inspectionBy: formData.inspectionBy,
+        inspectionDate: formData.inspectionDate,
         type: 'Inspection',
         subType: 'Emergency Lighting',
         category: inspectionDetails?.category || 'Emergency Lighting'
@@ -1233,15 +1233,7 @@ const EmergencyLightingInspectionForm = ({
     setIsLoading(true);
 
     try {
-      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
-      const submissionInspectionDate =
-          checkStatus === "Open" ? getUkLocalDateAsDate() : formData.inspectionDate;
-
-      if (checkStatus === "Open") {
-        setFormData((prev) => ({ ...prev, inspectionDate: submissionInspectionDate }));
-      }
-
-      // 1. First ensure we have the folder structure loaded
+      // Open status only controls the default date shown in the form; Submit uses the DatePicker value.
       const category = inspectionDetails?.category || 'Emergency Lighting';
       await fetchFolderStructure(authoritativeSiteId, category);
 
@@ -1254,8 +1246,8 @@ const EmergencyLightingInspectionForm = ({
         subType: siteCheck?.subType || 'Emergency Lighting to meet BS5266',
         category: siteCheck?.category || category,
         status: 'Done',
-        startDate: `${getUkLocalDate()}T00:00:00`,
-        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: new Date().toISOString(),
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id,
         assistantUserID: loggedInUserData?.id
       };
@@ -1277,7 +1269,7 @@ const EmergencyLightingInspectionForm = ({
         siteId: authoritativeSiteId,
         checkId: checkIdToUse,
         inspectionBy: formData.inspectionBy,
-        inspectionDate: submissionInspectionDate,
+        inspectionDate: formData.inspectionDate,
         actionId: existingAction?.actionId || formData.actionId
       };
 
@@ -1286,7 +1278,7 @@ const EmergencyLightingInspectionForm = ({
           : await post("/api/site-check/emergency-lighting", inspectionPayload);
 
       // 4. Generate and upload PDF
-      const pdfResult = await generatePDF(submissionInspectionDate);
+      const pdfResult = await generatePDF();
       if (!pdfResult.success) {
         console.error("PDF generation/upload failed");
       }

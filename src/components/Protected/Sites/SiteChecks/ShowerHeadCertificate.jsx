@@ -701,17 +701,8 @@ const ShowerHeadCertificate = ({
         setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
         try {
-            const submissionInspectionDate =
-                effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
-
-            if (effectiveCheckStatus === "Open") {
-                setFormData((prev) => ({
-                    ...prev,
-                    inspectionDate: submissionInspectionDate,
-                    signedDate: submissionInspectionDate,
-                }));
-            }
-
+            // Open status only controls the default date shown in the form.
+            // Submission uses the current formData values below.
             const statusPayload = {
                 siteId: parseInt(authoritativeSiteId, 10),
                 type: siteCheck?.type || 'Inspection',
@@ -720,7 +711,7 @@ const ShowerHeadCertificate = ({
                 subType: siteCheck?.subType || 'Legionella',
                 category: siteCheck?.category || 'Periodic Shower Head Cleaning',
                 status: 'Done',
-                startDate: `${submissionInspectionDate}T00:00:00`,
+                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
@@ -742,8 +733,8 @@ const ShowerHeadCertificate = ({
                 assetId: formData.selectedAsset?.assetId || formData.assetId,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
-                inspectionDate: submissionInspectionDate,
-                signedDate: submissionInspectionDate,
+                inspectionDate: formData.inspectionDate,
+                signedDate: formData.signedDate,
                 siteContact: formData.siteContactUser?.id || formData.siteContact,
                 type: 'Maintenance',
                 subType: 'Cleaning',
@@ -767,7 +758,7 @@ const ShowerHeadCertificate = ({
                 );
             }
 
-            const pdfResult = await generatePDF(true, submissionInspectionDate);
+            const pdfResult = await generatePDF(true);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
@@ -914,8 +905,8 @@ const ShowerHeadCertificate = ({
             ...formData,
             siteId: authoritativeSiteId,
             engineer: formData.engineer,
-            inspectionDate: getUkLocalDate(),
-            signedDate: getUkLocalDate(),
+            inspectionDate: formData.inspectionDate,
+            signedDate: formData.signedDate,
             checkId: state.currentCheckId,
             actionId: verifiedAction.actionId,
             type: 'Maintenance',

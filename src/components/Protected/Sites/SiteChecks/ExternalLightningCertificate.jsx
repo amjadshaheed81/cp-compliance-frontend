@@ -11,7 +11,7 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
@@ -1274,21 +1274,8 @@ const ExternalLightningCertificate = ({
     setIsLoading(true);
 
     try {
-      // NEW: Match Air Conditioning. An Open check is always submitted
-      // using the current UK date, not a date from an older inspection.
-      const submissionInspectionDate =
-        checkStatus === "Open"
-          ? getUkLocalDate()
-          : formData.inspectionDate;
-
-      if (checkStatus === "Open") {
-        setFormData((prev) => ({
-          ...prev,
-          inspectionDate: submissionInspectionDate,
-          signedDate: submissionInspectionDate,
-        }));
-      }
-
+      // Open status only controls the default date shown in the form.
+      // Submit uses the values currently held by the form controls.
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -1319,14 +1306,9 @@ const ExternalLightningCertificate = ({
         //     )
         //   ),
 
-        // NEW: Use the same current UK date everywhere.
-        startDate: `${submissionInspectionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(
-          calculateExpiryDate(
-            submissionInspectionDate,
-            inspectionDetails?.repeatFrequency
-          )
-        ),
+        // Preserve the original Site Check date behaviour; due date is based on the inspection control.
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1366,9 +1348,9 @@ const ExternalLightningCertificate = ({
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
 
-        // NEW: Explicitly override the stale React state values.
-        inspectionDate: submissionInspectionDate,
-        signedDate: submissionInspectionDate,
+        // Save the date values currently selected in the form.
+        inspectionDate: formData.inspectionDate,
+        signedDate: formData.signedDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'External Lighting',
@@ -1408,10 +1390,7 @@ const ExternalLightningCertificate = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(
-        true,
-        submissionInspectionDate
-      );
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

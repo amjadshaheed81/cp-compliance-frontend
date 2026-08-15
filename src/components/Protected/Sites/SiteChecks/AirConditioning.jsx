@@ -1172,26 +1172,14 @@ const AirConditioning = ({
     setIsLoading(true);
 
     try {
-      const submissionInspectionDate = checkStatus === 'Open'
-        ? getUkLocalDate()
-        : formData.inspectionDate;
-
-      if (checkStatus === 'Open') {
-        setFormData((prev) => ({
-          ...prev,
-          inspectionDate: submissionInspectionDate,
-          signedDate: submissionInspectionDate,
-        }));
-      }
-
       const statusPayload = {
         siteId: parseInt(authoritativeSiteId, 10),
         type: 'Inspection',
         subType: 'Plant and Equipment Inspection',
         category: 'Air Conditioning Service',
         status: 'Done',
-        startDate: submissionInspectionDate + 'T00:00:00',
-        dueDate: formatSiteCheckDueDate(submissionInspectionDate, inspectionDetails?.repeatFrequency),
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatSiteCheckDueDate(formData.inspectionDate, inspectionDetails?.repeatFrequency),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1226,8 +1214,7 @@ const AirConditioning = ({
         `/api/site-check/generic-inspection`,
         buildInspectionPayload(
             checkIdForSave || statusResponse?.data?.checkId,
-            undefined,
-            submissionInspectionDate
+            undefined
         )
       );
 
@@ -1236,7 +1223,7 @@ const AirConditioning = ({
       }
 
       // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

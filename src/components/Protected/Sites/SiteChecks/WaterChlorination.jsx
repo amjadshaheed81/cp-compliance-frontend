@@ -16,7 +16,7 @@ import {
   CircularProgress,
   Button,
 } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { saveAs } from "file-saver";
 import axios from "axios";
 import pdfTemplate from "./pdf/Chlorination Certificate.pdf";
@@ -776,18 +776,8 @@ The capacity of the tank is ${capacity} litres`;
     setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
     try {
-      const submissionInspectionDate =
-        effectiveCheckStatus === "Open" ? getUkLocalDate() : formData.date;
-
-      if (effectiveCheckStatus === "Open") {
-        setFormData((prev) => ({
-          ...prev,
-          date: submissionInspectionDate,
-          clientDate: submissionInspectionDate,
-          engineerDate: submissionInspectionDate,
-        }));
-      }
-
+      // Open status only controls the default date shown in the form.
+      // Submission uses the current formData values below.
       const finalReport = getDefaultReportTemplate(tankCapacity);
       const statusPayload = {
         siteId: parseInt(authoritativeSiteId, 10),
@@ -797,8 +787,8 @@ The capacity of the tank is ${capacity} litres`;
         subType: siteCheck?.subType || "Legionella",
         category: siteCheck?.category || "Water - Storage System Chlorination",
         status: "Done",
-        startDate: `${submissionInspectionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
         leadUserID: String(loggedInUserData?.id || "0"),
         assistantUserID: String(loggedInUserData?.id || "0"),
       };
@@ -829,9 +819,9 @@ The capacity of the tank is ${capacity} litres`;
         engineer: formData.engineer,
         engineerName: selectedEngineer?.name || formData.engineerName || "",
         param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
-        date: submissionInspectionDate,
-        clientDate: submissionInspectionDate,
-        engineerDate: submissionInspectionDate,
+        date: formData.date,
+        clientDate: formData.clientDate,
+        engineerDate: formData.engineerDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: "Maintenance",
         subType: "Chlorination",
@@ -856,7 +846,7 @@ The capacity of the tank is ${capacity} litres`;
       }
 
 
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
@@ -1001,9 +991,9 @@ The capacity of the tank is ${capacity} litres`;
         engineer: formData.engineer,
         engineerName: selectedEngineer?.name || formData.engineerName || "",
         param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
-        date: getUkLocalDate(),
-        clientDate: getUkLocalDate(),
-        engineerDate: getUkLocalDate(),
+        date: formData.date,
+        clientDate: formData.clientDate,
+        engineerDate: formData.engineerDate,
         checkId: state.currentCheckId,
         actionId: verifiedAction.actionId,
         type: 'Maintenance',

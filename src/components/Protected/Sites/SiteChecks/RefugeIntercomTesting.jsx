@@ -11,7 +11,7 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/FireRefuge.pdf';
@@ -812,8 +812,7 @@ const RefugeIntercomTesting = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      // OLD: formData.inspectionDate
-      // NEW: exact UK submission date.
+      // Inspection date comes from the inspectionDate form control.
       setTextField('Date', dateFormat(effectiveInspectionDate), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
@@ -845,10 +844,9 @@ const RefugeIntercomTesting = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      // OLD signedDate mapping retained for review.
-      // NEW: exact UK submission date.
-      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
-      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
+      // Signature date comes from the signedDate form control.
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -938,11 +936,6 @@ const RefugeIntercomTesting = ({
     setIsLoading(true);
 
     try {
-      const submissionInspectionDate = checkStatus === "Open" ? getUkLocalDate() : formData.inspectionDate;
-      if (checkStatus === "Open") {
-        setFormData((prev) => ({ ...prev, inspectionDate: submissionInspectionDate, signedDate: submissionInspectionDate }));
-      }
-
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -963,8 +956,8 @@ const RefugeIntercomTesting = ({
         subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
         category: siteCheck?.category || 'Refuge Intercom Testing & Inspection',
         status: 'Done',
-        startDate: `${submissionInspectionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1003,8 +996,8 @@ const RefugeIntercomTesting = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        inspectionDate: submissionInspectionDate,
-        signedDate: submissionInspectionDate,
+        inspectionDate: formData.inspectionDate,
+        signedDate: formData.signedDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Refuge Intercom',
@@ -1035,7 +1028,7 @@ const RefugeIntercomTesting = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

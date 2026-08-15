@@ -11,7 +11,7 @@ import {
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { DeleteForever } from "@mui/icons-material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/Sounder Audibilty Certificate.pdf';
@@ -787,8 +787,7 @@ const SounderAudibilityForm = ({
       setTextField('Address_3', addressLines[2] || '', smallFont);
       setTextField('Address_4', addressLines[3] || '', smallFont);
 
-      // OLD: formData.date
-      // NEW: exact UK submission date.
+      // Primary certificate date comes from the Date form control.
       setTextField('Date', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
       setTextField('Site Contact', formData.siteContactUser?.name || formData.siteContact || '', smallFont);
       setTextField('Site Contact No', formData.siteContactNo || '', smallFont);
@@ -817,10 +816,9 @@ const SounderAudibilityForm = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      // OLD: clientDate / engineerDate saved separately from the submission date.
-      // NEW: Open completion uses the same current UK date.
-      setTextField('on', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
-      setTextField('on_2', moment(effectiveDate).format('DD/MM/YYYY'), smallFont);
+      // Client and engineer signature dates remain independent form-control values.
+      setTextField('on', moment(formData.clientDate).format('DD/MM/YYYY'), smallFont);
+      setTextField('on_2', moment(formData.engineerDate).format('DD/MM/YYYY'), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -950,16 +948,6 @@ const SounderAudibilityForm = ({
     setIsLoading(true);
 
     try {
-      const submissionDate = checkStatus === "Open" ? getUkLocalDate() : formData.date;
-      if (checkStatus === "Open") {
-        setFormData((prev) => ({
-          ...prev,
-          date: submissionDate,
-          clientDate: submissionDate,
-          engineerDate: submissionDate,
-        }));
-      }
-
       // First check if we have an existing inspection
       let existingInspection = null;
       if (currentCheckId) {
@@ -980,8 +968,8 @@ const SounderAudibilityForm = ({
         subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
         category: siteCheck?.category || 'Fire Alarm Sounder Audibilty',
         status: 'Done',
-        startDate: `${submissionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(calculateExpiryDate(submissionDate, inspectionDetails?.repeatFrequency)),
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.date, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
       };
@@ -1020,9 +1008,9 @@ const SounderAudibilityForm = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
-        date: submissionDate,
-        clientDate: submissionDate,
-        engineerDate: submissionDate,
+        date: formData.date,
+        clientDate: formData.clientDate,
+        engineerDate: formData.engineerDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
         subType: 'Sounder Audibility',
@@ -1053,7 +1041,7 @@ const SounderAudibilityForm = ({
       console.log('Inspection data saved successfully:', saveResponse.data);
 
       // Generate PDF
-      const pdfResult = await generatePDF(true, submissionDate);
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }

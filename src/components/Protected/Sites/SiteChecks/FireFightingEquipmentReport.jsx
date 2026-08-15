@@ -11,7 +11,7 @@ import {
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField, CircularProgress, Button } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { saveAs } from 'file-saver';
 import axios from 'axios';
 import { PDFDocument } from 'pdf-lib';
@@ -831,9 +831,6 @@ should be carried out more frequently.`;
         setState(prev => ({ ...prev, isLoading: true, validationErrors: {} }));
 
         try {
-            const submissionInspectionDate = effectiveCheckStatus === "Open"
-                ? getUkLocalDate()
-                : formData.inspectionDate;
             const statusPayload = {
                 siteId: authoritativeSiteId,
                 type: siteCheck?.type || 'Inspection',
@@ -842,8 +839,8 @@ should be carried out more frequently.`;
                 subType: siteCheck?.subType || subType || 'Fire Fighting Equipment',
                 category: siteCheck?.category || category || 'Fire Extinguisher Inspection & Service',
                 status: 'Done',
-                startDate: `${submissionInspectionDate}T00:00:00`,
-                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
@@ -863,8 +860,8 @@ should be carried out more frequently.`;
             const inspectionPayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                inspectionDate: submissionInspectionDate,
-                signedDate: submissionInspectionDate,
+                inspectionDate: formData.inspectionDate,
+                signedDate: formData.signedDate,
                 type: 'Inspection',
                 subType: 'Fire Equipment',
                 category: 'Fire Fighting Equipment',
@@ -885,7 +882,7 @@ should be carried out more frequently.`;
                 );
             }
 
-            const pdfResult = await generatePDF(true, submissionInspectionDate);
+            const pdfResult = await generatePDF(true);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }

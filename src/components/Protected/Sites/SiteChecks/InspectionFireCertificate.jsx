@@ -8,7 +8,7 @@ import { get, post, put } from "../../../../api";
 import axios from 'axios';
 import pdfTemplate from './pdf/Fire Alarm.pdf';
 import RiskScoreCard from "./RiskScoreCard";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import {
@@ -1107,19 +1107,6 @@ const InspectionFireCertificate = ({
         setIsLoading(true);
 
         try {
-            const submissionInspectionDate = checkStatus === "Open"
-                ? getUkLocalDateAsDate()
-                : formData.inspectionDate;
-            const submissionDateString = getUkLocalDate(submissionInspectionDate);
-
-            if (checkStatus === "Open") {
-                setFormData((prev) => ({
-                    ...prev,
-                    inspectionDate: submissionInspectionDate,
-                }));
-            }
-
-            // 1. First create/update site check record
             const statusPayload = {
                 siteId: authoritativeSiteId,
                 type: siteCheck?.type || 'Inspection',
@@ -1128,8 +1115,8 @@ const InspectionFireCertificate = ({
                 subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
                 category: siteCheck?.category || inspectionDetails?.category || 'Fire Alarm',
                 status: 'Done',
-                startDate: `${submissionDateString}T00:00:00`,
-                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: new Date().toISOString(),
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1150,7 +1137,7 @@ const InspectionFireCertificate = ({
                 siteId: authoritativeSiteId,
                 checkId: checkIdToUse,
                 inspectionBy: formData.inspectionBy,
-                inspectionDate: submissionInspectionDate,
+                inspectionDate: formData.inspectionDate,
                 actionId: existingAction?.actionId || formData.actionId,
                 batteryTestResults: formData.batteryTestResults.slice(0, formData.batteryCount)
             };
@@ -1160,7 +1147,7 @@ const InspectionFireCertificate = ({
                 : await post("/api/site-check/fire-alarm-inspection", inspectionPayload);
 
             // 3. Generate and upload PDF
-            const pdfResult = await generatePDF(submissionInspectionDate);
+            const pdfResult = await generatePDF();
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }

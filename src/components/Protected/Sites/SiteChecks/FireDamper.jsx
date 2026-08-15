@@ -11,7 +11,7 @@ import {
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
@@ -1270,9 +1270,6 @@ const FireDamper = ({
         setIsLoading(true);
 
         try {
-            const submissionInspectionDate = effectiveCheckStatus === "Open"
-                ? getUkLocalDate()
-                : formData.inspectionDate;
 
             let existingInspection = null;
             if (currentCheckId) {
@@ -1292,8 +1289,8 @@ const FireDamper = ({
                 subType: siteCheck?.subType || subType || 'Passive Fire',
                 category: siteCheck?.category || category || 'Passive Fire - Fire Damper Inspection',
                 status: 'Done',
-                startDate: `${submissionInspectionDate}T00:00:00`,
-                dueDate: formatLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };
@@ -1326,8 +1323,8 @@ const FireDamper = ({
             const inspectionPayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                inspectionDate: submissionInspectionDate,
-                signedDate: submissionInspectionDate,
+                inspectionDate: formData.inspectionDate,
+                signedDate: formData.signedDate,
                 assetId: formData.selectedAsset?.assetId || formData.assetId || null,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
@@ -1358,7 +1355,7 @@ const FireDamper = ({
 
             console.log('Inspection data saved successfully:', saveResponse.data);
 
-            const pdfResult = await generatePDF(true, submissionInspectionDate);
+            const pdfResult = await generatePDF(true);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }

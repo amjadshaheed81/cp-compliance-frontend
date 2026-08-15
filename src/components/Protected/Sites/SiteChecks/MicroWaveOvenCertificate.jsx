@@ -11,7 +11,7 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/MicrowaveOvenCertificate.pdf';
@@ -1099,8 +1099,8 @@ const MicroWaveOvenCertificate = ({
 
       setTextField('Clients Name', clientName, mediumFont);
       setTextField('Engineers Name', engineerName, mediumFont);
-      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
-      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -1196,21 +1196,8 @@ const MicroWaveOvenCertificate = ({
     console.log('All validations passed, proceeding with submission...');
 
     try {
-      // NEW: Match Air Conditioning. An Open check is submitted using
-      // today's UK date instead of an older inspection record date.
-      const submissionInspectionDate =
-        checkStatus === "Open"
-          ? getUkLocalDate()
-          : formData.inspectionDate;
-
-      if (checkStatus === "Open") {
-        setFormData((prev) => ({
-          ...prev,
-          inspectionDate: submissionInspectionDate,
-          signedDate: submissionInspectionDate,
-        }));
-      }
-
+      // Open status only controls the default date shown in the form.
+      // Submit uses the values currently held by the form controls.
       // Debug: Log current form data
       console.log('Current form data:', JSON.stringify(formData, null, 2));
 
@@ -1253,13 +1240,8 @@ const MicroWaveOvenCertificate = ({
         //   ),
 
         // NEW: Use the same UK date throughout the completed check.
-        startDate: `${submissionInspectionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(
-          calculateExpiryDate(
-            submissionInspectionDate,
-            siteCheckDetails?.repeatFrequency
-          )
-        ),
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, siteCheckDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id
           ? String(loggedInUserData.id)
           : '0',
@@ -1307,9 +1289,9 @@ const MicroWaveOvenCertificate = ({
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
 
-        // NEW: Explicitly override stale React state with the submission date.
-        inspectionDate: submissionInspectionDate,
-        signedDate: submissionInspectionDate,
+        // Save the date values currently selected in the form.
+        inspectionDate: formData.inspectionDate,
+        signedDate: formData.signedDate,
 
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
@@ -1345,20 +1327,14 @@ const MicroWaveOvenCertificate = ({
 
       // Generate PDF - with test mode
       console.log('Generating PDF...');
-      const testPdfResult = await generatePDF(
-        false,
-        submissionInspectionDate
-      ); // First generate without upload for testing
+      const testPdfResult = await generatePDF(false); // First generate without upload for testing
       if (!testPdfResult.success) {
         console.error('PDF generation test failed:', testPdfResult.error);
         throw new Error(testPdfResult.error || "Failed to generate PDF");
       }
       console.log('PDF generation test successful, now uploading...');
 
-      const pdfResult = await generatePDF(
-        true,
-        submissionInspectionDate
-      ); // Now generate with upload
+      const pdfResult = await generatePDF(true); // Now generate with upload
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate and upload PDF");
       }

@@ -5,7 +5,7 @@ import { toast } from "react-toastify";
 import { get, post, put } from "../../../../api"; // Using the provided API functions
 import { getSiteAssets, getSiteDetailsById, getUsers } from "../../../../store/thunk/site";
 import { Autocomplete, TextField, Card, CardContent, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, MenuItem } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import moment from "moment";
 import pdfTemplate from './pdf/airConditionRecurrencCheck.pdf';
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
@@ -1163,9 +1163,6 @@ const AirConditioningRecurrenceCheck = ({
         setIsLoading(true);
 
         try {
-            const submissionSignedDate = effectiveCheckStatus === "Open"
-                ? getUkLocalDate()
-                : formData.signedDate;
 
             // First update or create the site check status
             const statusPayload = {
@@ -1176,8 +1173,8 @@ const AirConditioningRecurrenceCheck = ({
                 subType: siteCheck?.subType || subType || 'Plant and Equipment Inspection',
                 category: siteCheck?.category || category || 'Air Conditioning F-Gas Report',
                 status: 'Done',
-                startDate: `${submissionSignedDate}T00:00:00`,
-                dueDate: formatLocalDateTime(calculateExpiryDate(submissionSignedDate, siteCheckDetails?.repeatFrequency)),
+                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.signedDate, siteCheckDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
             };
@@ -1228,7 +1225,7 @@ const AirConditioningRecurrenceCheck = ({
             const recurrencePayload = {
                 ...formData,
                 siteId: authoritativeSiteId,
-                signedDate: submissionSignedDate,
+                signedDate: formData.signedDate,
                 assetId: selectedAsset?.assetId,
                 client: formData.clientUser?.id || formData.client,
                 engineer: formData.engineer,
@@ -1254,7 +1251,7 @@ const AirConditioningRecurrenceCheck = ({
             console.log('Recurrence check data saved successfully:', saveResponse.data);
 
             // Generate PDF
-            const pdfResult = await generatePDF(true, submissionSignedDate);
+            const pdfResult = await generatePDF(true);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }

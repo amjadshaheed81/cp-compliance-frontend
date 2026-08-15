@@ -10,7 +10,7 @@ import {
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, FormControlLabel, MenuItem, Radio, Select, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import pdfTemplate from './pdf/GasBoilerService.pdf';
 import RiskScoreCard from "./RiskScoreCard";
@@ -837,7 +837,7 @@ const GasBoilerService = ({
                     console.warn(`Error setting checkbox ${fieldName}:`, error.message);
                 }
             };
-            // NEW: Use the selected/saved engineer and exact submission date.
+            // Use the selected/saved engineer and the date/time currently held by the form controls.
             const effectiveEngineer = selectedEngineer || (formData.user?.id ? formData.user : null) || loggedInUserData || {};
             const effectiveDateTimeOfIssue = dateTimeOverride || formData.dateTimeOfIssue;
             const effectiveEngineerPostCode = getPostCodeFromAddress(effectiveEngineer?.companyAddress);
@@ -1019,9 +1019,9 @@ const GasBoilerService = ({
                 engineer: formData.engineer,
                 engineerName: formData.user?.name || formData.engineerName,
                 inspectionByUser: formData.user || selectedEngineer || loggedInUserData,
-                dateTimeOfIssue: getUkLocalDateTimeInput(),
-                engineerSignatureDate: getUkLocalDate(),
-                customerSignatureDate: getUkLocalDate(),
+                dateTimeOfIssue: formData.dateTimeOfIssue,
+                engineerSignatureDate: formData.engineerSignatureDate,
+                customerSignatureDate: formData.customerSignatureDate,
                 type: 'Inspection',
                 subType: 'Gas Boiler',
                 category: 'Gas Boiler Service'
@@ -1104,23 +1104,7 @@ const GasBoilerService = ({
         setIsLoading(true);
 
         try {
-            // NEW: Open checks use the current UK date/time, matching Air Conditioning.
-            const submissionDateTime = checkStatus === "Open"
-                ? getUkLocalDateTimeInput()
-                : formData.dateTimeOfIssue;
-            const submissionDate = checkStatus === "Open"
-                ? getUkLocalDate()
-                : formData.engineerSignatureDate;
-
-            if (checkStatus === "Open") {
-                setFormData((prev) => ({
-                    ...prev,
-                    dateTimeOfIssue: submissionDateTime,
-                    customerSignatureDate: submissionDate,
-                    engineerSignatureDate: submissionDate,
-                }));
-            }
-
+            // Open status only controls the default date/time shown in the form; Submit uses the three controls.
             let existingInspection = null;
             if (currentCheckId) {
                 try {
@@ -1139,8 +1123,8 @@ const GasBoilerService = ({
                 subType: siteCheck?.subType || 'Gas',
                 category: siteCheck?.category || 'Boiler Service / Maintenance Checklist',
                 status: 'Done',
-                startDate: `${submissionDate}T00:00:00`,
-                dueDate: formatLocalDateTime(calculateExpiryDate(submissionDateTime, inspectionDetails?.repeatFrequency)),
+                startDate: new Date().toISOString(),
+                dueDate: formatDateForBackend(calculateExpiryDate(formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1167,9 +1151,9 @@ const GasBoilerService = ({
                 rentedAccommodation: formData.rentedAccommodation,
                 engineer: formData.engineer,
                 engineerName: selectedEngineer?.name || formData.engineerName,
-                dateTimeOfIssue: submissionDateTime,
-                customerSignatureDate: submissionDate,
-                engineerSignatureDate: submissionDate,
+                dateTimeOfIssue: formData.dateTimeOfIssue,
+                customerSignatureDate: formData.customerSignatureDate,
+                engineerSignatureDate: formData.engineerSignatureDate,
                 // Include all check data
                 applianceChecks: formData.applianceChecks.map(check => ({
                     id: check.id,
@@ -1211,7 +1195,7 @@ const GasBoilerService = ({
             }
 
             // Generate and upload PDF
-            const pdfResult = await generatePDF(true, submissionDateTime);
+            const pdfResult = await generatePDF(true);
             if (!pdfResult.success) {
                 console.error("PDF generation/upload failed");
             }

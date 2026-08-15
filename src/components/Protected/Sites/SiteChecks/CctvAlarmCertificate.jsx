@@ -10,7 +10,7 @@ import {
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
-import { formatDate, formatLocalDateTime } from "../../../../utils/dateFormat";
+import { formatDate } from "../../../../utils/dateFormat";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/CCTV.pdf';
@@ -1117,13 +1117,9 @@ const CctvAlarmCertificate = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      // OLD:
-      // setTextField('on', dateFormat(formData.signedDate), smallFont);
-      // setTextField('on_2', dateFormat(formData.signedDate), smallFont);
-
-      // NEW: Open submission uses today's UK date consistently.
-      setTextField('on', dateFormat(effectiveInspectionDate), smallFont);
-      setTextField('on_2', dateFormat(effectiveInspectionDate), smallFont);
+      // Signature date comes from the signedDate form control.
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Flatten and save
       form.flatten();
@@ -1228,21 +1224,8 @@ const CctvAlarmCertificate = ({
     setIsLoading(true);
 
     try {
-      // NEW: Match Air Conditioning. An Open check is completed using
-      // today's UK date rather than an older inspection record date.
-      const submissionInspectionDate =
-        checkStatus === "Open"
-          ? getUkLocalDate()
-          : formData.inspectionDate;
-
-      if (checkStatus === "Open") {
-        setFormData((prev) => ({
-          ...prev,
-          inspectionDate: submissionInspectionDate,
-          signedDate: submissionInspectionDate,
-        }));
-      }
-
+      // Open status only controls the default date shown in the form.
+      // Submit uses the values currently held by the form controls.
       let existingInspection = null;
       if (currentCheckId) {
         try {
@@ -1278,14 +1261,9 @@ const CctvAlarmCertificate = ({
         //     )
         //   ),
 
-        // NEW: Use one current UK date throughout the completed check.
-        startDate: `${submissionInspectionDate}T00:00:00`,
-        dueDate: formatLocalDateTime(
-          calculateExpiryDate(
-            submissionInspectionDate,
-            inspectionDetails?.repeatFrequency
-          )
-        ),
+        // Preserve original Site Check date behaviour; due date is based on the inspection control.
+        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        dueDate: formatDateForBackend(calculateExpiryDate(formData.inspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id
           ? String(loggedInUserData.id)
           : '0',
@@ -1328,9 +1306,9 @@ const CctvAlarmCertificate = ({
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
 
-        // NEW: Explicitly save the UK submission date, not stale state.
-        inspectionDate: submissionInspectionDate,
-        signedDate: submissionInspectionDate,
+        // Save the date values currently selected in the form.
+        inspectionDate: formData.inspectionDate,
+        signedDate: formData.signedDate,
 
         siteContact: formData.siteContactUser?.id || formData.siteContact,
         type: 'Inspection',
@@ -1361,10 +1339,7 @@ const CctvAlarmCertificate = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      const pdfResult = await generatePDF(
-        true,
-        submissionInspectionDate
-      );
+      const pdfResult = await generatePDF(true);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
