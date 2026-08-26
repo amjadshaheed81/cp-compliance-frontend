@@ -145,14 +145,13 @@ const WaterHeaterCertificate = ({
     leadEngineerId: siteCheck?.leadUserID,
   });
 
-  // NEW: Open = current UK date/logged-in engineer. Done is restored from API.
+  // Open dates are initialised from the form defaults and must remain user-editable.
+  // Do not reset inspectionDate/signedDate when status/user data is refreshed.
   useEffect(() => {
     if (effectiveCheckStatus !== "Open") return;
 
     setFormData((prev) => ({
       ...prev,
-      inspectionDate: getUkLocalDate(),
-      signedDate: getUkLocalDate(),
       engineer: prev.engineer || loggedInUserData?.id || "",
       user: prev.user?.id ? prev.user : (loggedInUserData || {}),
     }));
@@ -243,7 +242,7 @@ const WaterHeaterCertificate = ({
           address: prev.address,
           assetId: mostRecentItem.assetId || prev.assetId,
           siteContact: mostRecentItem.siteContact || prev.siteContact,
-          signedDate: effectiveCheckStatus === "Open" ? getUkLocalDate() : (mostRecentItem.signedDate || prev.signedDate),
+          signedDate: effectiveCheckStatus === "Open" ? prev.signedDate : (mostRecentItem.signedDate || prev.signedDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           jobNo: mostRecentItem.jobNo || prev.jobNo,
           engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
@@ -268,7 +267,7 @@ const WaterHeaterCertificate = ({
               ? (isCurrentOpenInspection ? (engineerUser || loggedInUserData || {}) : (loggedInUserData || {}))
               : (engineerUser || prev.user || {}),
           inspectionDate: effectiveCheckStatus === "Open"
-              ? getUkLocalDate()
+              ? prev.inspectionDate
               : (mostRecentItem.inspectionDate || prev.inspectionDate),
           selectedAsset: selectedAsset || prev.selectedAsset,
           clientDate: mostRecentItem.clientDate || prev.clientDate,
