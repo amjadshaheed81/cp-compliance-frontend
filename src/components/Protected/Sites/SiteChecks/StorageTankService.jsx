@@ -20,8 +20,12 @@ import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
 
@@ -511,17 +515,8 @@ const StorageTankService = ({
     checkId,
   ]);
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+    const calculateExpiryDate = (visitDate, repeatFrequency) =>
+      calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
   useEffect(() => {
     const shouldShowRiskAssessment = formData.param2 === "Pass";
@@ -589,6 +584,7 @@ const StorageTankService = ({
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
+      ...(name === "inspectionDate" ? { signedDate: value } : {}),
     }));
   };
 
@@ -1497,7 +1493,7 @@ const StorageTankService = ({
           </div>
           <div className="col-md-3">
             <div className="mb-3">
-              <label className="form-label">Date</label>
+              <label className="form-label">Inspection Date</label>
               <input
                 type="date"
                 className="form-control"
@@ -1939,20 +1935,20 @@ const StorageTankService = ({
             </div>
 
             <div className="mb-3">
-              <label className="form-label">Date</label>
+              <label className="form-label">Signed Date</label>
               <input
-                type="date"
-                className="form-control"
-                name="signedDate"
-                value={formatDate(formData.signedDate)}
-                onChange={handleInputChange}
-                required
-                style={{
-                  height: "40px",
-                  padding: "0 10px",
-                  width: "100%",
-                }}
-                disabled={isSubmitted}
+                  type="date"
+                  className="form-control"
+                  name="signedDate"
+                  value={formatDate(formData.inspectionDate || formData.signedDate)}
+                  readOnly
+                  required
+                  style={{
+                    height: "40px",
+                    padding: "0 10px",
+                    width: "100%",
+                    backgroundColor: "#f8f9fa",
+                  }}
               />
             </div>
           </div>
@@ -1985,35 +1981,18 @@ const StorageTankService = ({
               loading={isLoadingEngineers}
               error={validationErrors.engineer || engineerLoadError}
             />
-            <div className="mb-3">
-              <label className="form-label">Date</label>
-              <input
-                type="date"
-                className="form-control"
-                name="signedDate"
-                value={formatDate(formData.signedDate)}
-                onChange={handleInputChange}
-                required
-                disabled={isSubmitted}
-                style={{
-                  height: "40px",
-                  padding: "0 10px",
-                  width: "100%",
-                }}
-              />
-            </div>
+            <SiteCheckEngineerSignature
+                engineer={selectedEngineer}
+                engineerId={formData.engineer || formData.user?.id}
+                fallbackSignature={formData.user?.signature || ""}
+                sasToken={sasToken}
+            />
           </div>
         </div>
 
         {!isSubmitted ? (
           <div className="d-flex justify-content-between mt-3 print-hide">
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={() => window.history.back()}
-            >
-              Back
-            </button>
+            <SiteCheckBackButton />
             <div>
               {isFormEditable && (
                 <button
@@ -2045,6 +2024,14 @@ const StorageTankService = ({
             )}
           </div>
         )}
+      {!isSubmitted && (
+        <div className="d-flex justify-content-end print-hide">
+          <SiteCheckDueSummary
+            inspectionDate={formData.inspectionDate}
+            repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+          />
+        </div>
+      )}
       </form>
 
       <style>{`

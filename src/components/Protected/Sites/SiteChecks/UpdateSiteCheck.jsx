@@ -50,10 +50,35 @@ import ShowerHeadCertificate from "./ShowerHeadCertificate";
 import GasBoilerService from "./GasBoilerService";
 import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 
 const Item = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(1),
 }));
+
+const INSPECTION_STEPS_WITH_INTERNAL_BACK = new Set([
+    "inspection-electrical-emergency",
+    "inspection-electrical-lightning",
+    "inspection-sounder-audibilty",
+    "inspection-refuge-intercom-testing",
+    "inspection-fire-damper",
+    "inspection-electrical-microwave-oven",
+    "inspection-boiler-service",
+    "inspection-electrical-wc-alarm",
+    "inspection-fire-Equipment",
+    "inspection-cctv-intruder-alarm",
+    "inspection-storage-tank",
+    "inspection-water-chlorination",
+    "inspection-intruder-alarm",
+    "inspection-water-heater",
+    "inspection-fan-extract",
+    "inspection-air-conditioning",
+    "inspection-air-conditioning-report",
+    "inspection-ventilation-report",
+    "shower-head",
+    "inspection-gas",
+    "inspection-fire-alarm",
+]);
 
 const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
     const printRef = useRef();
@@ -958,21 +983,11 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
                             {/*>*/}
                             {/*  <PrintIcon /> Print PDF Report*/}
                             {/*</button>*/}
-                            <button
-                                style={{
-                                    width: "150px",
-                                    marginBottom: "20px",
-                                    margin: "10px",
-                                    float: "right",
-                                }}
-                                className="btn btn-primary btn-light"
-                                onClick={() => {
-                                    navigate("/site-checks");
-                                }}
-                                id="lklkl2"
-                            >
-                                Back
-                            </button>
+                            {(!INSPECTION_STEPS_WITH_INTERNAL_BACK.has(step) || siteCheck?.status !== "Open") && (
+                                <div className="d-flex justify-content-end m-2 print-hide">
+                                    <SiteCheckBackButton onClick={() => navigate("/site-checks")} />
+                                </div>
+                            )}
                         </Grid>
                     </Stack>
                 </div>

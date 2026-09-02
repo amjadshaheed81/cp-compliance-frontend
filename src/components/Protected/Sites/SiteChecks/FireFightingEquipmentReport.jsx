@@ -17,8 +17,12 @@ import axios from 'axios';
 import { PDFDocument } from 'pdf-lib';
 import RiskScoreCard2 from "./RiskScoreCard2";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 // NOTE: You must have a PDF template at this path for the PDF generation to work correctly.
 import pdfTemplate from './pdf/FireFightingEquippement.pdf';
@@ -546,17 +550,8 @@ should be carried out more frequently.`;
         }
     }, []);
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+    const calculateExpiryDate = (visitDate, repeatFrequency) =>
+      calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
         try {
@@ -1240,7 +1235,7 @@ should be carried out more frequently.`;
                     </div>
                     <div className="col-md-3">
                         <div className="mb-3">
-                            <label className="form-label">Date</label>
+                            <label className="form-label">Inspection Date</label>
                             <input
                                 type="date"
                                 className="form-control"
@@ -1295,6 +1290,12 @@ should be carried out more frequently.`;
                             loading={isLoadingEngineers}
                             error={state.validationErrors.engineer || engineerLoadError}
                             label="Engineer"
+                        />
+                        <SiteCheckEngineerSignature
+                            engineer={selectedEngineer}
+                            engineerId={formData.engineer || formData.user?.id}
+                            fallbackSignature={formData.user?.signature || ""}
+                            sasToken={sasToken}
                         />
                         <div className="mb-3">
                             <label className="form-label">Site Telephone</label>
@@ -1739,13 +1740,7 @@ should be carried out more frequently.`;
                 <div className="mt-4 print-hide">
                     {!state.isSubmitted ? (
                         <div className="d-flex justify-content-between mt-3">
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                onClick={() => window.history.back()}
-                            >
-                                Back
-                            </Button>
+                            <SiteCheckBackButton />
                             <div>
                                 {state.isFormEditable && (
                                     <Button
@@ -1768,6 +1763,14 @@ should be carried out more frequently.`;
                         </div>
                     )}
                 </div>
+            {!state.isSubmitted && (
+              <div className="d-flex justify-content-end print-hide">
+                <SiteCheckDueSummary
+                  inspectionDate={formData.inspectionDate}
+                  repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+                />
+              </div>
+            )}
             </form>
 
             <style jsx>{`

@@ -12,8 +12,12 @@ import RiskScoreCard from "./RiskScoreCard";
 import { formatDate } from "../../../../utils/dateFormat";
 import {Autocomplete, Chip, TextField} from "@mui/material";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, getUkLocalDateAsDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const EmergencyLightingInspectionForm = ({
                                            checkId,
@@ -688,17 +692,8 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
-  const calculateExpiryDate = (visitDate, repeatFrequency) => {
-    const date = new Date(visitDate);
-    switch (repeatFrequency) {
-      case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-      case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-      case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-      case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-      default:          date.setFullYear(date.getFullYear() + 1);  break;
-    }
-    return date;
-  };
+  const calculateExpiryDate = (visitDate, repeatFrequency) =>
+    calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
   // Function to check if a file exists in the folder
   const checkFileExists = async (folderId, fileName) => {
@@ -1809,32 +1804,21 @@ const EmergencyLightingInspectionForm = ({
                 </div>
               </div>
 
-              {/* Signature */}
+              {/* Signature uploaded on the selected engineer's Edit Profile record. */}
               <div className="col-md-3">
-                <div className="mb-3">
-                  <label htmlFor="inspector.signature" className="form-label">
-                    Signature
-                  </label>
-                  <div
-                      className="border rounded bg-white d-flex align-items-center"
-                      style={{ height: "38px", padding: "2px" }}
-                  >
-                    <img
-                        width="100%"
-                        height="100%"
-                        style={{ objectFit: "contain" }}
-                        src={formData.user?.signature + "?" + sasToken}
-                        alt="Signature"
-                    />
-                  </div>
-                </div>
+                <SiteCheckEngineerSignature
+                    engineer={selectedEngineer}
+                    engineerId={formData.inspectionBy || formData.user?.id}
+                    fallbackSignature={formData.user?.signature || ""}
+                    sasToken={sasToken}
+                />
               </div>
 
               {/* Date */}
               <div className="col-md-3">
                 <div className="mb-3">
                   <label htmlFor="inspector.date" className="form-label">
-                    Date
+                    Inspection Date
                   </label>
                   <DatePicker
                       selected={formData.inspectionDate || ""}
@@ -1849,29 +1833,36 @@ const EmergencyLightingInspectionForm = ({
               </div>
             </div>
 
-            <div className="d-flex justify-content-end">
-              <div className="d-flex gap-2">
-                {!isSubmitted ? (
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={
-                            isLoading ||
-                            isGeneratingPDF ||
-                            (showRiskAssessment && !actionRaised) ||
-                            !isFormEditable
-                        }
-                    >
-                      {isLoading ? 'Submitting...' :
-                          isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
-                    </button>
-                ) : (
-                    <div className="alert alert-success">
-                      Inspection submitted successfully on {formatDate(formData.inspectionDate)}
-                    </div>
-                )}
+            {!isSubmitted ? (
+              <div className="d-flex justify-content-between align-items-start mt-3 print-hide">
+                <SiteCheckBackButton />
+                <button
+                    type="submit"
+                    className="btn btn-primary"
+                    disabled={
+                        isLoading ||
+                        isGeneratingPDF ||
+                        (showRiskAssessment && !actionRaised) ||
+                        !isFormEditable
+                    }
+                >
+                  {isLoading ? 'Submitting...' :
+                      isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
+                </button>
               </div>
+            ) : (
+              <div className="alert alert-success">
+                Inspection submitted successfully on {formatDate(formData.inspectionDate)}
+              </div>
+            )}
+          {!isSubmitted && (
+            <div className="d-flex justify-content-end print-hide">
+              <SiteCheckDueSummary
+                inspectionDate={formData.inspectionDate}
+                repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+              />
             </div>
+          )}
           </form>
           <style>
             {`

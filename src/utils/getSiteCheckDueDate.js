@@ -1,64 +1,51 @@
 import moment from "moment";
+import {
+  calculateSiteCheckDueDate,
+  toSiteCheckDateOnly,
+} from "./siteCheckRecurrence";
 
 export const addRepeatFrequency = (startDate, repeatFrequency) => {
-  const date = new Date(startDate);
-  
-  switch (repeatFrequency) {
-    case "Daily":
-      date.setDate(date.getDate() + 1);
-      break;
-    case "Weekly":
-      date.setDate(date.getDate() + 7);
-      break;
-    case "Monthly":
-      date.setMonth(date.getMonth() + 1);
-      break;
-    case "Quarterly":
-      date.setMonth(date.getMonth() + 3);
-      break;
-    case "Yearly":
-      date.setFullYear(date.getFullYear() + 1);
-      break;
-    default:
-      throw new Error("Invalid repeat frequency");
+  const nextDate = calculateSiteCheckDueDate(startDate, repeatFrequency);
+  if (!nextDate) {
+    throw new Error(`Invalid repeat frequency: ${repeatFrequency || "(empty)"}`);
   }
-  
-  return date;
+
+  // Midday keeps the date stable when this legacy helper is consumed as a
+  // Date object by UpdateSiteCheck/grid fallback code.
+  return new Date(`${nextDate}T12:00:00`);
+};
+
+const getFutureDueDate = (siteCheck) => {
+  const startDate = toSiteCheckDateOnly(siteCheck?.startDate);
+  const repeatFrequency = siteCheck?.repeatFrequency;
+  if (!startDate || !repeatFrequency || repeatFrequency === "None") {
+    return null;
+  }
+
+  let nextDueDate = new Date(`${startDate}T12:00:00`);
+  const currentDate = new Date();
+
+  while (nextDueDate <= currentDate) {
+    nextDueDate = addRepeatFrequency(nextDueDate, repeatFrequency);
+  }
+
+  return nextDueDate;
 };
 
 export const getSiteCheckDueDate = (siteCheck) => {
-  if (siteCheck?.startDate && siteCheck?.repeatFrequency && !siteCheck?.dueDate) {
-    const currentDate = new Date();
-    let nextDueDate = new Date(siteCheck.startDate);
-    
-    // Keep advancing by the repeat frequency until the next due date is in the future
-    while (nextDueDate <= currentDate) {
-      nextDueDate = addRepeatFrequency(nextDueDate, siteCheck.repeatFrequency);
-    }
-    
-    // Format the future due date to "DD-MM-YYYY"
-    return moment(nextDueDate).format("DD-MM-YYYY");
-  } else {
-    return siteCheck?.dueDate
-      ? moment(siteCheck.dueDate).format("DD-MM-YYYY")
-      : "--";
+  if (siteCheck?.dueDate) {
+    return moment(siteCheck.dueDate).format("DD-MM-YYYY");
   }
+
+  const nextDueDate = getFutureDueDate(siteCheck);
+  return nextDueDate ? moment(nextDueDate).format("DD-MM-YYYY") : "--";
 };
 
 export const getSiteCheckDueDateForStatus = (siteCheck) => {
-  if (siteCheck?.startDate && siteCheck?.repeatFrequency && !siteCheck?.dueDate) {
-    const currentDate = new Date();
-    let nextDueDate = new Date(siteCheck.startDate);
-    
-    // Keep advancing by the repeat frequency until the next due date is in the future
-    while (nextDueDate <= currentDate) {
-      nextDueDate = addRepeatFrequency(nextDueDate, siteCheck.repeatFrequency);
-    }
-
-    return nextDueDate.toISOString(); // Return in ISO format for comparisons
-  } else {
-    return siteCheck?.dueDate
-      ? new Date(siteCheck.dueDate).toISOString()
-      : null; // Return null if no due date is available
+  if (siteCheck?.dueDate) {
+    return new Date(siteCheck.dueDate).toISOString();
   }
+
+  const nextDueDate = getFutureDueDate(siteCheck);
+  return nextDueDate ? nextDueDate.toISOString() : null;
 };

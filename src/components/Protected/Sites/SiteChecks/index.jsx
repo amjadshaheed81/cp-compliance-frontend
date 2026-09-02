@@ -27,6 +27,7 @@ import {
 } from "@mui/material";
 import { getSites } from "../../../../store/thunk/site";
 import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
+import { calculateSiteCheckDueDateTime, calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const datePickerRef = useRef(null);
@@ -205,39 +206,17 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     }
     let dueDateValue = formData?.dueDate;
     if (name === "repeatFrequency") {
-      // If repeatFrequency is set and dueDate is not provided
-      const startDate = formData?.startDate
-        ? new Date(formData?.startDate)
+      // Start New provides an estimate from the planned Start Date. The final
+      // submitted inspection will replace this with a due date calculated from
+      // the actual Inspection Date entered in the form.
+      dueDateValue = formData?.startDate
+        ? calculateSiteCheckDueDateTime(formData.startDate, value)
         : "";
 
-      switch (value) {
-        case "Daily":
-          dueDateValue = new Date(startDate.setDate(startDate.getDate() + 1));
-          break;
-        case "Weekly":
-          dueDateValue = new Date(startDate.setDate(startDate.getDate() + 7));
-          break;
-        case "Monthly":
-          dueDateValue = new Date(startDate.setMonth(startDate.getMonth() + 1));
-          break;
-        case "6-Monthly":
-          dueDateValue = new Date(startDate.setMonth(startDate.getMonth() + 6));
-          break;
-        case "Yearly":
-          dueDateValue = new Date(
-            startDate.setFullYear(startDate.getFullYear() + 1)
-          );
-          break;
-        default:
-          dueDateValue = startDate ? new Date(startDate) : "";
-          break;
-      }
-
-      dueDateValue = dueDateValue ? dueDateValue.toISOString() : ""; // Convert to ISO string
       setFormData({
         ...formData,
         [name]: value,
-        dueDate: dueDateValue,
+        dueDate: dueDateValue || "",
       });
     } else {
       setFormData({
@@ -531,17 +510,8 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
 
   const dateFormatFromFrequency = (repeatFrequency, date) => {
-    let daysToAdd = 0;
-    if (repeatFrequency === "Daily") {
-      daysToAdd = 1;
-    } else if (repeatFrequency === "Weekly") {
-      daysToAdd = 7;
-    } else if (repeatFrequency === "Monthly") {
-      daysToAdd = 30;
-    } else if (repeatFrequency === "Yearly") {
-      daysToAdd = 365;
-    }
-    return moment(date, "YYYY-MM-DD").add("days", daysToAdd);
+    const nextDate = calculateSiteCheckDueDate(date, repeatFrequency);
+    return nextDate ? moment(nextDate, "YYYY-MM-DD") : moment(date);
   };
 
   const getSiteChecks = async () => {
@@ -859,10 +829,32 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                                 {action?.riskScoreGreen ?? 0}
                               </span>
                             </th>
-                            <th scope="col" style={{ width: "150px" }}>
-                              {action?.dueDate
-                                ? moment(action?.dueDate).format("DD-MM-YYYY")
-                                : getSiteCheckDueDate(action)}
+                            <th scope="col" style={{ width: "170px" }}>
+                              <Tooltip
+                                title={`Frequency: ${action?.repeatFrequency || "Not set"}`}
+                                arrow
+                              >
+                                <span className="d-inline-flex align-items-center gap-2">
+                                  <span
+                                    className={`badge ${
+                                      action?.status === "Open"
+                                        ? "bg-warning text-dark"
+                                        : "bg-light text-primary border border-primary"
+                                    }`}
+                                  >
+                                    {action?.status === "Open" ? "Start" : "Due"}
+                                  </span>
+                                  <span>
+                                    {action?.status === "Open"
+                                      ? action?.startDate
+                                        ? moment(action?.startDate).format("DD-MM-YYYY")
+                                        : "-"
+                                      : action?.dueDate
+                                      ? moment(action?.dueDate).format("DD-MM-YYYY")
+                                      : getSiteCheckDueDate(action)}
+                                  </span>
+                                </span>
+                              </Tooltip>
                             </th>
                             <th scope="col">
                               <Chip
@@ -1046,47 +1038,9 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                           let dueDateValue = formData?.dueDate;
                           const repeatFrequency = formData?.repeatFrequency;
 
-                          // If repeatFrequency is set and dueDate is not provided
                           if (repeatFrequency) {
-                            const startDate = new Date(date);
-
-                            switch (repeatFrequency) {
-                              case "Daily":
-                                dueDateValue = new Date(
-                                  startDate.setDate(startDate.getDate() + 1)
-                                );
-                                break;
-                              case "Weekly":
-                                dueDateValue = new Date(
-                                  startDate.setDate(startDate.getDate() + 7)
-                                );
-                                break;
-                              case "Monthly":
-                                dueDateValue = new Date(
-                                  startDate.setMonth(startDate.getMonth() + 1)
-                                );
-                                break;
-
-                              case "6-Monthly":
-                                dueDateValue = new Date(
-                                    startDate.setMonth(startDate.getMonth() + 6)
-                                );
-                                break;
-
-                              case "Yearly":
-                                dueDateValue = new Date(
-                                  startDate.setFullYear(
-                                    startDate.getFullYear() + 1
-                                  )
-                                );
-                                break;
-                              default:
-                                break;
-                            }
-
-                            dueDateValue = dueDateValue
-                              ? dueDateValue.toISOString()
-                              : ""; // Convert to ISO string
+                            dueDateValue =
+                              calculateSiteCheckDueDateTime(date, repeatFrequency) || "";
                           }
 
                           setFormData({
@@ -1286,7 +1240,25 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
                       </div>
                     )}
                   </Grid>
-                  <Grid sm={4}></Grid>
+                  <Grid sm={4}>
+                    {formData?.startDate &&
+                      formData?.repeatFrequency &&
+                      formData.repeatFrequency !== "None" &&
+                      formData?.dueDate && (
+                        <div style={{ margin: "10px" }}>
+                          <label htmlFor="estimatedNextDue">
+                            Estimated Next Due
+                          </label>
+                          <input
+                            id="estimatedNextDue"
+                            type="text"
+                            className="form-control"
+                            value={moment(formData.dueDate).format("DD/MM/YYYY")}
+                            readOnly
+                          />
+                        </div>
+                      )}
+                  </Grid>
                   <Grid sm={4}></Grid>
                   <hr />
                   <Grid sm={4}></Grid>

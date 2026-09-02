@@ -18,8 +18,12 @@ import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, getUkLocalDateTimeInput, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
 
@@ -578,17 +582,8 @@ const GasBoilerService = ({
         }
     };
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+    const calculateExpiryDate = (visitDate, repeatFrequency) =>
+      calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
     const fetchFolderStructure = async (siteId) => {
         try {
@@ -1046,6 +1041,18 @@ const GasBoilerService = ({
         }));
     };
 
+    const handleInspectionDateTimeChange = (e) => {
+        const value = e.target.value;
+        const signatureDate = value ? value.slice(0, 10) : "";
+
+        setFormData((prev) => ({
+            ...prev,
+            dateTimeOfIssue: value,
+            customerSignatureDate: signatureDate,
+            engineerSignatureDate: signatureDate,
+        }));
+    };
+
     const handleAssetSelect = (event, newValue) => {
         setFormData(prev => ({
             ...prev,
@@ -1475,21 +1482,11 @@ const GasBoilerService = ({
                                         type="datetime-local"
                                         className="form-control"
                                         value={formData.dateTimeOfIssue}
-                                        onChange={(e) => setFormData({ ...formData, dateTimeOfIssue: e.target.value })}
+                                        onChange={handleInspectionDateTimeChange}
                                         disabled={!isFormEditable || isSubmitted}
                                     />
                                 </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Signature</label>
-                                    <br />
-                                    <img
-                                        width="200"
-                                        height="50"
-                                        style={{ border: "1px solid" }}
-                                        src={(selectedEngineer?.signature || formData.user?.signature || "") + "?" + sasToken}
-                                        alt="Signature"
-                                    />
-                                </div>
+
                             </div>
                         </div>
 
@@ -1793,13 +1790,13 @@ const GasBoilerService = ({
                                     {renderSiteContactField()}
                                 </div>
                                 <div className="mb-3">
-                                    <label className="form-label">Customer Signature Date</label>
+                                    <label className="form-label">Signed Date</label>
                                     <input
                                         type="date"
                                         className="form-control"
-                                        value={formatDate(formData.customerSignatureDate)}
-                                        onChange={(e) => setFormData({ ...formData, customerSignatureDate: e.target.value })}
-                                        disabled={!isFormEditable || isSubmitted}
+                                        value={formatDate(formData.dateTimeOfIssue || formData.customerSignatureDate)}
+                                        readOnly
+                                        style={{ backgroundColor: "#f8f9fa" }}
                                     />
                                 </div>
                             </div>
@@ -1813,16 +1810,12 @@ const GasBoilerService = ({
                                         disabled
                                     />
                                 </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Engineer Signature Date</label>
-                                    <input
-                                        type="date"
-                                        className="form-control"
-                                        value={formatDate(formData.engineerSignatureDate)}
-                                        onChange={(e) => setFormData({ ...formData, engineerSignatureDate: e.target.value })}
-                                        disabled={!isFormEditable || isSubmitted}
-                                    />
-                                </div>
+                                <SiteCheckEngineerSignature
+                                    engineer={selectedEngineer}
+                                    engineerId={formData.engineer || formData.user?.id}
+                                    fallbackSignature={formData.user?.signature || ""}
+                                    sasToken={sasToken}
+                                />
                             </div>
                         </div>
                     </div>
@@ -1877,25 +1870,36 @@ const GasBoilerService = ({
                 )}
 
                 {!isSubmitted ? (
-                    <button
-                        type="submit"
-                        className="btn btn-primary"
-                        disabled={
-                            isLoading ||
-                            isGeneratingPDF ||
-                            (showRiskAssessment && !actionRaised) ||
-                            !isFormEditable ||
-                            isSubmitted  // Add this
-                            || !isgasEngineer
-                        }
-                    >
-                        {isLoading ? 'Submitting...' : 'Submit Report'}
-                    </button>
+                    <div className="d-flex justify-content-between align-items-start mt-3 print-hide">
+                        <SiteCheckBackButton />
+                        <button
+                            type="submit"
+                            className="btn btn-primary"
+                            disabled={
+                                isLoading ||
+                                isGeneratingPDF ||
+                                (showRiskAssessment && !actionRaised) ||
+                                !isFormEditable ||
+                                isSubmitted  // Add this
+                                || !isgasEngineer
+                            }
+                        >
+                            {isLoading ? 'Submitting...' : 'Submit Report'}
+                        </button>
+                    </div>
                 ) : (
                     <div className="alert alert-success">
                         Report submitted successfully on {formatDate(formData.engineerSignatureDate)}
                     </div>
                 )}
+            {!isSubmitted && (
+              <div className="d-flex justify-content-end print-hide">
+                <SiteCheckDueSummary
+                  inspectionDate={formData.dateTimeOfIssue}
+                  repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+                />
+              </div>
+            )}
             </form>
 
             <style>{`

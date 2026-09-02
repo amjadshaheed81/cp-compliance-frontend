@@ -19,8 +19,12 @@ import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
 
@@ -216,17 +220,8 @@ const GasSafetyRecord = ({
         return date.toISOString().replace('T', ' ').split('.')[0];
     };
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+    const calculateExpiryDate = (visitDate, repeatFrequency) =>
+      calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
     const isGasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
 
@@ -1294,6 +1289,7 @@ const GasSafetyRecord = ({
         setFormData(prev => ({
             ...prev,
             [name]: type === "checkbox" ? checked : value,
+            ...(name === "date" ? { engineerSignatureDate: value } : {}),
         }));
     };
 
@@ -1498,7 +1494,7 @@ const GasSafetyRecord = ({
                         <div className="row">
                             <div className="col-md-3">
                                 <div className="mb-3">
-                                    <label className="form-label">Date</label>
+                                    <label className="form-label">Inspection Date</label>
                                     <input
                                         type="date"
                                         className="form-control"
@@ -2482,27 +2478,22 @@ const GasSafetyRecord = ({
                                     label="Gas Engineer"
                                 />
                                 <div className="mb-3">
-                                    <label className="form-label">Date</label>
+                                    <label className="form-label">Signed Date</label>
                                     <input
                                         type="date"
                                         className="form-control"
                                         name="engineerSignatureDate"
-                                        value={formData.engineerSignatureDate}
-                                        onChange={handleInputChange}
-                                        disabled={isSubmitted}
+                                        value={formData.date || formData.engineerSignatureDate}
+                                        readOnly
+                                        style={{ backgroundColor: "#f8f9fa" }}
                                     />
                                 </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Signature</label>
-                                    <br />
-                                    <img
-                                        width="200"
-                                        height="50"
-                                        style={{ border: "1px solid" }}
-                                        src={(selectedEngineer?.signature || formData.user?.signature || "") + "?" + sasToken}
-                                        alt="Signature"
-                                    />
-                                </div>
+                                <SiteCheckEngineerSignature
+                                    engineer={selectedEngineer}
+                                    engineerId={formData.engineer || formData.user?.id}
+                                    fallbackSignature={formData.user?.signature || ""}
+                                    sasToken={sasToken}
+                                />
                             </div>
                             {/* <div className="col-md-6">
                 <div className="mb-3">
@@ -2545,13 +2536,7 @@ const GasSafetyRecord = ({
 
                 {!isSubmitted ? (
                     <div className="d-flex justify-content-between mt-3 print-hide">
-                        <button
-                            type="button"
-                            className="btn btn-secondary"
-                            onClick={() => window.history.back()}
-                        >
-                            Back
-                        </button>
+                        <SiteCheckBackButton />
                         <div>
                             {isFormEditable && (
                                 <button
@@ -2583,6 +2568,14 @@ const GasSafetyRecord = ({
                         )}
                     </div>
                 )}
+            {!isSubmitted && (
+              <div className="d-flex justify-content-end print-hide">
+                <SiteCheckDueSummary
+                  inspectionDate={formData.date}
+                  repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+                />
+              </div>
+            )}
             </form>
 
             <style>{`

@@ -12,6 +12,8 @@ import {
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
 import { toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
@@ -177,6 +179,7 @@ const AirConditioning = ({
   const [validationErrors, setValidationErrors] = useState({});
   const [inspectionDetails, setInspectionDetails] = useState(null);
   const [lastEngineerId, setLastEngineerId] = useState(null);
+  const [selectedEngineerProfile, setSelectedEngineerProfile] = useState(null);
 
     const [folderIds, setFolderIds] = useState({
     logBooks: null,
@@ -234,6 +237,47 @@ const AirConditioning = ({
   const selectedEngineer = engineerOptions.find(
     (user) => String(user.id) === String(formData.engineer)
   ) || null;
+
+  // The signature uploaded on Edit Profile is persisted on the full user
+  // details record (`user.signature`).  The general /api/user/all response is
+  // not treated as the authoritative signature source, so load the selected
+  // engineer's profile whenever the engineer changes.
+  useEffect(() => {
+    let cancelled = false;
+    const engineerId = formData.engineer;
+
+    if (!engineerId) {
+      setSelectedEngineerProfile(null);
+      return undefined;
+    }
+
+    const loadEngineerProfile = async () => {
+      try {
+        const response = await get(`/api/user/${engineerId}/details`);
+        if (!cancelled) {
+          setSelectedEngineerProfile(response?.user || response || null);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setSelectedEngineerProfile(null);
+        }
+      }
+    };
+
+    loadEngineerProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.engineer]);
+
+  const engineerSignatureUrl =
+    selectedEngineerProfile?.signature ||
+    selectedEngineer?.signature ||
+    (String(formData.user?.id || "") === String(formData.engineer || "")
+      ? formData.user?.signature
+      : "") ||
+    "";
 
   const selectedAsset = siteCheckAssets.find(
       (asset) => Number(asset.assetId) === Number(formData.assetId)
@@ -701,27 +745,23 @@ const AirConditioning = ({
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    const nextValue = type === "checkbox" ? checked : value;
+
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: nextValue,
+      // The two signature dates on this report are intentionally not
+      // independent dates. They follow the actual Inspection Date.
+      ...(name === "inspectionDate" ? { signedDate: value } : {}),
     }));
   };
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+  const calculateExpiryDate = (visitDate, repeatFrequency) =>
+    calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
   const formatSiteCheckDueDate = (visitDate, repeatFrequency) => {
     const expiry = calculateExpiryDate(visitDate, repeatFrequency);
-    return `${expiry.toISOString().split('T')[0]}T00:00:00`;
+    return expiry ? `${expiry}T00:00:00` : null;
   };
 
   const buildInspectionPayload = (checkIdOverride, actionIdOverride, inspectionDateOverride, signedDateOverride) => ({
@@ -1180,7 +1220,8 @@ const AirConditioning = ({
       // The Open form may default to today's UK date, but once the user edits
       // the control its value is authoritative for API/PDF persistence.
       const submissionInspectionDate = formData.inspectionDate;
-      const submissionSignedDate = formData.signedDate;
+      // Signed Date is read-only and follows the Inspection Date.
+      const submissionSignedDate = submissionInspectionDate;
 
       const statusPayload = {
         siteId: parseInt(authoritativeSiteId, 10),
@@ -1417,6 +1458,12 @@ const AirConditioning = ({
               (asset.subCategory2 === "Air Conditioning Unit (Indoor)" || asset.subCategory2 === "Air Conditioning Unit (Outdoor)")
       ) || [];
 
+  const repeatFrequency = inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency || "None";
+  const nextInspectionDate =
+      repeatFrequency !== "None"
+        ? (calculateExpiryDate(formData.inspectionDate, repeatFrequency) || "")
+        : "";
+
 
   return (
       <div className="container mt-4 mb-5">
@@ -1461,7 +1508,7 @@ const AirConditioning = ({
             </div>
             <div className="col-md-3">
               <div className="mb-3">
-                <label className="form-label">Date</label>
+                <label className="form-label">Inspection Date</label>
                 <input
                     type="date"
                     className="form-control"
@@ -2194,20 +2241,20 @@ const AirConditioning = ({
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Date</label>
+                <label className="form-label">Signed Date</label>
                 <input
                     type="date"
                     className="form-control"
                     name="signedDate"
                     value={formatDate(formData.signedDate)}
-                    onChange={handleInputChange}
+                    readOnly
                     required
                     style={{
                       height: "40px",
                       padding: "0 10px",
                       width: "100%",
+                      backgroundColor: "#f8f9fa",
                     }}
-                    disabled={isSubmitted}
                 />
               </div>
             </div>
@@ -2244,36 +2291,38 @@ const AirConditioning = ({
                 />
               </div>
               <div className="mb-3">
-                <label className="form-label">Date</label>
-                <input
-                    type="date"
-                    className="form-control"
-                    name="signedDate"
-                    value={formatDate(formData.signedDate)}
-                    onChange={handleInputChange}
-                    required
-                    disabled={isSubmitted}
-                    style={{
-                      height: "40px",
-                      padding: "0 10px",
-                      width: "100%",
-                    }}
-                />
+                <label className="form-label">Signature</label>
+                <div>
+                  {engineerSignatureUrl ? (
+                      <img
+                          width="200"
+                          height="50"
+                          style={{ border: "1px solid #ced4da", objectFit: "contain" }}
+                          src={`${engineerSignatureUrl}?${sasToken}`}
+                          alt="Engineer Signature"
+                      />
+                  ) : (
+                      <div
+                          className="form-control d-flex align-items-center text-muted"
+                          style={{
+                            width: "200px",
+                            height: "50px",
+                            backgroundColor: "#f8f9fa",
+                          }}
+                      >
+                        No signature available
+                      </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
           <div className="mt-4 print-hide">
             {!isSubmitted ? (
-                <div className="d-flex justify-content-between mt-3">
-                  <button
-                      type="button"
-                      className="btn btn-secondary"
-                      onClick={() => window.history.back()}
-                  >
-                    Back
-                  </button>
-                  <div>
+                <div className="d-flex justify-content-between align-items-start mt-3">
+                  <SiteCheckBackButton />
+                  <div className="d-flex flex-column align-items-end">
                     {isFormEditable && (
                         <button
                             type="submit"
@@ -2288,6 +2337,20 @@ const AirConditioning = ({
                           {isLoading ? 'Submitting...' : 'Submit Report'}
                         </button>
                     )}
+                    <div className="mt-3" style={{ minWidth: "280px" }}>
+                      <div className="d-flex align-items-center justify-content-between mb-2">
+                        <span className="fw-bold me-3">Frequency</span>
+                        <span className="form-control text-end" style={{ backgroundColor: "#f8f9fa", maxWidth: "165px" }}>
+                          {repeatFrequency}
+                        </span>
+                      </div>
+                      <div className="d-flex align-items-center justify-content-between">
+                        <span className="fw-bold me-3">Next Due Date</span>
+                        <span className="form-control text-end" style={{ backgroundColor: "#f8f9fa", maxWidth: "165px" }}>
+                          {nextInspectionDate ? dateFormat(nextInspectionDate) : ""}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
             ) : (

@@ -10,6 +10,7 @@ import pdfTemplate from './pdf/Fire Alarm.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import { formatDate } from "../../../../utils/dateFormat";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import {
     getUkLocalDate,
@@ -18,6 +19,9 @@ import {
   toJavaLocalDateTime,
   toJavaLocalDate,
 } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const InspectionFireCertificate = ({
                                        checkId,
@@ -689,17 +693,8 @@ const InspectionFireCertificate = ({
         }
     };
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+    const calculateExpiryDate = (visitDate, repeatFrequency) =>
+      calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
     const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride) => {
         try {
@@ -1662,21 +1657,16 @@ const InspectionFireCertificate = ({
                             </div>
                         </div>
                         <div className="col-md-2">
-                            <div className="mb-3">
-                                <label className="form-label">Signature</label>
-                                <br />
-                                <img
-                                    width="200"
-                                    height="50"
-                                    style={{ border: "1px solid" }}
-                                    src={formData.user?.signature + "?" + sasToken}
-                                    alt="Signature"
-                                />
-                            </div>
+                            <SiteCheckEngineerSignature
+                                engineer={selectedEngineer}
+                                engineerId={formData.inspectionBy || formData.user?.id}
+                                fallbackSignature={formData.user?.signature || ""}
+                                sasToken={sasToken}
+                            />
                         </div>
                         <div className="col-md-2">
                             <div className="mb-3">
-                                <label className="form-label">Date</label>
+                                <label className="form-label">Inspection Date</label>
                                 <DatePicker
                                     selected={formData.inspectionDate}
                                     onChange={handleDateChange}
@@ -1689,8 +1679,9 @@ const InspectionFireCertificate = ({
                         </div>
                     </div>
 
-                    <div className="d-flex justify-content-end">
-                        {!isSubmitted ? (
+                    {!isSubmitted ? (
+                        <div className="d-flex justify-content-between align-items-start mt-3 print-hide">
+                            <SiteCheckBackButton />
                             <button
                                 type="submit"
                                 className="btn btn-primary"
@@ -1704,12 +1695,20 @@ const InspectionFireCertificate = ({
                                 {isLoading ? 'Submitting...' :
                                     isGeneratingPDF ? 'Generating PDF...' : 'Submit Inspection'}
                             </button>
-                        ) : (
-                            <div className="alert alert-success">
-                                Inspection submitted successfully on {formatDate(formData.inspectionDate)}
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="alert alert-success">
+                            Inspection submitted successfully on {formatDate(formData.inspectionDate)}
+                        </div>
+                    )}
+                {!isSubmitted && (
+                  <div className="d-flex justify-content-end print-hide">
+                    <SiteCheckDueSummary
+                      inspectionDate={formData.inspectionDate}
+                      repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+                    />
+                  </div>
+                )}
                 </form>
             </div>
         </div>

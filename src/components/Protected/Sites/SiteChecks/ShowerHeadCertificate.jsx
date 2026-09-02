@@ -19,8 +19,12 @@ import RiskScoreCard from "./RiskScoreCard";
 import { PDFDocument } from 'pdf-lib';
 import RiskScoreCard2 from "./RiskScoreCard2";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const ShowerHeadCertificate = ({
                                    sasToken,
@@ -168,6 +172,7 @@ const ShowerHeadCertificate = ({
         setFormData(prev => ({
             ...prev,
             [name]: type === "checkbox" ? checked : value,
+            ...(name === "inspectionDate" ? { signedDate: value } : {}),
         }));
     };
 
@@ -442,17 +447,8 @@ const ShowerHeadCertificate = ({
         }
     }, []);
 
-    const calculateExpiryDate = (visitDate, repeatFrequency) => {
-        const date = new Date(visitDate);
-        switch (repeatFrequency) {
-            case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-            case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-            case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-            case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-            default:          date.setFullYear(date.getFullYear() + 1);  break;
-        }
-        return date;
-    };
+    const calculateExpiryDate = (visitDate, repeatFrequency) =>
+      calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
     const getHighestFileVersion = useCallback(async (folderId, fileName) => {
         try {
@@ -707,6 +703,12 @@ const ShowerHeadCertificate = ({
                 category: siteCheck?.category || 'Periodic Shower Head Cleaning',
                 status: 'Done',
                 startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                dueDate: toJavaLocalDateTime(
+                    calculateExpiryDate(
+                        submissionInspectionDate,
+                        inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency
+                    )
+                ),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
             };
@@ -1111,7 +1113,7 @@ const ShowerHeadCertificate = ({
                     </div>
                     <div className="col-md-3">
                         <div className="mb-3">
-                            <label className="form-label">Date</label>
+                            <label className="form-label">Inspection Date</label>
                             <input
                                 type="date"
                                 className="form-control"
@@ -1318,17 +1320,21 @@ const ShowerHeadCertificate = ({
                             {renderClientNameField()}
                         </div>
                         <div className="mb-3">
-                            <label className="form-label">Date</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="signedDate"
-                                value={formatDate(formData.signedDate)}
-                                onChange={handleInputChange}
-                                required
-                                style={{ height: "40px", padding: "0 10px", width: "100%" }}
-                                disabled={state.isSubmitted}
-                            />
+                          <label className="form-label">Signed Date</label>
+                          <input
+                              type="date"
+                              className="form-control"
+                              name="signedDate"
+                              value={formatDate(formData.inspectionDate || formData.signedDate)}
+                              readOnly
+                              required
+                              style={{
+                                height: "40px",
+                                padding: "0 10px",
+                                width: "100%",
+                                backgroundColor: "#f8f9fa",
+                              }}
+                          />
                         </div>
                     </div>
                     <div className="col-md-6">
@@ -1360,32 +1366,19 @@ const ShowerHeadCertificate = ({
                             loading={isLoadingEngineers}
                             error={state.validationErrors.engineer || engineerLoadError}
                         />
-                        <div className="mb-3">
-                            <label className="form-label">Date</label>
-                            <input
-                                type="date"
-                                className="form-control"
-                                name="signedDate"
-                                value={formatDate(formData.signedDate)}
-                                onChange={handleInputChange}
-                                required
-                                disabled={state.isSubmitted}
-                                style={{ height: "40px", padding: "0 10px", width: "100%" }}
-                            />
-                        </div>
+                        <SiteCheckEngineerSignature
+                            engineer={selectedEngineer}
+                            engineerId={formData.engineer || formData.user?.id}
+                            fallbackSignature={formData.user?.signature || ""}
+                            sasToken={sasToken}
+                        />
                     </div>
                 </div>
 
                 <div className="mt-4 print-hide">
                     {!state.isSubmitted ? (
                         <div className="d-flex justify-content-between mt-3">
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                onClick={() => window.history.back()}
-                            >
-                                Back
-                            </Button>
+                            <SiteCheckBackButton />
                             <div>
                                 {state.isFormEditable && (
                                     <Button
@@ -1408,6 +1401,14 @@ const ShowerHeadCertificate = ({
                         </div>
                     )}
                 </div>
+            {!state.isSubmitted && (
+              <div className="d-flex justify-content-end print-hide">
+                <SiteCheckDueSummary
+                  inspectionDate={formData.inspectionDate}
+                  repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+                />
+              </div>
+            )}
             </form>
 
             <style jsx>{`

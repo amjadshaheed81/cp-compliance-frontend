@@ -23,8 +23,12 @@ import pdfTemplate from "./pdf/Chlorination Certificate.pdf";
 import RiskScoreCard2 from "./RiskScoreCard2";
 import { PDFDocument } from "pdf-lib";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
+import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime } from "./shared/siteCheckDateUtils";
+import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const WaterChlorinationCertificate = ({
   sasToken,
@@ -498,17 +502,8 @@ The capacity of the tank is ${capacity} litres`;
     [authoritativeSiteId]
   );
 
-  const calculateExpiryDate = (visitDate, repeatFrequency) => {
-    const date = new Date(visitDate);
-    switch (repeatFrequency) {
-      case 'Monthly':   date.setMonth(date.getMonth() + 1);        break;
-      case 'Quarterly': date.setMonth(date.getMonth() + 3);        break;
-      case '6-Monthly': date.setMonth(date.getMonth() + 6);        break;
-      case 'Yearly':    date.setFullYear(date.getFullYear() + 1);  break;
-      default:          date.setFullYear(date.getFullYear() + 1);  break;
-    }
-    return date;
-  };
+  const calculateExpiryDate = (visitDate, repeatFrequency) =>
+    calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
   const uploadPdfToServer = useCallback(
     async (pdfBlob, fileName, inspectionDateOverride = null) => {
@@ -1105,7 +1100,7 @@ The capacity of the tank is ${capacity} litres`;
           </div>
           <div className="col-md-3">
             <div className="mb-3">
-              <label className="form-label">Date</label>
+              <label className="form-label">Inspection Date</label>
               <input
                 type="date"
                 className="form-control"
@@ -1338,30 +1333,19 @@ The capacity of the tank is ${capacity} litres`;
 
           </div>
           <div className="col-md-2">
-            <div className="mb-3">
-              <label className="form-label">Signature</label>
-              <br />
-              <img
-                width="200"
-                height="50"
-                style={{ border: "1px solid" }}
-                src={(selectedEngineer?.signature || formData.param5Remark || "") + "?" + sasToken}
-                alt="Engineer Signature"
-              />
-            </div>
+            <SiteCheckEngineerSignature
+              engineer={selectedEngineer}
+              engineerId={formData.engineer || formData.user?.id}
+              fallbackSignature={formData.param5Remark || formData.user?.signature || ""}
+              sasToken={sasToken}
+            />
           </div>
         </div>
 
         <div className="mt-4 print-hide">
           {!state.isSubmitted ? (
             <div className="d-flex justify-content-between mt-3">
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={() => window.history.back()}
-              >
-                Back
-              </Button>
+              <SiteCheckBackButton />
               <div>
                 {state.isFormEditable && (
                   <Button
@@ -1391,6 +1375,14 @@ The capacity of the tank is ${capacity} litres`;
             </div>
           )}
         </div>
+      {!state.isSubmitted && (
+        <div className="d-flex justify-content-end print-hide">
+          <SiteCheckDueSummary
+            inspectionDate={formData.date}
+            repeatFrequency={siteCheck?.repeatFrequency || inspectionDetails?.repeatFrequency}
+          />
+        </div>
+      )}
       </form>
 
       <style jsx>{`
