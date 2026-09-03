@@ -65,6 +65,7 @@ import {
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
   GET_USER_ALL,
+  GET_SITE_CHECK_USER_OPTIONS,
   GET_USER_ALL_EXTERNAL,
   USER_LOGIN,
   USER_LOGOUT,
@@ -98,6 +99,12 @@ const initialState = {
   saveSiteLandscapesInfo: null,
   isLoading: false,
   users: [],
+  siteCheckUserOptions: {
+    siteId: null,
+    siteUsers: [],
+    allUsers: [],
+    loadedAt: 0,
+  },
   externalusers: [],
   loggedInUserData: null,
   siteAssets: [],
@@ -629,6 +636,12 @@ const reducer = (state = initialState, action) => {
       return {
         ...state,
         users: action.payload,
+      };
+    case GET_SITE_CHECK_USER_OPTIONS:
+      return {
+        ...state,
+        siteCheckUserOptions: action.payload,
+        users: action.payload?.allUsers || [],
       };
     case GET_USER_ALL_EXTERNAL:
       return {

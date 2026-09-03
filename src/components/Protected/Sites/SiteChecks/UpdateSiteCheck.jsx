@@ -24,6 +24,7 @@ import {
     deleteUser,
     getSites,
     getExternalUsers,
+    getSiteCheckUserOptions,
 } from "../../../../store/thunk/site";
 import PrintIcon from "@mui/icons-material/Print";
 import html2pdf from "html2pdf.js";
@@ -80,7 +81,12 @@ const INSPECTION_STEPS_WITH_INTERNAL_BACK = new Set([
     "inspection-fire-alarm",
 ]);
 
-const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
+const SiteChecks = ({
+    siteSelectedForGlobal,
+    loggedInUserData,
+    siteCheckUserOptions,
+    getSiteCheckUserOptions,
+}) => {
     const printRef = useRef();
 
     const params = useParams();
@@ -89,8 +95,22 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
     const [step, setStep] = useState();
     const checkId = params.id;
     const [siteCheck, setSiteCheck] = useState();
-    const [managerList, setManagerList] = useState([]);
     const navigate = useNavigate();
+    const authoritativeUserSiteId = siteCheck?.siteId || siteSelectedForGlobal?.siteId;
+    const managerList =
+        Number(siteCheckUserOptions?.siteId) === Number(authoritativeUserSiteId)
+            ? siteCheckUserOptions?.siteUsers || []
+            : [];
+
+    useEffect(() => {
+        if (!authoritativeUserSiteId) return undefined;
+
+        const refreshTimer = window.setInterval(() => {
+            getSiteCheckUserOptions(authoritativeUserSiteId, true);
+        }, 60 * 60 * 1000);
+
+        return () => window.clearInterval(refreshTimer);
+    }, [authoritativeUserSiteId, getSiteCheckUserOptions]);
 
     useEffect(() => {
         if (
@@ -120,7 +140,6 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
     }, [siteCheck]);
 
     useEffect(() => {
-        getManagerList();
         getSiteChecks();
         getToken();
     }, [checkId]);
@@ -128,23 +147,6 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
     const getToken = async () => {
         const token = await getSasToken();
         setSasToken(token);
-    };
-
-    const getManagerList = async () => {
-        const data = await get(
-            `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
-        );
-        setManagerList(
-            data?.users?.sort((a, b) => {
-                if (a.name < b.name) {
-                    return -1; // a comes before b
-                }
-                if (a.name > b.name) {
-                    return 1; // b comes before a
-                }
-                return 0; // names are equal
-            }) || []
-        );
     };
 
     useEffect(() => {}, []);
@@ -177,6 +179,11 @@ const SiteChecks = ({ siteSelectedForGlobal,loggedInUserData }) => {
 
     const getSiteChecks = async () => {
         const siteCheck = await get("/api/site-check/check-id/" + checkId);
+        const userSiteId = siteCheck?.siteId || siteSelectedForGlobal?.siteId;
+
+        if (userSiteId) {
+            await getSiteCheckUserOptions(userSiteId);
+        }
 
         if (
             siteCheck.type === "Inspection" &&
@@ -1001,9 +1008,11 @@ const mapStateToProps = (state) => ({
     externalusers: state.site.externalusers,
     loggedInUserData: state.site.loggedInUserData,
     siteSelectedForGlobal: state.site.siteSelectedForGlobal,
+    siteCheckUserOptions: state.site.siteCheckUserOptions,
 });
 export default connect(mapStateToProps, {
     getExternalUsers,
     deleteUser,
     getSites,
+    getSiteCheckUserOptions,
 })(SiteChecks);

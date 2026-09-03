@@ -25,11 +25,16 @@ import {
   Autocomplete,
   TextField,
 } from "@mui/material";
-import { getSites } from "../../../../store/thunk/site";
+import { getSites, getSiteCheckUserOptions } from "../../../../store/thunk/site";
 import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 import { calculateSiteCheckDueDateTime, calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
-const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
+const SiteChecks = ({
+  siteSelectedForGlobal,
+  loggedInUserData,
+  siteCheckUserOptions,
+  getSiteCheckUserOptions,
+}) => {
   const datePickerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [create, setCreate] = useState(false);
@@ -38,9 +43,12 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [subtypeoptions2, setsubtypeoptions2] = useState([]);
   const [catoptions, setcatoptions] = useState([]);
   const [filterCatOptions, setFilterCatOptions] = useState([]);
+  const [siteCheckLovOptions, setSiteCheckLovOptions] = useState({
+    subTypes: [],
+    categories: [],
+  });
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
-  const [managerList, setManagerList] = useState([]);
   const [assetIdMap, setAssetIdMap] = useState({});
 
   const navigate = useNavigate();
@@ -49,26 +57,27 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
 
   useEffect(() => {
-    getManagerList();
     gettypeoptions();
   }, []);
 
-  const getManagerList = async () => {
-    const data = await get(
-      `/api/user/all?siteId=${siteSelectedForGlobal?.siteId}`
-    );
-    setManagerList(
-      data?.users?.sort((a, b) => {
-        if (a.name < b.name) {
-          return -1; // a comes before b
-        }
-        if (a.name > b.name) {
-          return 1; // b comes before a
-        }
-        return 0; // names are equal
-      }) || []
-    );
-  };
+  useEffect(() => {
+    const siteId = siteSelectedForGlobal?.siteId;
+    if (!siteId) return undefined;
+
+    getSiteCheckUserOptions(siteId);
+
+    const refreshTimer = window.setInterval(() => {
+      getSiteCheckUserOptions(siteId, true);
+    }, 60 * 60 * 1000);
+
+    return () => window.clearInterval(refreshTimer);
+  }, [siteSelectedForGlobal?.siteId, getSiteCheckUserOptions]);
+
+  const managerList =
+    Number(siteCheckUserOptions?.siteId) ===
+    Number(siteSelectedForGlobal?.siteId)
+      ? siteCheckUserOptions?.siteUsers || []
+      : [];
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -82,100 +91,66 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setCurrentPage(pageNumber);
   };
 
+  const sortLovValues = (lovs = []) =>
+    lovs
+      .map((l) => l.lovValue)
+      .sort((a, b) => {
+        if (a < b) return -1;
+        if (a > b) return 1;
+        return 0;
+      });
+
   const gettypeoptions = async () => {
-    const lovtypes = await get("/api/lov/SITE_CHECK_TYPE");
-    settypeoptions(lovtypes?.map((l) => l.lovValue));
-  };
-  const getsubtypeoptions = async () => {
-    const lovtypes = await get(
-      "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData2.type
-    );
-    setsubtypeoptions(
-      lovtypes
-        ?.map((l) => l.lovValue)
-        ?.sort((a, b) => {
-          if (a < b) {
-            return -1; // a comes before b
-          }
-          if (a > b) {
-            return 1; // b comes before a
-          }
-          return 0; // type are equal
-        })
-    );
+    const lookups = await get("/api/lov/site-check-options");
+    settypeoptions(lookups?.types?.map((l) => l.lovValue) || []);
+    setSiteCheckLovOptions({
+      subTypes: lookups?.subTypes || [],
+      categories: lookups?.categories || [],
+    });
   };
 
-  const getcatoptions = async () => {
-    const lovtypes = await get(
-      "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData.subType
+  const getsubtypeoptions = () => {
+    const lovtypes = siteCheckLovOptions.subTypes.filter(
+      (l) => l.attribite1 === formData2.type
+    );
+    setsubtypeoptions(sortLovValues(lovtypes));
+  };
+
+  const getcatoptions = () => {
+    const lovtypes = siteCheckLovOptions.categories.filter(
+      (l) => l.attribite1 === formData.subType
     );
     const filteredCategories =
       formData.subType === "Emergency Lighting to meet BS5266"
-        ? lovtypes?.filter(
+        ? lovtypes.filter(
             (l) =>
               l.lovValue !==
               "Emergency Lighting (systems less than 3 years old) 6 monthly 1 hour discharge testing"
           )
         : lovtypes;
-    setcatoptions(
-      filteredCategories
-        ?.map((l) => l.lovValue)
-        ?.sort((a, b) => {
-          if (a < b) {
-            return -1; // a comes before b
-          }
-          if (a > b) {
-            return 1; // b comes before a
-          }
-          return 0; // type are equal
-        })
-    );
+    setcatoptions(sortLovValues(filteredCategories));
   };
 
-  const getFilterCatOptions = async () => {
-    const lovtypes = await get(
-      "/api/lov/SITE_CHECK_CATEGORY?filter1=" + formData2.subType
+  const getFilterCatOptions = () => {
+    const lovtypes = siteCheckLovOptions.categories.filter(
+      (l) => l.attribite1 === formData2.subType
     );
     const filteredCategories =
       formData2.subType === "Emergency Lighting to meet BS5266"
-        ? lovtypes?.filter(
+        ? lovtypes.filter(
             (l) =>
               l.lovValue !==
               "Emergency Lighting (systems less than 3 years old) 6 monthly 1 hour discharge testing"
           )
         : lovtypes;
-    setFilterCatOptions(
-      filteredCategories
-        ?.map((l) => l.lovValue)
-        ?.sort((a, b) => {
-          if (a < b) {
-            return -1; // a comes before b
-          }
-          if (a > b) {
-            return 1; // b comes before a
-          }
-          return 0; // type are equal
-        })
-    );
+    setFilterCatOptions(sortLovValues(filteredCategories));
   };
 
-  const getsubtypeoptions2 = async () => {
-    const lovtypes = await get(
-      "/api/lov/SITE_CHECK_SUB_TYPE?filter1=" + formData.type
+  const getsubtypeoptions2 = () => {
+    const lovtypes = siteCheckLovOptions.subTypes.filter(
+      (l) => l.attribite1 === formData.type
     );
-    setsubtypeoptions2(
-      lovtypes
-        ?.map((l) => l.lovValue)
-        ?.sort((a, b) => {
-          if (a < b) {
-            return -1; // a comes before b
-          }
-          if (a > b) {
-            return 1; // b comes before a
-          }
-          return 0; // type are equal
-        })
-    );
+    setsubtypeoptions2(sortLovValues(lovtypes));
   };
   useEffect(() => {}, []);
   const [formData, setFormData] = useState({
@@ -522,65 +497,41 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
     setIsLoading(true);
 
     try {
-      // Get all site checks
-      const siteChecks = await get(
-        "/api/site-check/site/" + siteSelectedForGlobal.siteId
+      // The grid endpoint returns the existing Site Check row shape plus a
+      // separate Asset ID map, removing the previous per-row inspection calls.
+      const gridData = await get(
+        "/api/site-check/site/" + siteSelectedForGlobal.siteId + "/grid"
       );
 
-      // Create a map to store asset IDs
-      const newAssetIdMap = {};
+      const siteChecks = gridData?.siteChecks || [];
+      const newAssetIdMap = gridData?.assetIdMap || {};
 
-      // Fetch inspection data for all checks and populate the map
-      await Promise.all(
-        siteChecks.map(async (check) => {
-          try {
-            const assetId = await fetchInspectionData(
-              check.checkId,
-              check.type,
-              check.subType,
-              check.category
-            );
-            if (assetId) {
-              newAssetIdMap[check.checkId] = assetId;
-            }
-          } catch (error) {
-            console.error(`Error fetching inspection data for check ${check.checkId}:`, error);
-          }
-        })
-      );
-
-      // Update the assetIdMap state
       setAssetIdMap(newAssetIdMap);
 
-      // Sort the site checks with the following priority:
-      // 1. Checks with asset IDs (sorted numerically in ascending order)
-      // 2. Checks without asset IDs (grouped by subType → category, sorted alphabetically)
+      // Preserve the existing grid ordering:
+      // 1. Checks with asset IDs (numeric ascending)
+      // 2. Checks without asset IDs (subType -> category alphabetically)
       const safeSubType = (v) => (v || "").toString();
       const safeCategory = (v) => (v || "").toString();
       const sortedSiteChecks = [...siteChecks].sort((a, b) => {
         const aAssetId = newAssetIdMap[a.checkId];
         const bAssetId = newAssetIdMap[b.checkId];
 
-        // Case 1: Both have asset IDs → Sort numerically (smallest first)
         if (aAssetId && bAssetId) {
           return parseInt(aAssetId) - parseInt(bAssetId);
         }
 
-        // Case 2: Only 'a' has asset ID → 'a' comes first
         if (aAssetId) return -1;
-
-        // Case 3: Only 'b' has asset ID → 'b' comes first
         if (bAssetId) return 1;
 
-        // Case 4: Neither has asset ID → Group by subType → category (alphabetical)
-        const subTypeCompare = safeSubType(a.subType).localeCompare(safeSubType(b.subType));
+        const subTypeCompare = safeSubType(a.subType).localeCompare(
+          safeSubType(b.subType)
+        );
         if (subTypeCompare !== 0) return subTypeCompare;
 
-        // If same subType, sort by category
         return safeCategory(a.category).localeCompare(safeCategory(b.category));
       });
 
-      // Update both states
       setFilteredSiteChecks(sortedSiteChecks);
       setSiteChecks(sortedSiteChecks);
     } catch (error) {
@@ -588,37 +539,6 @@ const SiteChecks = ({ siteSelectedForGlobal, loggedInUserData }) => {
       toast.error("Failed to load site checks");
     } finally {
       setIsLoading(false);
-    }
-  };
-  // Updated fetchInspectionData function
-  const fetchInspectionData = async (checkId, type, subType, category) => {
-    try {
-      let apiEndpoint;
-
-      // Determine the endpoint based on category
-      if (category === 'Boiler Service / Maintenance Checklist') {
-        apiEndpoint = `/api/site-check/gas-boiler-inspection/${checkId}`;
-      } else if (category === 'Gas Safety Annual Inspection') {
-        apiEndpoint = `/api/site-check/gas-safety-inspection/${checkId}`;
-      } else {
-        // Default to generic inspection
-        apiEndpoint = `/api/site-check/generic-inspection/${checkId}`;
-      }
-
-      const inspectionData = await get(apiEndpoint);
-
-      // Handle different response structures
-      if (Array.isArray(inspectionData)) {
-        // Generic inspection returns an array - get the most recent item
-        const mostRecentItem = inspectionData[inspectionData.length - 1];
-        return mostRecentItem?.assetId;
-      } else {
-        // Gas boiler and gas safety inspections return single object
-        return inspectionData?.assetId;
-      }
-    } catch (error) {
-      console.error(`Error fetching inspection for check ${checkId}:`, error);
-      return null;
     }
   };
 
@@ -1311,5 +1231,9 @@ const mapStateToProps = (state) => ({
   sites: state.site.sites,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
+  siteCheckUserOptions: state.site.siteCheckUserOptions,
 });
-export default connect(mapStateToProps, { getSites })(SiteChecks);
+export default connect(mapStateToProps, {
+  getSites,
+  getSiteCheckUserOptions,
+})(SiteChecks);

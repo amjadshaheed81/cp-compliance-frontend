@@ -70,6 +70,7 @@ import {
   SAVE_SITE_LAYOUT,
   SAVE_SITE_LAYOUT_FAILURE,
   GET_USER_ALL,
+  GET_SITE_CHECK_USER_OPTIONS,
   GET_USER_ALL_EXTERNAL,
   USER_LOGIN,
   USER_LOGOUT,
@@ -1295,6 +1296,64 @@ export const addUserTagSite = (userId, formData) => {
       }
     } catch (error) {
       toast.error("Something went wrong while adding user. Please try again.");
+    }
+  };
+};
+
+
+const SITE_CHECK_USER_BROWSER_CACHE_MS = 60 * 60 * 1000;
+
+const sortUsersByName = (users = []) =>
+  [...users].sort((a, b) =>
+    String(a?.name || "").localeCompare(String(b?.name || ""), undefined, {
+      sensitivity: "base",
+    })
+  );
+
+export const getSiteCheckUserOptions = (siteId, forceRefresh = false) => {
+  return async (dispatch, getState) => {
+    if (!siteId) {
+      return { siteId: null, siteUsers: [], allUsers: [], loadedAt: 0 };
+    }
+
+    const cached = getState()?.site?.siteCheckUserOptions;
+    const cacheIsCurrentSite = Number(cached?.siteId) === Number(siteId);
+    const cacheAge = Date.now() - Number(cached?.loadedAt || 0);
+
+    if (
+      !forceRefresh &&
+      cacheIsCurrentSite &&
+      cacheAge >= 0 &&
+      cacheAge < SITE_CHECK_USER_BROWSER_CACHE_MS
+    ) {
+      return cached;
+    }
+
+    try {
+      const response = await get(`/api/user/site-check-options?siteId=${siteId}`);
+      const payload = {
+        siteId: Number(siteId),
+        siteUsers: sortUsersByName(response?.siteUsers || []),
+        allUsers: sortUsersByName(response?.allUsers || []),
+        loadedAt: Date.now(),
+      };
+
+      dispatch({
+        type: GET_SITE_CHECK_USER_OPTIONS,
+        payload,
+      });
+
+      return payload;
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching Site Check users. Please try again."
+      );
+      return cached || {
+        siteId: Number(siteId),
+        siteUsers: [],
+        allUsers: [],
+        loadedAt: 0,
+      };
     }
   };
 };

@@ -987,7 +987,9 @@ const InspectionFireCertificate = ({
 
     useEffect(() => {
         const fetchData = async () => {
-            getUsers();
+            if (users.length === 0) {
+              getUsers();
+            }
             if (authoritativeSiteId) {
                 await fetchFolderStructure(authoritativeSiteId, 'Fire Alarm');
             }

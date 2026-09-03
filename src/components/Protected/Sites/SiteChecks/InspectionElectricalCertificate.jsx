@@ -9,7 +9,9 @@ import { getSites, getUsers } from "../../../../store/thunk/site";
 
 const InspectionElectricalCertificate = ({ sasToken, checkId, users, getUsers, siteSelectedForGlobal }) => {
   useEffect(() => {
-    getUsers();
+    if (users.length === 0) {
+      getUsers();
+    }
     getIpection();
   }, []);
   const [completed, setCompleted] = useState(false);
