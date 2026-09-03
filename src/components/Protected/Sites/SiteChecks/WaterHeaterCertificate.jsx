@@ -12,7 +12,6 @@ import {
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
 import InsertPhotoIcon from "@mui/icons-material/InsertPhoto";
-import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import pdfTemplate from './pdf/WaterHeater.pdf';
 import RiskScoreCard from "./RiskScoreCard";
@@ -20,12 +19,21 @@ import moment from "moment";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
-import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
-import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+
+const getBasePhotoUrl = (url) => {
+  if (!url || typeof url !== "string") return "";
+  return url.split("?")[0];
+};
+
+const getPhotoDisplayUrl = (url, token) => {
+  const baseUrl = getBasePhotoUrl(url);
+  if (!baseUrl) return "";
+  return token ? `${baseUrl}?${token}` : baseUrl;
+};
 
 let PDFLib;
 
@@ -175,7 +183,7 @@ const WaterHeaterCertificate = ({
         // Update any existing photo URLs with new token
         setUploadedPhotos(prev => prev.map(photo => ({
           ...photo,
-          url: `${photo.url.split('?')[0]}?${token}`
+          url: getPhotoDisplayUrl(photo.baseUrl || photo.url, token)
         })));
       } catch (error) {
         console.error('Failed to fetch SAS token:', error);
@@ -222,8 +230,10 @@ const WaterHeaterCertificate = ({
           const paramKey = `param${i}Remark`;
           const photoUrl = mostRecentItem[paramKey];
           if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
+            const baseUrl = getBasePhotoUrl(photoUrl);
             photosFromApi.push({
-              url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
+              url: getPhotoDisplayUrl(baseUrl, sasToken),
+              baseUrl,
               paramKey
             });
           }
@@ -249,7 +259,7 @@ const WaterHeaterCertificate = ({
           signedDate: effectiveCheckStatus === "Open" ? prev.signedDate : (mostRecentItem.signedDate || prev.signedDate),
           siteContactNo: mostRecentItem.siteContactNo || prev.siteContactNo,
           jobNo: mostRecentItem.jobNo || prev.jobNo,
-          engineersReport: mostRecentItem.engineersReport || prev.engineersReport,
+          report: mostRecentItem.report ?? prev.report,
           param1: mostRecentItem.param1 || prev.param1,
           param2: mostRecentItem.param2 || prev.param2,
           param3: mostRecentItem.param3 || prev.param3,
@@ -257,10 +267,10 @@ const WaterHeaterCertificate = ({
           param5: mostRecentItem.param5 || prev.param5,
           param6: mostRecentItem.param6 || prev.param6,
           param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
-          param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
-          param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
-          param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
-          param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
+          param2Remark: getBasePhotoUrl(mostRecentItem.param2Remark) || prev.param2Remark,
+          param3Remark: getBasePhotoUrl(mostRecentItem.param3Remark) || prev.param3Remark,
+          param4Remark: getBasePhotoUrl(mostRecentItem.param4Remark) || prev.param4Remark,
+          param5Remark: getBasePhotoUrl(mostRecentItem.param5Remark) || prev.param5Remark,
           client: mostRecentItem.client || "",
           // OLD: engineer/user always preferred the saved record, even while Open.
           // NEW: same Open/Done behaviour as Air Conditioning.
@@ -576,7 +586,6 @@ const WaterHeaterCertificate = ({
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-      ...(name === "inspectionDate" ? { signedDate: value } : {}),
     }));
   };
 
@@ -1001,33 +1010,48 @@ const WaterHeaterCertificate = ({
 
       const filesToUpload = files.slice(0, availableParams.length);
       const token = sasToken || await getSasToken();
+      if (!sasToken && token) {
+        setSasToken(token);
+      }
 
       const uploadResults = await Promise.all(
           filesToUpload.map(async (file, index) => {
-            const response = await uploadSiteCheckDoc({
+            const uploadedUrl = await uploadSiteCheckDoc({
               siteId: authoritativeSiteId || 0,
               file: file
             });
 
-            const baseUrl = response?.url ||
-                `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+            if (typeof uploadedUrl !== "string" || !uploadedUrl.trim()) {
+              throw new Error(`Photo upload did not return a valid URL for ${file.name}`);
+            }
 
-            const imageUrl = `${baseUrl}?${token}`;
+            const baseUrl = getBasePhotoUrl(uploadedUrl.trim());
 
             return {
-              url: imageUrl,
-              baseUrl: baseUrl,
+              url: getPhotoDisplayUrl(baseUrl, token),
+              baseUrl,
               paramKey: availableParams[index],
-              fileName: file.name,
-              documentId: response?.documentId || uuidv4()
+              fileName: file.name
             };
           })
       );
 
       const formUpdates = uploadResults.reduce((acc, photo) => {
-        acc[photo.paramKey] = photo.url;
+        acc[photo.paramKey] = photo.baseUrl;
         return acc;
       }, {});
+
+      // Persist only the photo fields. The dedicated endpoint deliberately does not
+      // replace the rest of the GenericInspection record. Save sequentially so that
+      // multiple photos cannot race while updating the same inspection row.
+      if (currentCheckId) {
+        for (const photo of uploadResults) {
+          await put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+            paramKey: photo.paramKey,
+            photoUrl: photo.baseUrl
+          });
+        }
+      }
 
       setFormData(prev => ({
         ...prev,
@@ -1039,25 +1063,6 @@ const WaterHeaterCertificate = ({
         ...uploadResults
       ].slice(0, 4));
 
-      // Save to API
-      if (currentCheckId) {
-        const payload = {
-          checkId: currentCheckId,
-          siteId: authoritativeSiteId,
-          type: 'Inspection',
-          subType: 'Water Heater',
-          category: 'Water Heater Service',
-          ...formUpdates
-        };
-
-        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-        if (existingInspections?.length > 0) {
-          await put(`/api/site-check/generic-inspection/${currentCheckId}`, payload);
-        } else {
-          await post(`/api/site-check/generic-inspection`, payload);
-        }
-      }
-
       toast.success("Photos uploaded successfully!");
     } catch (error) {
       console.error("Photo upload error:", error);
@@ -1067,33 +1072,29 @@ const WaterHeaterCertificate = ({
     }
   };
 
-  const handleRemovePhoto = (index) => {
+  const handleRemovePhoto = async (index) => {
     const photoToRemove = uploadedPhotos[index];
+    if (!photoToRemove) return;
 
-    setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
+    try {
+      if (currentCheckId && photoToRemove.paramKey) {
+        await put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+          paramKey: photoToRemove.paramKey,
+          photoUrl: ""
+        });
+      }
 
-    if (photoToRemove.paramKey) {
-      setFormData(prev => ({
-        ...prev,
-        [photoToRemove.paramKey]: ""
-      }));
-    }
+      setUploadedPhotos(prev => prev.filter((_, i) => i !== index));
 
-    if (currentCheckId && photoToRemove.paramKey) {
-      const payload = {
-        checkId: currentCheckId,
-        siteId: authoritativeSiteId,
-        type: 'Inspection',
-        subType: 'Water Heater',
-        category: 'Water Heater Service',
-        [photoToRemove.paramKey]: ""
-      };
-
-      put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
-          .catch(error => {
-            console.error("Error removing photo from API:", error);
-            toast.error("Failed to update photo in database");
-          });
+      if (photoToRemove.paramKey) {
+        setFormData(prev => ({
+          ...prev,
+          [photoToRemove.paramKey]: ""
+        }));
+      }
+    } catch (error) {
+      console.error("Error removing photo from API:", error);
+      toast.error("Failed to update photo in database");
     }
   };
 
@@ -1705,9 +1706,9 @@ const WaterHeaterCertificate = ({
 
               {/* Photo Previews */}
               {uploadedPhotos.map((photo, index) => {
-                const imageUrl = photo.url.includes('?')
-                    ? photo.url
-                    : `${photo.url}?${sasToken}`;
+                const imageUrl = sasToken
+                    ? getPhotoDisplayUrl(photo.baseUrl || photo.url, sasToken)
+                    : (photo.url || photo.baseUrl);
 
                 return (
                     <div
@@ -1981,20 +1982,20 @@ const WaterHeaterCertificate = ({
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Signed Date</label>
+                <label className="form-label">Date</label>
                 <input
                     type="date"
                     className="form-control"
                     name="signedDate"
-                    value={formatDate(formData.inspectionDate || formData.signedDate)}
-                    readOnly
+                    value={formatDate(formData.signedDate)}
+                    onChange={handleInputChange}
                     required
                     style={{
                       height: "40px",
                       padding: "0 10px",
                       width: "100%",
-                      backgroundColor: "#f8f9fa",
                     }}
+                    disabled={isSubmitted}
                 />
               </div>
             </div>
@@ -2027,18 +2028,35 @@ const WaterHeaterCertificate = ({
                   loading={isLoadingEngineers}
                   error={validationErrors.engineer || engineerLoadError}
               />
-              <SiteCheckEngineerSignature
-                  engineer={selectedEngineer}
-                  engineerId={formData.engineer || formData.user?.id}
-                  fallbackSignature={formData.user?.signature || ""}
-                  sasToken={sasToken}
-              />
+              <div className="mb-3">
+                <label className="form-label">Date</label>
+                <input
+                    type="date"
+                    className="form-control"
+                    name="signedDate"
+                    value={formatDate(formData.signedDate)}
+                    onChange={handleInputChange}
+                    required
+                    disabled={isSubmitted}
+                    style={{
+                      height: "40px",
+                      padding: "0 10px",
+                      width: "100%",
+                    }}
+                />
+              </div>
             </div>
           </div>
 
           {!isSubmitted ? (
               <div className="d-flex justify-content-between mt-3 print-hide">
-                <SiteCheckBackButton />
+                <button
+                    type="button"
+                    className="btn btn-secondary"
+                    onClick={() => window.history.back()}
+                >
+                  Back
+                </button>
                 <div>
                   {isFormEditable && (
                       <button
