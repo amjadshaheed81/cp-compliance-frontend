@@ -30,6 +30,8 @@ import SiteCalendar from "../components/Protected/Sites/SiteCalendar";
 import ViewCreatePreActions from "../components/Protected/Sites/PreActions/ViewCreatePreActions";
 import SiteChecks from "../components/Protected/Sites/SiteChecks";
 import UpdateSiteCheck from "../components/Protected/Sites/SiteChecks/UpdateSiteCheck";
+import SiteCheckHealth from "../components/Protected/Sites/SiteChecks/SiteCheckHealth";
+import SiteCheckSchedulerLogs from "../components/Protected/Sites/SiteChecks/SiteCheckSchedulerLogs";
 import UpdateAsset from "../components/Protected/Sites/Assets/UpdateAsset";
 import ViewEditPreAction from "../components/Protected/Sites/PreActions/ViewEditPreAction";
 import EditAction from "../components/Protected/Sites/Actions/EditAction";
@@ -171,6 +173,16 @@ export const getRoutes = () => {
     {
       path: "/site-checks/:id/update",
       element: <UpdateSiteCheck />,
+    },
+    {
+      path: "/site-check-health",
+      element: <SiteCheckHealth />,
+      allowedRoles: [ROLE.ADMIN], // only Admin can access Site Check recovery
+    },
+    {
+      path: "/site-check-scheduler-logs",
+      element: <SiteCheckSchedulerLogs />,
+      allowedRoles: [ROLE.ADMIN], // only Admin can access scheduler audit logs
     },
     {
       path: "/admin/categories",

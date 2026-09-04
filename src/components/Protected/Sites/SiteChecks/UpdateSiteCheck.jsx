@@ -18,8 +18,8 @@ import Audit from "./Audit";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, getSasToken, getPdf, getPdfFromUrl, put } from "../../../../api";
-import { Grid, Stack, Paper, styled } from "@mui/material";
+import { get, getSasToken, getPdf, getPdfFromUrl, put, post } from "../../../../api";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Paper, styled } from "@mui/material";
 import {
     deleteUser,
     getSites,
@@ -31,6 +31,10 @@ import html2pdf from "html2pdf.js";
 import "./Print.css";
 import moment from "moment";
 import { addRepeatFrequency } from "../../../../utils/getSiteCheckDueDate";
+import {
+    calculateSiteCheckDueDate,
+    formatSiteCheckDisplayDate,
+} from "../../../../utils/siteCheckRecurrence";
 import { ROLE } from "../../../../Constant/Role";
 import SounderAudibilty from "./SounderAudibility";
 import RefugeIntercomTesting from "./RefugeIntercomTesting";
@@ -52,6 +56,7 @@ import GasBoilerService from "./GasBoilerService";
 import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getUkLocalDate } from "./shared/siteCheckDateUtils";
 
 const Item = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(1),
@@ -158,6 +163,32 @@ const SiteChecks = ({
     });
 
     const [savingAssignees, setSavingAssignees] = useState(false);
+    const [showManualOpenDialog, setShowManualOpenDialog] = useState(false);
+    const [plannedInspectionDate, setPlannedInspectionDate] = useState("");
+    const [openingInspectionEarly, setOpeningInspectionEarly] = useState(false);
+
+    const hasRecurringFrequency =
+        Boolean(siteCheck?.repeatFrequency) &&
+        siteCheck.repeatFrequency !== "None";
+
+    const canOpenInspectionEarly =
+        loggedInUserData?.role === ROLE.ADMIN &&
+        siteCheck?.status === "Done" &&
+        siteCheck?.type === "Inspection" &&
+        hasRecurringFrequency;
+
+    const currentDueDateValue = siteCheck?.dueDate
+        ? String(siteCheck.dueDate).substring(0, 10)
+        : "";
+    const todayUk = getUkLocalDate();
+    const hasCurrentDueDate = Boolean(currentDueDateValue);
+    const plannedNextDueDate =
+        plannedInspectionDate && hasRecurringFrequency
+            ? calculateSiteCheckDueDate(
+                  plannedInspectionDate,
+                  siteCheck?.repeatFrequency
+              )
+            : null;
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -349,6 +380,39 @@ const SiteChecks = ({
             setStep("survey-water-tank");
         }
         setSiteCheck(siteCheck);
+    };
+
+    const handleOpenInspectionEarlyDialog = () => {
+        setPlannedInspectionDate(todayUk);
+        setShowManualOpenDialog(true);
+    };
+
+    const handleOpenInspectionEarly = async () => {
+        if (!plannedInspectionDate) {
+            toast.error("Planned Inspection Date is required.");
+            return;
+        }
+
+        try {
+            setOpeningInspectionEarly(true);
+            const response = await post(`/api/site-check/recovery/${checkId}`, {
+                action: "OPEN_INSPECTION_EARLY",
+                cycleStartDate: plannedInspectionDate,
+                reason: `Inspection force-opened from the inspection detail page for ${plannedInspectionDate}`,
+            });
+
+            setShowManualOpenDialog(false);
+            toast.success(response?.data?.message || "Inspection opened successfully.");
+            navigate("/site-checks");
+        } catch (error) {
+            const message =
+                error?.response?.data?.message ||
+                error?.response?.data ||
+                "Unable to open the inspection.";
+            toast.error(typeof message === "string" ? message : "Unable to open the inspection.");
+        } finally {
+            setOpeningInspectionEarly(false);
+        }
     };
 
     const handleSaveAssignees = async () => {
@@ -626,7 +690,8 @@ const SiteChecks = ({
                                 <Grid sm={4}>
                                     {(siteCheck?.type === "Audit" ||
                                         (siteCheck?.type === "Survey" &&
-                                            siteCheck?.subType === "Water")) && (
+                                            siteCheck?.subType === "Water") ||
+                                        siteCheck?.type === "Inspection") && (
                                         <div style={{ margin: "10px" }}>
                                             <label htmlFor="folder" name="folder">
                                                 Repeats
@@ -643,7 +708,25 @@ const SiteChecks = ({
                                         </div>
                                     )}
                                 </Grid>
-                                <Grid sm={4}></Grid>
+                                <Grid sm={4}>
+                                    {canOpenInspectionEarly && (
+                                        <div style={{ margin: "10px", marginTop: "32px" }}>
+                                            <button
+                                                type="button"
+                                                className="btn fw-bold shadow-sm"
+                                                style={{
+                                                    width: "100%",
+                                                    backgroundColor: "#e67e22",
+                                                    borderColor: "#c76410",
+                                                    color: "#ffffff",
+                                                }}
+                                                onClick={handleOpenInspectionEarlyDialog}
+                                            >
+                                                Open Inspection Early
+                                            </button>
+                                        </div>
+                                    )}
+                                </Grid>
                                 <Grid sm={4}></Grid>
                                 <hr />
                                 <Grid sm={4}></Grid>
@@ -999,6 +1082,82 @@ const SiteChecks = ({
                     </Stack>
                 </div>
             </div>
+
+            <Dialog
+                open={showManualOpenDialog}
+                onClose={() => !openingInspectionEarly && setShowManualOpenDialog(false)}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>Open Inspection Early</DialogTitle>
+                <DialogContent>
+                    <div className="mb-2">
+                        <strong>Frequency:</strong>{" "}
+                        {siteCheck?.repeatFrequency || "Not available"}
+                    </div>
+                    <div className="mb-3">
+                        <strong>Current Due Date:</strong>{" "}
+                        {currentDueDateValue
+                            ? moment(currentDueDateValue).format("DD-MM-YYYY")
+                            : "Not available"}
+                    </div>
+
+                    {!hasCurrentDueDate && (
+                        <div className="alert alert-warning py-2">
+                            This inspection does not have a current Due Date, so it cannot be opened early.
+                        </div>
+                    )}
+
+
+                    <label htmlFor="plannedInspectionDate" className="form-label">
+                        Planned Inspection Date
+                    </label>
+                    <input
+                        id="plannedInspectionDate"
+                        type="date"
+                        className="form-control"
+                        value={plannedInspectionDate}
+                        onChange={(e) => setPlannedInspectionDate(e.target.value)}
+                        disabled={openingInspectionEarly || !hasCurrentDueDate}
+                    />
+                    {plannedInspectionDate && plannedNextDueDate && (
+                        <div className="alert alert-info py-2 mt-3 mb-2">
+                            <strong>Estimated Next Due Date:</strong>{" "}
+                            {formatSiteCheckDisplayDate(plannedNextDueDate)}
+                            <div className="small mt-1">
+                                Based on the selected date and {siteCheck?.repeatFrequency} frequency.
+                            </div>
+                        </div>
+                    )}
+                    <div className="form-text mt-2">
+                        This opens the inspection and moves its Start Date to the selected date.
+                        The existing Due Date stays unchanged. The final next Due Date is still
+                        calculated from the actual Inspection Date when the engineer submits the report.
+                    </div>
+                </DialogContent>
+                <DialogActions>
+                    <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => setShowManualOpenDialog(false)}
+                        disabled={openingInspectionEarly}
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleOpenInspectionEarly}
+                        disabled={
+                            openingInspectionEarly ||
+                            !hasCurrentDueDate ||
+                            !plannedInspectionDate
+                        }
+                    >
+                        {openingInspectionEarly ? "Opening..." : "Open Inspection"}
+                    </button>
+                </DialogActions>
+            </Dialog>
         </Fragment>
     );
 };

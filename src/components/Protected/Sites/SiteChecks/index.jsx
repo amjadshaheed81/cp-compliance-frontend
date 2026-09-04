@@ -657,6 +657,18 @@ const SiteChecks = ({
                         </button>
                       )}
                     </div>
+                    {loggedInUserData?.role === ROLE.ADMIN && (
+                      <div className="col-md-2 col-sm-4 mt-2">
+                        <button
+                          style={{ width: "150px" }}
+                          className="btn btn-outline-info"
+                          onClick={() => goTo("/site-check-scheduler-logs")}
+                          title="View Site Check scheduler execution and change logs"
+                        >
+                          Scheduler Logs
+                        </button>
+                      </div>
+                    )}
                     <div className="col-md-1 col-sm-4 mt-2">
                       <CSVLink
                         filename={
