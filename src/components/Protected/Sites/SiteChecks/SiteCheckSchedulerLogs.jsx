@@ -114,7 +114,7 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
       );
       setManualSchedulerConfig(status);
     } catch (error) {
-      // Developer feature may be disabled or unavailable. Keep Run Manual hidden.
+      // If the endpoint is unavailable, keep the manual-run control hidden.
       console.debug("Site Check manual scheduler feature is unavailable", error);
       setManualSchedulerConfig(null);
     }
@@ -128,7 +128,7 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
 
   const runManualSiteCheckScheduler = async () => {
     const jobs = manualSchedulerConfig?.jobs || [];
-    if (!manualSchedulerConfig?.enabled || jobs.length === 0) {
+    if (jobs.length === 0) {
       return;
     }
 
@@ -138,9 +138,9 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
     });
 
     const result = await Swal.fire({
-      title: "Developer: Run Site Check Scheduler",
+      title: "Run Site Check Scheduler",
       html:
-        "<strong>Admin test/developer feature.</strong><br/>" +
+        "<strong>Admin manual scheduler action.</strong><br/>" +
         "This runs the existing GLOBAL Site Check scheduler logic now for all matching sites. " +
         "Notification jobs may send notifications.",
       input: "select",
@@ -258,12 +258,12 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
                 <i className="fas fa-arrow-left me-2"></i>
                 Back
               </button>
-              {manualSchedulerConfig?.enabled && (
+              {(manualSchedulerConfig?.jobs?.length || 0) > 0 && (
                 <button
                   className="btn btn-outline-warning"
                   disabled={manualSchedulerRunning}
                   onClick={runManualSiteCheckScheduler}
-                  title="Admin developer/test feature: run one existing Site Check scheduler job now"
+                  title="Admin only: run one existing Site Check scheduler job now"
                 >
                   <i className="fas fa-play me-2"></i>
                   {manualSchedulerRunning ? "Running Scheduler..." : "Run Manual Scheduler"}
