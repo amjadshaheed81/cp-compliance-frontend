@@ -1236,7 +1236,7 @@ const MicroWaveOvenCertificate = ({
         //   ),
 
         // NEW: Use the same UK date throughout the completed check.
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        startDate: toJavaLocalDateTime(submissionInspectionDate),
         dueDate: toJavaLocalDateTime(
           calculateExpiryDate(
             submissionInspectionDate,
@@ -1258,7 +1258,7 @@ const MicroWaveOvenCertificate = ({
         console.log('Updating existing check with ID:', currentCheckId);
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
+            `/api/site-check/${currentCheckId}/completion`,
             statusPayload
         );
       } else {

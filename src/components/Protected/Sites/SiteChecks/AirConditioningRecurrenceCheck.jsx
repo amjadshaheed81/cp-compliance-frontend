@@ -1164,7 +1164,7 @@ const AirConditioningRecurrenceCheck = ({
                 subType: siteCheck?.subType || subType || 'Plant and Equipment Inspection',
                 category: siteCheck?.category || category || 'Air Conditioning F-Gas Report',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                startDate: toJavaLocalDateTime(submissionSignedDate),
                 dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionSignedDate, siteCheckDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
                 assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
@@ -1175,7 +1175,7 @@ const AirConditioningRecurrenceCheck = ({
                 // Update existing check using the provided put function
                 statusPayload.checkId = parseInt(currentCheckId, 10);
                 statusResponse = await put(
-                    `/api/site-check/${currentCheckId}`,
+                    `/api/site-check/${currentCheckId}/completion`,
                     statusPayload
                 );
             } else {

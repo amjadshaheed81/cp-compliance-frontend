@@ -956,7 +956,7 @@ const FanExtract = ({
         // OLD category: 'Extract Fan' broke the UI route after completion.
         category: siteCheck?.category || 'Extract Fan Cleaning',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        startDate: toJavaLocalDateTime(submissionInspectionDate),
         dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
@@ -967,7 +967,7 @@ const FanExtract = ({
         // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
+            `/api/site-check/${currentCheckId}/completion`,
             statusPayload
         );
       } else {

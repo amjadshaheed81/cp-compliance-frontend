@@ -967,7 +967,7 @@ const SounderAudibilityForm = ({
         subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
         category: siteCheck?.category || 'Fire Alarm Sounder Audibilty',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        startDate: toJavaLocalDateTime(submissionDate),
         dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
@@ -978,7 +978,7 @@ const SounderAudibilityForm = ({
         // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
+            `/api/site-check/${currentCheckId}/completion`,
             statusPayload
         );
       } else {

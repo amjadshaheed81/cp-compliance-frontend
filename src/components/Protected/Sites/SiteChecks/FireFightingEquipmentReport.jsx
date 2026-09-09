@@ -831,7 +831,7 @@ should be carried out more frequently.`;
                 subType: siteCheck?.subType || subType || 'Fire Fighting Equipment',
                 category: siteCheck?.category || category || 'Fire Extinguisher Inspection & Service',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                startDate: toJavaLocalDateTime(submissionInspectionDate),
                 dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: String(loggedInUserData?.id || '0'),
                 assistantUserID: String(loggedInUserData?.id || '0')
@@ -840,7 +840,7 @@ should be carried out more frequently.`;
             let statusResponse;
             if (state.currentCheckId) {
                 statusPayload.checkId = parseInt(state.currentCheckId, 10);
-                statusResponse = await put(`/api/site-check/${state.currentCheckId}`, statusPayload);
+                statusResponse = await put(`/api/site-check/${state.currentCheckId}/completion`, statusPayload);
             } else {
                 statusResponse = await post(`/api/site-check`, statusPayload);
                 if (statusResponse?.checkId) {

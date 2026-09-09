@@ -1366,7 +1366,7 @@ const GasSafetyRecord = ({
                 subType: siteCheck?.subType || 'Gas',
                 category: siteCheck?.category || 'Gas Safety Annual Inspection',
                 status: 'Done',
-                startDate: toJavaLocalDateTime(new Date()),
+                startDate: toJavaLocalDateTime(submissionInspectionDate),
                 dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
@@ -1374,7 +1374,7 @@ const GasSafetyRecord = ({
 
             let checkIdToUse = currentCheckId;
             const statusResponse = checkIdToUse
-                ? await put(`/api/site-check/${checkIdToUse}`, statusPayload)
+                ? await put(`/api/site-check/${checkIdToUse}/completion`, statusPayload)
                 : await post('/api/site-check', statusPayload);
 
             if (!checkIdToUse && statusResponse?.checkId) {

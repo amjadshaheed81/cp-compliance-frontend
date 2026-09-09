@@ -702,7 +702,7 @@ const ShowerHeadCertificate = ({
                 subType: siteCheck?.subType || 'Legionella',
                 category: siteCheck?.category || 'Periodic Shower Head Cleaning',
                 status: 'Done',
-                startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+                startDate: toJavaLocalDateTime(submissionInspectionDate),
                 dueDate: toJavaLocalDateTime(
                     calculateExpiryDate(
                         submissionInspectionDate,
@@ -716,7 +716,7 @@ const ShowerHeadCertificate = ({
             let statusResponse;
             if (state.currentCheckId) {
                 statusPayload.checkId = parseInt(state.currentCheckId, 10);
-                statusResponse = await put(`/api/site-check/${state.currentCheckId}`, statusPayload);
+                statusResponse = await put(`/api/site-check/${state.currentCheckId}/completion`, statusPayload);
             } else {
                 statusResponse = await post(`/api/site-check`, statusPayload);
                 if (statusResponse?.checkId) {

@@ -1262,7 +1262,7 @@ const CctvAlarmCertificate = ({
         //   ),
 
         // NEW: Use one current UK date throughout the completed check.
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        startDate: toJavaLocalDateTime(submissionInspectionDate),
         dueDate: toJavaLocalDateTime(
           calculateExpiryDate(
             submissionInspectionDate,
@@ -1282,7 +1282,7 @@ const CctvAlarmCertificate = ({
         // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
+            `/api/site-check/${currentCheckId}/completion`,
             statusPayload
         );
       } else {

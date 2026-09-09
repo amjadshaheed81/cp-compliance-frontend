@@ -1130,7 +1130,7 @@ const GasBoilerService = ({
                 subType: siteCheck?.subType || 'Gas',
                 category: siteCheck?.category || 'Boiler Service / Maintenance Checklist',
                 status: 'Done',
-                startDate: toJavaLocalDateTime(new Date()),
+                startDate: toJavaLocalDateTime(submissionDateTime),
                 dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionDateTime, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
@@ -1138,7 +1138,7 @@ const GasBoilerService = ({
 
             let checkIdToUse = currentCheckId;
             const statusResponse = checkIdToUse
-                ? await put(`/api/site-check/${checkIdToUse}`, statusPayload)
+                ? await put(`/api/site-check/${checkIdToUse}/completion`, statusPayload)
                 : await post('/api/site-check', statusPayload);
 
             if (!checkIdToUse && statusResponse?.checkId) {

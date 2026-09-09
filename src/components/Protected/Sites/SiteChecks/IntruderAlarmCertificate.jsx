@@ -1037,7 +1037,7 @@ const IntruderAlarmCertificate = ({
         subType: siteCheck?.subType || 'Intruder Alarm',
         category: siteCheck?.category || 'Intruder Alarm Servicing & Inspection',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        startDate: toJavaLocalDateTime(submissionInspectionDate),
         dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, siteCheckDetails?.repeatFrequency)),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
@@ -1048,7 +1048,7 @@ const IntruderAlarmCertificate = ({
         // Update existing check
         statusPayload.checkId = parseInt(currentCheckId, 10);
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
+            `/api/site-check/${currentCheckId}/completion`,
             statusPayload
         );
       } else {

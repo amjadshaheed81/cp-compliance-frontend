@@ -779,7 +779,7 @@ The capacity of the tank is ${capacity} litres`;
         subType: siteCheck?.subType || "Legionella",
         category: siteCheck?.category || "Water - Storage System Chlorination",
         status: "Done",
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        startDate: toJavaLocalDateTime(submissionInspectionDate),
         dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
         leadUserID: String(loggedInUserData?.id || "0"),
         assistantUserID: String(loggedInUserData?.id || "0"),
@@ -789,7 +789,7 @@ The capacity of the tank is ${capacity} litres`;
       if (state.currentCheckId) {
         statusPayload.checkId = parseInt(state.currentCheckId, 10);
         statusResponse = await put(
-          `/api/site-check/${state.currentCheckId}`,
+          `/api/site-check/${state.currentCheckId}/completion`,
           statusPayload
         );
       } else {

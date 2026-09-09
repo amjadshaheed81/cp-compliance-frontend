@@ -1113,7 +1113,7 @@ const InspectionFireCertificate = ({
                 subType: siteCheck?.subType || 'Fire Alarm to meet BS5839',
                 category: siteCheck?.category || inspectionDetails?.category || 'Fire Alarm',
                 status: 'Done',
-                startDate: toJavaLocalDateTime(new Date()),
+                startDate: toJavaLocalDateTime(submissionInspectionDate),
                 dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
@@ -1121,7 +1121,7 @@ const InspectionFireCertificate = ({
 
             let checkIdToUse = currentCheckId;
             const statusResponse = checkIdToUse
-                ? await put(`/api/site-check/${checkIdToUse}`, statusPayload)
+                ? await put(`/api/site-check/${checkIdToUse}/completion`, statusPayload)
                 : await post('/api/site-check', statusPayload);
 
             if (!checkIdToUse && statusResponse?.checkId) {
