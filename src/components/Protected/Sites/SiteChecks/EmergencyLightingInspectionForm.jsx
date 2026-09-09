@@ -1270,7 +1270,7 @@ const EmergencyLightingInspectionForm = ({
       };
 
       const inspectionResponse = formData.id
-          ? await put(`/api/site-check/emergency-lighting/${formData.id}`, inspectionPayload)
+          ? await put(`/api/site-check/emergency-lighting/${checkIdToUse}`, inspectionPayload)
           : await post("/api/site-check/emergency-lighting", inspectionPayload);
 
       // 4. Generate and upload PDF
