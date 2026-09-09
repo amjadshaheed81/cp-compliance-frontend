@@ -817,6 +817,14 @@ const DisabledWCAlarmCertificate = ({
       assetId: newValue ? newValue.assetId : "",
       selectedAsset: newValue || null,
     }));
+
+    // Clear the asset validation message as soon as a valid device is selected.
+    setValidationErrors((prev) => {
+      if (!prev.asset) return prev;
+      const next = { ...prev };
+      delete next.asset;
+      return next;
+    });
   };
 
   const checkFileExists = async (folderId, fileName) => {
@@ -1081,16 +1089,20 @@ const DisabledWCAlarmCertificate = ({
       setTextField('contactNo', formData.siteContactNo || '', smallFont);
       setTextField('jobNo', formData.job || '', smallFont);
 
+      // Use the selected asset defensively. Validation prevents normal
+      // submission without an asset, but PDF generation should never crash
+      // with an unhelpful TypeError if the asset list/state changes.
+      const pdfAsset = selectedAsset || formData.selectedAsset;
       const equipmentDetailsLocation = [
-        selectedAsset.floor,
-        selectedAsset.room,
-        selectedAsset.position,
-        selectedAsset.assetName
+        pdfAsset?.floor,
+        pdfAsset?.room,
+        pdfAsset?.position,
+        pdfAsset?.assetName
       ].filter(Boolean).join(' - ');
 
       // Equipment information
-      setTextField('Manufacturer', selectedAsset?.manufacturer || '', mediumFont);
-      setTextField('Model Number', selectedAsset?.model || '', mediumFont);
+      setTextField('Manufacturer', pdfAsset?.manufacturer || '', mediumFont);
+      setTextField('Model Number', pdfAsset?.model || '', mediumFont);
       setTextField('Location', equipmentDetailsLocation, mediumFont);
 
       // Test results
@@ -1176,6 +1188,13 @@ const DisabledWCAlarmCertificate = ({
         "Please select an active engineer for this Site Check.";
     }
 
+    // A Disabled WC Alarm certificate is asset-specific. The PDF also reads
+    // the selected device location/manufacturer/model, so do not allow a
+    // submission without a real asset selected from this Site.
+    if (!formData.assetId || !selectedAsset) {
+      errors.asset = "Please select a Disabled WC Alarm Device.";
+    }
+
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -1188,6 +1207,8 @@ const DisabledWCAlarmCertificate = ({
 
       if (errors.engineer) {
         toast.error(errors.engineer);
+      } else if (errors.asset) {
+        toast.error(errors.asset);
       }
 
       return;
@@ -1615,6 +1636,8 @@ const DisabledWCAlarmCertificate = ({
                               label="Select a Disabled WC Alarm Device"
                               variant="outlined"
                               placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                           />
                       )}
                       sx={{ width: "100%" }}
