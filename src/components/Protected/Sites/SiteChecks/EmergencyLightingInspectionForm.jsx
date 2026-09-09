@@ -184,7 +184,8 @@ const EmergencyLightingInspectionForm = ({
         subType: response.subType,
         category: response.category,
         dueDate: response.dueDate,
-        status: response.status
+        status: response.status,
+        repeatFrequency: response.repeatFrequency
       };
 
       console.log('Fetched inspection data:', inspectionDetails);
@@ -795,7 +796,7 @@ const EmergencyLightingInspectionForm = ({
             fileVersion: (existingFile.fileVersion || 1) + 1,
             siteId: authoritativeSiteId,
             issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, (inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency))),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
@@ -833,7 +834,7 @@ const EmergencyLightingInspectionForm = ({
             fileVersion: fileVersion,
             siteId: authoritativeSiteId,
             issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, (inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency))),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
             referenceNumber: `EL-${new Date().getTime()}`
@@ -1225,7 +1226,7 @@ const EmergencyLightingInspectionForm = ({
     setIsLoading(true);
 
     try {
-      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
+      // Complete using the authoritative inspection date selected in the form.
       const submissionInspectionDate = formData.inspectionDate;
 
       // 1. First ensure we have the folder structure loaded
@@ -1242,7 +1243,7 @@ const EmergencyLightingInspectionForm = ({
         category: siteCheck?.category || category,
         status: 'Done',
         startDate: toJavaLocalDateTime(submissionInspectionDate),
-        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+        dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, (inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency))),
         leadUserID: loggedInUserData?.id,
         assistantUserID: loggedInUserData?.id
       };
