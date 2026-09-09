@@ -24,6 +24,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -407,7 +408,7 @@ const GasSafetyRecord = ({
                     assetId: gasSafetyData.assetId || prev.assetId,
                     selectedAsset: selectedAsset || prev.selectedAsset,
                     applianceLocation: gasSafetyData.applianceLocation ||
-                        (selectedAsset ? `${selectedAsset.assetName} - Asset No-${selectedAsset.assetId} - ${selectedAsset.manufacturer}, ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}` : prev.applianceLocation),
+                        (selectedAsset ? `${selectedAsset?.assetName} - Asset No-${selectedAsset?.assetId} - ${selectedAsset?.manufacturer}, ${selectedAsset?.position}, ${selectedAsset?.floor}, ${selectedAsset?.room}` : prev.applianceLocation),
                     applianceType: selectedAsset?.subCategory || gasSafetyData.applianceType || prev.applianceType,
                     applianceManufacturer: selectedAsset?.manufacturer || gasSafetyData.applianceManufacturer || prev.applianceManufacturer,
                     applianceModel: selectedAsset?.model || gasSafetyData.applianceModel || prev.applianceModel,
@@ -630,7 +631,7 @@ const GasSafetyRecord = ({
             }
         } catch (error) {
             console.error("Error handling risk assessment completion:", error);
-            toast.error(error.message || "Failed to process action completion");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
             setActionRaised(false);
             setExistingAction(null);
             setFormData(prev => ({ ...prev, actionId: null }));
@@ -953,7 +954,7 @@ const GasSafetyRecord = ({
             toast.success("Photos uploaded successfully!");
         } catch (error) {
             console.error("Photo upload error:", error);
-            toast.error(error.message || 'Upload failed');
+            toast.error(getSiteCheckErrorMessage(error, "Upload failed"));
         } finally {
             setUploadingPhotos(false);
         }
@@ -1429,7 +1430,7 @@ const GasSafetyRecord = ({
 
         } catch (error) {
             console.error("Submission error:", error);
-            toast.error(error.message || "Failed to submit Gas Safety Record");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to submit Gas Safety Record"));
         } finally {
             setIsLoading(false);
         }
@@ -1762,7 +1763,7 @@ const GasSafetyRecord = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`${selectedAsset.assetName} - Asset No-${formData.assetId} - ${selectedAsset.manufacturer} ,  - ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}`}
+                                            value={`${selectedAsset?.assetName} - Asset No-${formData.assetId} - ${selectedAsset?.manufacturer} ,  - ${selectedAsset?.position}, ${selectedAsset?.floor}, ${selectedAsset?.room}`}
                                             disabled
                                         />
                                     </div>
@@ -1779,7 +1780,7 @@ const GasSafetyRecord = ({
                                             type="text"
                                             className="form-control"
                                             name="type"
-                                            value={selectedAsset.subCategory}
+                                            value={selectedAsset?.subCategory}
                                             disabled
                                         />
                                     </div>
@@ -1791,7 +1792,7 @@ const GasSafetyRecord = ({
                                             type="text"
                                             className="form-control"
                                             name="manufacturer"
-                                            value={selectedAsset.manufacturer}
+                                            value={selectedAsset?.manufacturer}
                                             disabled
                                         />
                                     </div>
@@ -1803,7 +1804,7 @@ const GasSafetyRecord = ({
                                             type="text"
                                             className="form-control"
                                             name="modelNumber"
-                                            value={selectedAsset.model}
+                                            value={selectedAsset?.model}
                                             disabled
                                         />
                                     </div>
@@ -2534,7 +2535,14 @@ const GasSafetyRecord = ({
                     </div>
                 </div>
 
-                {!isSubmitted ? (
+                {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                     <div className="d-flex justify-content-between mt-3 print-hide">
                         <SiteCheckBackButton />
                         <div>

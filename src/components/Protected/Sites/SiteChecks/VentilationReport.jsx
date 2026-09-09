@@ -24,6 +24,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -560,7 +561,7 @@ const VentilationReport = ({
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
 
       // Rollback state changes if the operation failed
       setActionRaised(false);
@@ -630,6 +631,13 @@ const VentilationReport = ({
       assetId: newValue ? newValue.assetId : "",
       selectedAsset: newValue || null,
     }));
+  
+      setValidationErrors((prev) => {
+        if (!prev.asset) return prev;
+        const next = { ...prev };
+        delete next.asset;
+        return next;
+      });
   };
 
   const checkFileExists = async (folderId, fileName) => {
@@ -816,18 +824,18 @@ const VentilationReport = ({
       setTextField('Job No', formData.job || '', smallFont);
 
       const equipmentDetailsLocation = [
-        selectedAsset.position,
-        selectedAsset.manufacturer,
-        selectedAsset.selectedAsset?.assetName,
-        selectedAsset.floor,
-        selectedAsset.room,
+        selectedAsset?.position,
+        selectedAsset?.manufacturer,
+        selectedAsset?.selectedAsset?.assetName,
+        selectedAsset?.floor,
+        selectedAsset?.room,
         `/Asset No-${formData.assetId}`,
       ].filter(Boolean).join(' - ');
 
       // Equipment information
-      setTextField('Manufacturer', selectedAsset.manufacturer || '', smallFont);
-      setTextField('Model Number', selectedAsset.model || '', smallFont);
-      setTextField('Serial Number', selectedAsset.serialNumber || '', smallFont);
+      setTextField('Manufacturer', selectedAsset?.manufacturer || '', smallFont);
+      setTextField('Model Number', selectedAsset?.model || '', smallFont);
+      setTextField('Serial Number', selectedAsset?.serialNumber || '', smallFont);
       setTextField('equipmentDetails', equipmentDetailsLocation || '', smallFont);
 
       const mapPassFailToYesNo = (value) => {
@@ -860,7 +868,7 @@ const VentilationReport = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `VentilationReport_${formData.selectedAsset?.assetName}.pdf`;
+      const fileName = `VentilationReport_${formData.selectedAsset?.assetName || "report"}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
@@ -917,6 +925,9 @@ const VentilationReport = ({
 
     // Form validation
     const errors = {};
+    if (!formData.assetId || !(selectedAsset || formData.selectedAsset)) {
+      errors.asset = "Please select a Ventilation Device.";
+    }
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -927,6 +938,7 @@ const VentilationReport = ({
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.asset) toast.error(errors.asset);
       return;
     }
 
@@ -1041,7 +1053,7 @@ const VentilationReport = ({
 
     } catch (error) {
       console.error('Error in form submission:', error);
-      toast.error(error.message || 'Failed to submit form');
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setIsLoading(false);
     }
@@ -1316,6 +1328,8 @@ const VentilationReport = ({
                               label="Select a Ventilation Device"
                               variant="outlined"
                               placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                           />
                       )}
                       sx={{ width: "100%" }}
@@ -1332,7 +1346,7 @@ const VentilationReport = ({
                             type="text"
                             className="form-control"
                             name="manufacturer"
-                            value={selectedAsset.manufacturer}
+                            value={selectedAsset?.manufacturer}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1346,7 +1360,7 @@ const VentilationReport = ({
                             type="text"
                             className="form-control"
                             name="modelNumber"
-                            value={selectedAsset.model}
+                            value={selectedAsset?.model}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1360,7 +1374,7 @@ const VentilationReport = ({
                             type="text"
                             className="form-control"
                             name="serialNo"
-                            value={selectedAsset.serialNumber}
+                            value={selectedAsset?.serialNumber}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1374,7 +1388,7 @@ const VentilationReport = ({
                             type="text"
                             className="form-control"
                             name="position"
-                            value={selectedAsset.position}
+                            value={selectedAsset?.position}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1388,7 +1402,7 @@ const VentilationReport = ({
                             type="text"
                             className="form-control"
                             name="floor"
-                            value={selectedAsset.floor}
+                            value={selectedAsset?.floor}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1402,7 +1416,7 @@ const VentilationReport = ({
                             type="text"
                             className="form-control"
                             name="room"
-                            value={selectedAsset.room}
+                            value={selectedAsset?.room}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1732,7 +1746,14 @@ const VentilationReport = ({
           </div>
 
           <div className="mt-4 print-hide">
-            {!isSubmitted ? (
+            {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                 <div className="d-flex justify-content-between mt-3">
                   <SiteCheckBackButton />
                   <div>

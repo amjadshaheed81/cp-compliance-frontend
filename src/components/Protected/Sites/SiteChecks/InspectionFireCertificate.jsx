@@ -21,6 +21,7 @@ import {
 } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const InspectionFireCertificate = ({
@@ -305,7 +306,7 @@ const InspectionFireCertificate = ({
             toast.success(`Action #${verifiedAction.actionId} successfully created and linked`);
         } catch (error) {
             console.error("Error handling risk assessment completion:", error);
-            toast.error(error.message || "Failed to process action completion");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
             setActionRaised(false);
             setExistingAction(null);
             setFormData(prev => ({ ...prev, actionId: null }));
@@ -1161,7 +1162,7 @@ const InspectionFireCertificate = ({
 
         } catch (error) {
             console.error("Submission error:", error);
-            toast.error(error.message || "Failed to submit inspection");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to submit inspection"));
         } finally {
             setIsLoading(false);
         }
@@ -1681,7 +1682,14 @@ const InspectionFireCertificate = ({
                         </div>
                     </div>
 
-                    {!isSubmitted ? (
+                    {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                         <div className="d-flex justify-content-between align-items-start mt-3 print-hide">
                             <SiteCheckBackButton />
                             <button

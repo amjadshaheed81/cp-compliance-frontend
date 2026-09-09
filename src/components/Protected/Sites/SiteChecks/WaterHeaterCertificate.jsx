@@ -22,6 +22,8 @@ import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
+import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const getBasePhotoUrl = (url) => {
@@ -574,7 +576,7 @@ const WaterHeaterCertificate = ({
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
       setActionRaised(false);
       setExistingAction(null);
       setFormData(prev => ({ ...prev, actionId: null }));
@@ -879,11 +881,11 @@ const WaterHeaterCertificate = ({
 
 
       const equipmentDetails = formData.selectedAsset ? [
-        selectedAsset.position,
-        selectedAsset.manufacturer,
-        selectedAsset.assetName,
-        selectedAsset.floor,
-        selectedAsset.room,
+        selectedAsset?.position,
+        selectedAsset?.manufacturer,
+        selectedAsset?.assetName,
+        selectedAsset?.floor,
+        selectedAsset?.room,
         `Asset No-${formData.assetId}`,
       ].filter(Boolean).join(' - ') : 'Not specified';
 
@@ -1066,7 +1068,7 @@ const WaterHeaterCertificate = ({
       toast.success("Photos uploaded successfully!");
     } catch (error) {
       console.error("Photo upload error:", error);
-      toast.error(error.message || 'Upload failed');
+      toast.error(getSiteCheckErrorMessage(error, "Upload failed"));
     } finally {
       setUploadingPhotos(false);
     }
@@ -1109,6 +1111,13 @@ const WaterHeaterCertificate = ({
       room: newValue?.room || "",
       assetId: newValue?.assetId || "",
     }));
+  
+      setValidationErrors((prev) => {
+        if (!prev.asset) return prev;
+        const next = { ...prev };
+        delete next.asset;
+        return next;
+      });
   };
 
   const handleSubmit = async (e) => {
@@ -1133,12 +1142,16 @@ const WaterHeaterCertificate = ({
     }
 
     const errors = {};
+    if (!formData.assetId || !(selectedAsset || formData.selectedAsset)) {
+      errors.asset = "Please select a Water Heater.";
+    }
     if (!formData.engineer || !selectedEngineer) {
       errors.engineer = "Please select an active engineer for this Site Check.";
     }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.asset) toast.error(errors.asset);
       return;
     }
 
@@ -1250,7 +1263,7 @@ const WaterHeaterCertificate = ({
     } catch (error) {
       console.error('Error in form submission:', error);
       console.error('Error details:', error.response?.data || error.message);
-      toast.error(error.message || 'Failed to submit form');
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setIsLoading(false);
     }
@@ -1534,6 +1547,8 @@ const WaterHeaterCertificate = ({
                               label="Select a Water Heater"
                               variant="outlined"
                               placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                           />
                       )}
                       sx={{ width: "100%" }}
@@ -2048,15 +2063,16 @@ const WaterHeaterCertificate = ({
             </div>
           </div>
 
+          {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
           {!isSubmitted ? (
               <div className="d-flex justify-content-between mt-3 print-hide">
-                <button
-                    type="button"
-                    className="btn btn-secondary"
-                    onClick={() => window.history.back()}
-                >
-                  Back
-                </button>
+                <SiteCheckBackButton />
                 <div>
                   {isFormEditable && (
                       <button

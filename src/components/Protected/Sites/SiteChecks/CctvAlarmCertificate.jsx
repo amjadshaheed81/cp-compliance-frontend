@@ -28,6 +28,7 @@ import {
 } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -728,7 +729,7 @@ const CctvAlarmCertificate = ({
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
       setActionRaised(false);
       setExistingAction(null);
       setFormData(prev => ({ ...prev, actionId: null }));
@@ -817,6 +818,13 @@ const CctvAlarmCertificate = ({
       assetId: newValue ? newValue.assetId : "",
       selectedAsset: newValue || null,
     }));
+  
+      setValidationErrors((prev) => {
+        if (!prev.asset) return prev;
+        const next = { ...prev };
+        delete next.asset;
+        return next;
+      });
   };
 
   const checkFileExists = async (folderId, fileName) => {
@@ -1080,10 +1088,10 @@ const CctvAlarmCertificate = ({
       setTextField('Job No', formData.job || '', smallFont);
 
       const equipmentDetailsLocation = [
-        selectedAsset.floor,
-        selectedAsset.room,
-        selectedAsset.position,
-        selectedAsset.assetName
+        selectedAsset?.floor,
+        selectedAsset?.room,
+        selectedAsset?.position,
+        selectedAsset?.assetName
       ].filter(Boolean).join(' - ');
 
       // Equipment information
@@ -1193,6 +1201,9 @@ const CctvAlarmCertificate = ({
     }
 
     const errors = {};
+    if (!formData.assetId || !(selectedAsset || formData.selectedAsset)) {
+      errors.asset = "Please select a CCTV Device.";
+    }
 
     // NEW: The engineer must be a valid option for this Site Check site.
     if (!formData.engineer || !selectedEngineer) {
@@ -1212,6 +1223,8 @@ const CctvAlarmCertificate = ({
 
       if (errors.engineer) {
         toast.error(errors.engineer);
+      } else if (errors.asset) {
+        toast.error(errors.asset);
       }
 
       return;
@@ -1364,7 +1377,7 @@ const CctvAlarmCertificate = ({
     } catch (error) {
       console.error('Error in form submission:', error);
       console.error('Error details:', error.response?.data || error.message);
-      toast.error(error.message || 'Failed to submit form');
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setIsLoading(false);
     }
@@ -1638,6 +1651,8 @@ const CctvAlarmCertificate = ({
                               label="Select a CCTV Device"
                               variant="outlined"
                               placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                           />
                       )}
                       sx={{ width: "100%" }}
@@ -1654,7 +1669,7 @@ const CctvAlarmCertificate = ({
                             type="text"
                             className="form-control"
                             name="manufacturer"
-                            value={selectedAsset.manufacturer || ""}
+                            value={selectedAsset?.manufacturer || ""}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1668,7 +1683,7 @@ const CctvAlarmCertificate = ({
                             type="text"
                             className="form-control"
                             name="model"
-                            value={selectedAsset.model || ""}
+                            value={selectedAsset?.model || ""}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1682,7 +1697,7 @@ const CctvAlarmCertificate = ({
                             type="text"
                             className="form-control"
                             name="position"
-                            value={selectedAsset.position || ""}
+                            value={selectedAsset?.position || ""}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1696,7 +1711,7 @@ const CctvAlarmCertificate = ({
                             type="text"
                             className="form-control"
                             name="floor"
-                            value={selectedAsset.floor || ""}
+                            value={selectedAsset?.floor || ""}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1710,7 +1725,7 @@ const CctvAlarmCertificate = ({
                             type="text"
                             className="form-control"
                             name="room"
-                            value={selectedAsset.room || ""}
+                            value={selectedAsset?.room || ""}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -2169,7 +2184,14 @@ const CctvAlarmCertificate = ({
           </div>
 
           <div className="mt-4 print-hide">
-            {!isSubmitted ? (
+            {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                 <div className="d-flex justify-content-between mt-3">
                   <SiteCheckBackButton />
                   <div>

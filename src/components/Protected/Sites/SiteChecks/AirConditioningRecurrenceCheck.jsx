@@ -14,6 +14,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -271,10 +272,10 @@ const AirConditioningRecurrenceCheck = ({
     useEffect(() => {
         // When an asset is selected, find related assets using relatedAssetId
         const fetchRelatedAssets = async () => {
-            if (selectedAsset && selectedAsset.relatedAssetId) {
+            if (selectedAsset && selectedAsset?.relatedAssetId) {
                 try {
                     // If relatedAssetId is a comma-separated string, split it
-                    const relatedIds = selectedAsset.relatedAssetId.toString().split(',').map(id => id.trim());
+                    const relatedIds = selectedAsset?.relatedAssetId.toString().split(',').map(id => id.trim());
                     const relatedAssetsPromises = relatedIds.map(id => fetchRelatedAsset(id));
                     const relatedAssetsResults = await Promise.all(relatedAssetsPromises);
 
@@ -513,7 +514,7 @@ const AirConditioningRecurrenceCheck = ({
     useEffect(() => {
         const siteIdToUse = authoritativeSiteId;
         if (selectedAsset?.assetId && siteIdToUse) {
-            fetchSiteChecks(selectedAsset.assetId);
+            fetchSiteChecks(selectedAsset?.assetId);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedAsset?.assetId, authoritativeSiteId]);
@@ -1259,7 +1260,7 @@ const AirConditioningRecurrenceCheck = ({
         } catch (error) {
             console.error('Error in form submission:', error);
             console.error('Error details:', error.response?.data || error.message);
-            toast.error(error.message || 'Failed to submit form');
+            toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
         } finally {
             setIsLoading(false);
         }
@@ -1376,7 +1377,7 @@ const AirConditioningRecurrenceCheck = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`${selectedAsset?.assetName} (Model - ${selectedAsset.model || "N/A"} / Serial - ${selectedAsset.serialNumber || "N/A"} / Asset No - ${selectedAsset.assetId || "N/A"}) Located on ${selectedAsset.position || "N/A"} Floor: ${selectedAsset.floor || "N/A"} in Room No :${selectedAsset.room || "N/A"}`}
+                                            value={`${selectedAsset?.assetName} (Model - ${selectedAsset?.model || "N/A"} / Serial - ${selectedAsset?.serialNumber || "N/A"} / Asset No - ${selectedAsset?.assetId || "N/A"}) Located on ${selectedAsset?.position || "N/A"} Floor: ${selectedAsset?.floor || "N/A"} in Room No :${selectedAsset?.room || "N/A"}`}
                                             disabled
                                             style={{
                                                 backgroundColor: "#f8f9fa",
@@ -1672,7 +1673,14 @@ const AirConditioningRecurrenceCheck = ({
                 )}
 
                 <div className="mt-4 print-hide">
-                    {!isSubmitted ? (
+                    {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                         <div className="d-flex justify-content-between mt-3">
                             <SiteCheckBackButton />
                             <div>

@@ -28,6 +28,7 @@ import {
 } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -726,7 +727,7 @@ const ExternalLightningCertificate = ({
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
 
       // Rollback state changes if the operation failed
       setActionRaised(false);
@@ -1411,7 +1412,7 @@ const ExternalLightningCertificate = ({
     } catch (error) {
       console.error('Error in form submission:', error);
       console.error('Error details:', error.response?.data || error.message);
-      toast.error(error.message || 'Failed to submit form');
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setIsLoading(false);
     }
@@ -2065,7 +2066,14 @@ const ExternalLightningCertificate = ({
           </div>
 
           <div className="mt-4 print-hide">
-            {!isSubmitted ? (
+            {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                 <div className="d-flex justify-content-between mt-3">
                   <SiteCheckBackButton />
                   <div>

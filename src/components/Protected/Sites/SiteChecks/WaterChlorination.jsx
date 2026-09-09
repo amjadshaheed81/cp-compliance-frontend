@@ -28,6 +28,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 const WaterChlorinationCertificate = ({
@@ -853,7 +854,7 @@ The capacity of the tank is ${capacity} litres`;
       setTimeout(() => navigate(-1), 1500);
     } catch (error) {
       console.error("Error in form submission:", error);
-      toast.error(error.message || "Failed to submit form");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
@@ -1009,7 +1010,7 @@ The capacity of the tank is ${capacity} litres`;
       toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action"));
     }
   };
 
@@ -1343,6 +1344,13 @@ The capacity of the tank is ${capacity} litres`;
         </div>
 
         <div className="mt-4 print-hide">
+          {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {state.isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
           {!state.isSubmitted ? (
             <div className="d-flex justify-content-between mt-3">
               <SiteCheckBackButton />

@@ -23,6 +23,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, getUkLocalDateTimeInput, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -954,7 +955,7 @@ const GasBoilerService = ({
             form.flatten();
             const pdfBytesModified = await pdfDoc.save();
             const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-            const fileName = `GasBoilerService_${selectedAsset.assetName || 'report'}.pdf`;
+            const fileName = `GasBoilerService_${selectedAsset?.assetName || 'report'}.pdf`;
 
             setGeneratedPdfBlob(blob);
             setShowPdfButton(true);
@@ -1026,7 +1027,7 @@ const GasBoilerService = ({
             toast.success(`Action #${verifiedAction.actionId} successfully created and linked`);
         } catch (error) {
             console.error("Error handling risk assessment completion:", error);
-            toast.error(error.message || "Failed to process action completion");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
             setActionRaised(false);
             setExistingAction(null);
             setFormData(prev => ({ ...prev, actionId: null }));
@@ -1213,7 +1214,7 @@ const GasBoilerService = ({
 
         } catch (error) {
             console.error("Submission error:", error);
-            toast.error(error.message || "Failed to submit inspection");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to submit inspection"));
         } finally {
             setIsLoading(false);
         }
@@ -1542,7 +1543,7 @@ const GasBoilerService = ({
                                             type="text"
                                             className="form-control"
                                             name="manufacturer"
-                                            value={selectedAsset.manufacturer}
+                                            value={selectedAsset?.manufacturer}
                                             disabled
                                         />
                                     </div>
@@ -1554,7 +1555,7 @@ const GasBoilerService = ({
                                             type="text"
                                             className="form-control"
                                             name="modelNumber"
-                                            value={selectedAsset.model}
+                                            value={selectedAsset?.model}
                                             disabled
                                         />
                                     </div>
@@ -1565,7 +1566,7 @@ const GasBoilerService = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={selectedAsset.assetId}
+                                            value={selectedAsset?.assetId}
                                             disabled
                                         />
                                     </div>
@@ -1581,7 +1582,7 @@ const GasBoilerService = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`${selectedAsset.assetName} - ${selectedAsset.manufacturer} , Asset No-${formData.assetId} - ${selectedAsset.position}, ${selectedAsset.floor}, ${selectedAsset.room}`}
+                                            value={`${selectedAsset?.assetName} - ${selectedAsset?.manufacturer} , Asset No-${formData.assetId} - ${selectedAsset?.position}, ${selectedAsset?.floor}, ${selectedAsset?.room}`}
                                             disabled
                                         />
                                     </div>
@@ -1597,7 +1598,7 @@ const GasBoilerService = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={selectedAsset.manufacturer}
+                                            value={selectedAsset?.manufacturer}
                                             disabled
                                         />
                                     </div>
@@ -1609,7 +1610,7 @@ const GasBoilerService = ({
                                             type="text"
                                             className="form-control"
                                             name="type"
-                                            value={selectedAsset.subCategory2}
+                                            value={selectedAsset?.subCategory2}
                                             disabled
                                         />
                                     </div>
@@ -1869,7 +1870,14 @@ const GasBoilerService = ({
                     </div>
                 )}
 
-                {!isSubmitted ? (
+                {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                     <div className="d-flex justify-content-between align-items-start mt-3 print-hide">
                         <SiteCheckBackButton />
                         <button

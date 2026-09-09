@@ -25,6 +25,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -681,7 +682,7 @@ const FireDamper = ({
             }
         } catch (error) {
             console.error("Error handling risk assessment completion:", error);
-            toast.error(error.message || "Failed to process action completion");
+            toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
             setActionRaised(false);
             setExistingAction(null);
             setFormData(prev => ({ ...prev, actionId: null }));
@@ -764,7 +765,7 @@ const FireDamper = ({
 
         } catch (error) {
             console.error("Pre-photo upload error:", error);
-            toast.error(error.message || 'Upload failed');
+            toast.error(getSiteCheckErrorMessage(error, "Upload failed"));
         } finally {
             setUploadingPrePhotos(false);
         }
@@ -944,18 +945,18 @@ const FireDamper = ({
             setTextField('Date', dateFormat(inspectionDateOverride || formData.inspectionDate), smallFont);
 
             const equipmentDetails = formData.selectedAsset ? [
-                selectedAsset.position,
-                selectedAsset.manufacturer,
-                selectedAsset.assetName,
-                selectedAsset.floor,
-                selectedAsset.room,
+                selectedAsset?.position,
+                selectedAsset?.manufacturer,
+                selectedAsset?.assetName,
+                selectedAsset?.floor,
+                selectedAsset?.room,
                 `Asset No-${formData.assetId}`,
             ].filter(Boolean).join(' - ') : 'Not specified';
 
-            setTextField('DamperNo', selectedAsset.deviceId || '', smallFont);
+            setTextField('DamperNo', selectedAsset?.deviceId || '', smallFont);
             setTextField('Damper Location', equipmentDetails || '', smallFont);
-            setTextField('Floor', selectedAsset.floor || '', smallFont);
-            setTextField('Damper Type', selectedAsset.subCategory3 || '', smallFont);
+            setTextField('Floor', selectedAsset?.floor || '', smallFont);
+            setTextField('Damper Type', selectedAsset?.subCategory3 || '', smallFont);
             setTextField('Damper Size', selectedAsset?.damperSize.toString() || '', smallFont);
 
             setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
@@ -1130,7 +1131,7 @@ const FireDamper = ({
 
         } catch (error) {
             console.error("Post-photo upload error:", error);
-            toast.error(error.message || 'Upload failed');
+            toast.error(getSiteCheckErrorMessage(error, "Upload failed"));
         } finally {
             setUploadingPostPhotos(false);
         }
@@ -1209,6 +1210,13 @@ const FireDamper = ({
             assetId: newValue?.assetId || "",
             damperSize: newValue?.damperSize || "" // Add this line
         }));
+    
+        setValidationErrors((prev) => {
+          if (!prev.asset) return prev;
+          const next = { ...prev };
+          delete next.asset;
+          return next;
+        });
     };
 
     const handleEngineerSelect = (event, newValue) => {
@@ -1247,12 +1255,16 @@ const FireDamper = ({
         }
 
         const errors = {};
+        if (!formData.assetId || !(selectedAsset || formData.selectedAsset)) {
+          errors.asset = "Please select a Fire Damper.";
+        }
         if (!formData.engineer || !selectedEngineer) {
             errors.engineer = "Please select an active engineer for this Site Check.";
         }
 
         if (Object.keys(errors).length > 0) {
             setValidationErrors(errors);
+            if (errors.asset) toast.error(errors.asset);
             return;
         }
 
@@ -1362,7 +1374,7 @@ const FireDamper = ({
         } catch (error) {
             console.error('Error in form submission:', error);
             console.error('Error details:', error.response?.data || error.message);
-            toast.error(error.message || 'Failed to submit form');
+            toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
         } finally {
             setIsLoading(false);
         }
@@ -1452,6 +1464,8 @@ const FireDamper = ({
                                             label="Select a Fire Damper"
                                             variant="outlined"
                                             placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                                         />
                                     )}
                                     sx={{ width: "100%" }}
@@ -1468,7 +1482,7 @@ const FireDamper = ({
                                             type="text"
                                             className="form-control"
                                             name="deviceId"
-                                            value={selectedAsset.deviceId}
+                                            value={selectedAsset?.deviceId}
                                             onChange={handleInputChange}
                                             required
                                             disabled
@@ -1481,7 +1495,7 @@ const FireDamper = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`${selectedAsset.assetName || 'N/A'} - ${selectedAsset.position || 'N/A'} - ${selectedAsset.floor || 'N/A'} - ${selectedAsset.room || 'N/A'}`}
+                                            value={`${selectedAsset?.assetName || 'N/A'} - ${selectedAsset?.position || 'N/A'} - ${selectedAsset?.floor || 'N/A'} - ${selectedAsset?.room || 'N/A'}`}
                                             readOnly
                                             disabled
                                         />
@@ -1494,7 +1508,7 @@ const FireDamper = ({
                                             type="text"
                                             className="form-control"
                                             name="floor"
-                                            value={selectedAsset.floor}
+                                            value={selectedAsset?.floor}
                                             onChange={handleInputChange}
                                             required
                                             disabled
@@ -1508,7 +1522,7 @@ const FireDamper = ({
                                             type="text"
                                             className="form-control"
                                             name="damperSize"
-                                            value={selectedAsset.damperSize}
+                                            value={selectedAsset?.damperSize}
                                             onChange={handleInputChange}
                                             required
                                             disabled
@@ -1522,7 +1536,7 @@ const FireDamper = ({
                                             type="text"
                                             className="form-control"
                                             name="assetId"
-                                            value={selectedAsset.subCategory3 || 'N/A'}
+                                            value={selectedAsset?.subCategory3 || 'N/A'}
                                             onChange={handleInputChange}
                                             required
                                             disabled
@@ -2008,7 +2022,14 @@ const FireDamper = ({
                     </div>
                 )}
 
-                {!isSubmitted ? (
+                {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                     <div className="d-flex justify-content-between mt-3 print-hide">
                         <SiteCheckBackButton />
                         <div>

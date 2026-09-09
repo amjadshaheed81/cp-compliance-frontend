@@ -14,6 +14,7 @@ import { formatDate } from "../../../../utils/dateFormat";
 import { toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { v4 as uuidv4 } from 'uuid';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
@@ -734,7 +735,7 @@ const AirConditioning = ({
         toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
       }
     } catch (error) {
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
 
       // Rollback state changes if the operation failed
       setActionRaised(false);
@@ -1074,16 +1075,16 @@ const AirConditioning = ({
 
 
       const equipmentDetailsLocation = [
-        selectedAsset.floor,
-        selectedAsset.room,
-        selectedAsset.position,
-        selectedAsset.assetName
+        selectedAsset?.floor,
+        selectedAsset?.room,
+        selectedAsset?.position,
+        selectedAsset?.assetName
       ].filter(Boolean).join(' - ');
 
       // Equipment information
-      setTextField('Manufacturer', selectedAsset.manufacturer || '', mediumFont);
-      setTextField('Model Number', selectedAsset.model || '', mediumFont);
-      setTextField('Serial Number', selectedAsset.serialNumber || '', mediumFont);
+      setTextField('Manufacturer', selectedAsset?.manufacturer || '', mediumFont);
+      setTextField('Model Number', selectedAsset?.model || '', mediumFont);
+      setTextField('Serial Number', selectedAsset?.serialNumber || '', mediumFont);
       setTextField('Equipment Details  Location', equipmentDetailsLocation || '', mediumFont);
 
 
@@ -1130,7 +1131,7 @@ const AirConditioning = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `AirConditioningReport_${selectedAsset.assetName}.pdf`;
+      const fileName = `AirConditioningReport_${selectedAsset?.assetName || "report"}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
@@ -1600,7 +1601,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="manufacturer"
-                            value={selectedAsset.manufacturer}
+                            value={selectedAsset?.manufacturer}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1614,7 +1615,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="modelNumber"
-                            value={selectedAsset.model}
+                            value={selectedAsset?.model}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1628,7 +1629,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="serialNumber"
-                            value={selectedAsset.serialNumber}
+                            value={selectedAsset?.serialNumber}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1642,7 +1643,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="assetId"
-                            value={`Asset No - ${formData.selectedAsset.assetId}`}
+                            value={`Asset No - ${formData.selectedAsset?.assetId}`}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1656,7 +1657,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="position"
-                            value={selectedAsset.position}
+                            value={selectedAsset?.position}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1670,7 +1671,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="floor"
-                            value={selectedAsset.floor}
+                            value={selectedAsset?.floor}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1684,7 +1685,7 @@ const AirConditioning = ({
                             type="text"
                             className="form-control"
                             name="room"
-                            value={selectedAsset.room}
+                            value={selectedAsset?.room}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -2323,7 +2324,14 @@ const AirConditioning = ({
           </div>
 
           <div className="mt-4 print-hide">
-            {!isSubmitted ? (
+            {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                 <div className="d-flex justify-content-between align-items-start mt-3">
                   <SiteCheckBackButton />
                   <div className="d-flex flex-column align-items-end">

@@ -25,6 +25,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -572,7 +573,7 @@ const StorageTankService = ({
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
       setActionRaised(false);
       setExistingAction(null);
       setFormData(prev => ({ ...prev, actionId: null }));
@@ -849,10 +850,10 @@ const StorageTankService = ({
 
       // Safely handle equipment details when no asset is selected
       const equipmentDetailsLocation = formData.selectedAsset ? [
-        formData.selectedAsset.floor,
-        formData.selectedAsset.room,
-        formData.selectedAsset.position,
-        formData.selectedAsset.assetName
+        formData.selectedAsset?.floor,
+        formData.selectedAsset?.room,
+        formData.selectedAsset?.position,
+        formData.selectedAsset?.assetName
       ].filter(Boolean).join(' - ') : 'Not specified';
 
       // Equipment information
@@ -1045,7 +1046,7 @@ const StorageTankService = ({
       toast.success("Photos uploaded successfully!");
     } catch (error) {
       console.error("Photo upload error:", error);
-      toast.error(error.message || 'Upload failed');
+      toast.error(getSiteCheckErrorMessage(error, "Upload failed"));
     } finally {
       setUploadingPhotos(false);
     }
@@ -1095,6 +1096,13 @@ const StorageTankService = ({
       room: newValue?.room || "",
       assetId: newValue?.assetId || "",
     }));
+  
+      setValidationErrors((prev) => {
+        if (!prev.asset) return prev;
+        const next = { ...prev };
+        delete next.asset;
+        return next;
+      });
   };
 
 
@@ -1122,12 +1130,16 @@ const StorageTankService = ({
 
     // Form validation
     const errors = {};
+    if (!formData.assetId || !(selectedAsset || formData.selectedAsset)) {
+      errors.asset = "Please select a Storage Tank.";
+    }
     if (!formData.engineer || !selectedEngineer) {
       errors.engineer = "Please select an active engineer for this Site Check.";
     }
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
+      if (errors.asset) toast.error(errors.asset);
       return;
     }
 
@@ -1247,7 +1259,7 @@ const StorageTankService = ({
     } catch (error) {
       console.error('Error in form submission:', error);
       console.error('Error details:', error.response?.data || error.message);
-      toast.error(error.message || 'Failed to submit form');
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setIsLoading(false);
     }
@@ -1562,6 +1574,8 @@ const StorageTankService = ({
                       label="Select a Storage Tank"
                       variant="outlined"
                       placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                     />
                   )}
                   sx={{ width: "100%" }}
@@ -1990,7 +2004,14 @@ const StorageTankService = ({
           </div>
         </div>
 
-        {!isSubmitted ? (
+        {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
           <div className="d-flex justify-content-between mt-3 print-hide">
             <SiteCheckBackButton />
             <div>

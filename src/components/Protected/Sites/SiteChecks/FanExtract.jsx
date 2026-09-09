@@ -24,6 +24,7 @@ import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
 import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 
 let PDFLib;
@@ -568,7 +569,7 @@ const FanExtract = ({
       }
     } catch (error) {
       console.error("Error handling risk assessment completion:", error);
-      toast.error(error.message || "Failed to process action completion");
+      toast.error(getSiteCheckErrorMessage(error, "Failed to process action completion"));
 
       // Rollback state changes if the operation failed
       setActionRaised(false);
@@ -637,6 +638,13 @@ const FanExtract = ({
       assetId: newValue ? newValue.assetId : "",
       selectedAsset: newValue || null,
     }));
+
+    setValidationErrors((prev) => {
+      if (!prev.asset) return prev;
+      const next = { ...prev };
+      delete next.asset;
+      return next;
+    });
   };
 
   const checkFileExists = async (folderId, fileName) => {
@@ -822,19 +830,20 @@ const FanExtract = ({
       setTextField('contactNo', formData.siteContactNo || '', smallFont);
       setTextField('jobNo', formData.job || '', smallFont);
 
+      const pdfAsset = selectedAsset || formData.selectedAsset;
       const equipmentDetailsLocation = [
-        selectedAsset.position,
-        selectedAsset.manufacturer,
-        selectedAsset.assetName,
-        selectedAsset.floor,
-        selectedAsset.room,
-        `Asset No - ${selectedAsset.assetId}`,
+        pdfAsset?.position,
+        pdfAsset?.manufacturer,
+        pdfAsset?.assetName,
+        pdfAsset?.floor,
+        pdfAsset?.room,
+        pdfAsset?.assetId ? `Asset No - ${pdfAsset.assetId}` : '',
       ].filter(Boolean).join(' - ');
 
       // Equipment information
-      setTextField('Manufacturer', selectedAsset.manufacturer || '', smallFont);
-      setTextField('Model Number', selectedAsset.model || '', smallFont);
-      setTextField('details',  equipmentDetailsLocation || '', smallFont);
+      setTextField('Manufacturer', pdfAsset?.manufacturer || '', smallFont);
+      setTextField('Model Number', pdfAsset?.model || '', smallFont);
+      setTextField('details', equipmentDetailsLocation || '', smallFont);
 
       const mapPassFailToYesNo = (value) => {
         if (value === "Pass") return "Yes";
@@ -867,7 +876,7 @@ const FanExtract = ({
       form.flatten();
       const pdfBytesModified = await pdfDoc.save();
       const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
-      const fileName = `ExtractFanReport_${selectedAsset.assetName}.pdf`;
+      const fileName = `ExtractFanReport_${pdfAsset?.assetName || 'Extract-Fan'}.pdf`;
 
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
@@ -915,6 +924,9 @@ const FanExtract = ({
 
     // Form validation
     const errors = {};
+    if (!formData.assetId || !(selectedAsset || formData.selectedAsset)) {
+      errors.asset = "Please select an Extract Fan Device.";
+    }
     if (!formData.param1) errors.param1 = "Please select one option";
     if (!formData.param2) errors.param2 = "Please select one option";
     if (!formData.param3) errors.param3 = "Please select one option";
@@ -1045,7 +1057,7 @@ const FanExtract = ({
 
     } catch (error) {
       console.error('Error in form submission:', error);
-      toast.error(error.message || 'Failed to submit form');
+      toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
     } finally {
       setIsLoading(false);
     }
@@ -1330,6 +1342,8 @@ const FanExtract = ({
                               label="Select an Extract Fan Device"
                               variant="outlined"
                               placeholder="Search devices..."
+                              error={Boolean(validationErrors.asset)}
+                              helperText={validationErrors.asset || ""}
                           />
                       )}
                       sx={{ width: "100%" }}
@@ -1337,7 +1351,7 @@ const FanExtract = ({
                 </div>
               </div>
 
-              {formData.selectedAsset && (
+              {selectedAsset && (
                   <div className="row">
                     <div className="col-md-4">
                       <div className="mb-3">
@@ -1346,7 +1360,7 @@ const FanExtract = ({
                             type="text"
                             className="form-control"
                             name="manufacturer"
-                            value={selectedAsset.manufacturer}
+                            value={selectedAsset?.manufacturer || ''}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1360,7 +1374,7 @@ const FanExtract = ({
                             type="text"
                             className="form-control"
                             name="modelNumber"
-                            value={selectedAsset.model}
+                            value={selectedAsset?.model}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1374,7 +1388,7 @@ const FanExtract = ({
                             type="text"
                             className="form-control"
                             name="position"
-                            value={selectedAsset.position}
+                            value={selectedAsset?.position}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1388,7 +1402,7 @@ const FanExtract = ({
                             type="text"
                             className="form-control"
                             name="floor"
-                            value={selectedAsset.floor}
+                            value={selectedAsset?.floor}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1402,7 +1416,7 @@ const FanExtract = ({
                             type="text"
                             className="form-control"
                             name="room"
-                            value={selectedAsset.room}
+                            value={selectedAsset?.room}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1416,7 +1430,7 @@ const FanExtract = ({
                             type="text"
                             className="form-control"
                             name="assetId"
-                            value={`Asset No - ${formData.selectedAsset.assetId}`}
+                            value={`Asset No - ${formData.selectedAsset?.assetId}`}
                             onChange={handleInputChange}
                             required
                             disabled
@@ -1766,7 +1780,14 @@ const FanExtract = ({
           </div>
 
           <div className="mt-4 print-hide">
-            {!isSubmitted ? (
+            {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
+          {isSubmitted && (
+            <div className="mt-3 print-hide">
+              <SiteCheckBackButton />
+            </div>
+          )}
+
+          {!isSubmitted ? (
                 <div className="d-flex justify-content-between mt-3">
                   <SiteCheckBackButton />
                   <div>
