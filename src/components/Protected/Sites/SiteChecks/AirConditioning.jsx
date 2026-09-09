@@ -1229,7 +1229,8 @@ const AirConditioning = ({
         subType: 'Plant and Equipment Inspection',
         category: 'Air Conditioning Service',
         status: 'Done',
-        startDate: new Date().toISOString().split('T')[0] + 'T00:00:00',
+        // The actual Inspection Date is the authoritative start of the next cycle.
+        startDate: toJavaLocalDateTime(submissionInspectionDate),
         dueDate: formatSiteCheckDueDate(submissionInspectionDate, inspectionDetails?.repeatFrequency),
         leadUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0',
         assistantUserID: loggedInUserData?.id ? String(loggedInUserData.id) : '0'
@@ -1239,8 +1240,11 @@ const AirConditioning = ({
       let checkIdForSave = currentCheckId;
       if (currentCheckId) {
         statusPayload.checkId = parseInt(currentCheckId, 10);
+        // Existing checks use the completion endpoint so only the completion
+        // status/start/due fields are changed. Assignees and schedule settings
+        // remain untouched.
         statusResponse = await put(
-            `/api/site-check/${currentCheckId}`,
+            `/api/site-check/${currentCheckId}/completion`,
             statusPayload
         );
       } else {
