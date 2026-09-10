@@ -266,12 +266,13 @@ const AssessmentFireRisk = ({
     };
 
     const uploadPdfToServer = async (pdfBlob, fileName) => {
-        if (!auditFolderId) return false;
+        if (!auditFolderId) return { stored: false, sourceReference: null };
         try {
             setIsUploading(true);
             const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
             const { exists, file: existingFile } = await checkFileExists(auditFolderId, fileName);
             const uploadFormData = new FormData();
+            const sourceReference = `Audit-${checkId}-${Date.now()}`;
 
             if (exists && existingFile) {
                 uploadFormData.append("file", pdfFile);
@@ -287,18 +288,16 @@ const AssessmentFireRisk = ({
                         expiryDate: formatDateForBackend(calculateExpiryDate(siteCheck?.startDate, siteCheck?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: `Audit-${checkId}-${Date.now()}`,
+                        referenceNumber: sourceReference,
                     }],
                 };
                 uploadFormData.append("documentRequestString", JSON.stringify(documentRequestString));
-                const response = await putMultiPartFormData(
+                await putMultiPartFormData(
                     "/api/document/file/newVersion/upload",
                     uploadFormData
                 );
-                if (response?.data) {
-                    toast.success(`Report uploaded to Log Books → Internal Monthly Audit as version ${(existingFile.fileVersion ?? 1) + 1}.`);
-                    return true;
-                }
+                toast.success(`Report uploaded to Log Books → Internal Monthly Audit as version ${(existingFile.fileVersion ?? 1) + 1}.`);
+                return { stored: true, sourceReference };
             } else {
                 uploadFormData.append("files", pdfFile);
                 const fileVersion = await getHighestFileVersion(auditFolderId, fileName);
@@ -314,24 +313,21 @@ const AssessmentFireRisk = ({
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: `Audit-${checkId}-${Date.now()}`,
+                        referenceNumber: sourceReference,
                     }],
                 };
                 uploadFormData.append("documentRequestString", JSON.stringify(documentRequestString));
-                const response = await postMultiPartFormData(
+                await postMultiPartFormData(
                     "/api/document/files/upload",
                     uploadFormData
                 );
-                if (response?.data) {
-                    toast.success(`Report uploaded to Log Books → Internal Monthly Audit as version ${fileVersion}.`);
-                    return true;
-                }
+                toast.success(`Report uploaded to Log Books → Internal Monthly Audit as version ${fileVersion}.`);
+                return { stored: true, sourceReference };
             }
-            return false;
         } catch (error) {
             console.error("Error uploading audit PDF:", error);
             toast.error("Failed to upload report to folder.");
-            return false;
+            return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);
         }
@@ -599,7 +595,26 @@ const AssessmentFireRisk = ({
             try {
                 const r = await handlePrint();
                 if (r?.blob && r?.fileName && auditFolderId) {
-                    await uploadPdfToServer(r.blob, r.fileName);
+                    const uploadResult = await uploadPdfToServer(r.blob, r.fileName);
+
+                    // Phase 2: record immutable LIVE history only for Monthly Audit.
+                    // Annual Winter Audit keeps its current workflow unchanged for now.
+                    if (
+                        subType === "Monthly Audit" &&
+                        uploadResult?.stored &&
+                        uploadResult?.sourceReference
+                    ) {
+                        try {
+                            await post(`/api/site-check/${checkId}/history/monthly-audit`, {
+                                sourceReference: uploadResult.sourceReference,
+                            });
+                        } catch (historyErr) {
+                            console.error("Record Monthly Audit history:", historyErr);
+                            toast.error(
+                                "Audit submitted and report uploaded, but the History record could not be created."
+                            );
+                        }
+                    }
                 }
             } catch (uploadErr) {
                 console.error("Upload audit PDF:", uploadErr);
