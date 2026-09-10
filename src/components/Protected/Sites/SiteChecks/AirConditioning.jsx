@@ -178,6 +178,8 @@ const AirConditioning = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [inspectionDetails, setInspectionDetails] = useState(null);
   const [lastEngineerId, setLastEngineerId] = useState(null);
   const [selectedEngineerProfile, setSelectedEngineerProfile] = useState(null);
@@ -1162,6 +1164,102 @@ const AirConditioning = ({
       setIsGeneratingPDF(false);
     }
   };
+  const waitForHistoryRetry = (milliseconds) =>
+    new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+  const recordAirConditioningHistory = async ({
+    checkId: historyCheckId,
+    inspectionRecordId,
+    sourceReference,
+  }) => {
+    const parsedCheckId = Number(historyCheckId);
+    const parsedInspectionRecordId = Number(inspectionRecordId);
+    const normalisedSourceReference = String(sourceReference || "").trim();
+
+    if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+      throw new Error("A valid Site Check ID is required to record History.");
+    }
+    if (!Number.isInteger(parsedInspectionRecordId) || parsedInspectionRecordId <= 0) {
+      throw new Error("A valid inspection record ID is required to record History.");
+    }
+    if (!normalisedSourceReference) {
+      throw new Error("A PDF source reference is required to record History.");
+    }
+
+    let lastError;
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const response = await post(
+          `/api/site-check/${parsedCheckId}/history/air-conditioning`,
+          {
+            sourceReference: normalisedSourceReference,
+            inspectionRecordId: parsedInspectionRecordId,
+          }
+        );
+
+        if (![200, 201, 204].includes(response?.status)) {
+          throw new Error(
+            `History API returned unexpected status ${response?.status ?? "unknown"}.`
+          );
+        }
+
+        const history = response?.data;
+        if (!history?.historyId) {
+          throw new Error("History API returned success without a History record ID.");
+        }
+        if (Number(history.checkId) !== parsedCheckId) {
+          throw new Error("History API returned a record for a different Site Check.");
+        }
+        if (history.sourceReference !== normalisedSourceReference) {
+          throw new Error("History API returned a different PDF source reference.");
+        }
+
+        return history;
+      } catch (error) {
+        lastError = error;
+        const status = error?.response?.status;
+
+        // Authentication/authorization failures must not be retried. All other
+        // failures get one idempotent retry using the exact same identifiers.
+        if (attempt >= 2 || status === 401 || status === 403) {
+          break;
+        }
+
+        await waitForHistoryRetry(500);
+      }
+    }
+
+    throw lastError || new Error("History record could not be created.");
+  };
+
+  const retryPendingAirConditioningHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) {
+      return;
+    }
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordAirConditioningHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(
+        error,
+        "History record could not be created."
+      );
+      console.error("Retry Air Conditioning history:", {
+        ...pendingHistoryRetry,
+        status: error?.response?.status,
+        message,
+        error,
+      });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -1309,37 +1407,71 @@ const AirConditioning = ({
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      if (
-        resolvedCheckIdForSave &&
-        savedInspectionRecordId &&
-        pdfResult?.uploadResult?.stored &&
-        pdfResult?.uploadResult?.sourceReference
-      ) {
-        try {
-          await post(
-            `/api/site-check/${resolvedCheckIdForSave}/history/air-conditioning`,
-            {
-              sourceReference: pdfResult.uploadResult.sourceReference,
-              inspectionRecordId: savedInspectionRecordId,
-            }
-          );
-        } catch (historyError) {
-          console.error("Record Air Conditioning history:", historyError);
-          toast.error(
-            "Air Conditioning submitted and PDF uploaded, but the History record could not be created."
-          );
-        }
-      } else if (!savedInspectionRecordId) {
-        toast.error(
-          "Air Conditioning submitted, but History could not be created because the saved inspection record ID was not returned."
+      const parsedCheckId = Number(resolvedCheckIdForSave);
+      const parsedInspectionRecordId = Number(savedInspectionRecordId);
+      const sourceReference = String(
+        pdfResult?.uploadResult?.sourceReference || ""
+      ).trim();
+
+      if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+        throw new Error(
+          "Air Conditioning was saved, but History cannot be recorded because the Site Check ID is invalid."
         );
-      } else if (!pdfResult?.uploadResult?.stored) {
-        toast.error(
-          "Air Conditioning submitted, but History could not be created because the PDF was not stored in Site Documents."
+      }
+      if (!Number.isInteger(parsedInspectionRecordId) || parsedInspectionRecordId <= 0) {
+        throw new Error(
+          "Air Conditioning was saved, but History cannot be recorded because the saved inspection record ID was not returned."
+        );
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error(
+          "Air Conditioning was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
+        );
+      }
+      if (!sourceReference) {
+        throw new Error(
+          "Air Conditioning was saved, but History cannot be recorded because the PDF reference was not returned."
         );
       }
 
-      toast.success("Air Conditioning report saved and PDF generated successfully!");
+      const historyPayload = {
+        checkId: parsedCheckId,
+        inspectionRecordId: parsedInspectionRecordId,
+        sourceReference,
+      };
+
+      try {
+        await recordAirConditioningHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(
+          historyError,
+          "History record could not be created."
+        );
+
+        console.error("Record Air Conditioning history:", {
+          checkId: parsedCheckId,
+          inspectionRecordId: parsedInspectionRecordId,
+          sourceReference,
+          status: historyError?.response?.status,
+          message: historyMessage,
+          error: historyError,
+        });
+
+        // The existing inspection save and PDF upload have already succeeded.
+        // Do not resubmit the inspection or create another PDF version. Keep the
+        // exact identifiers so History alone can be retried safely/idempotently.
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+        toast.error(
+          `Report and PDF were saved, but History was not recorded: ${historyMessage}`
+        );
+        return;
+      }
+
+      toast.success("Air Conditioning report saved, PDF generated, and History recorded successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -2420,9 +2552,28 @@ const AirConditioning = ({
                 </div>
             ) : (
                 <div className="text-center">
-                  <div className="alert alert-success mb-4">
-                    Report submitted successfully on {getUkLocalDate()}
-                  </div>
+                  {pendingHistoryRetry ? (
+                    <div className="alert alert-warning mb-4">
+                      <div className="fw-bold mb-2">
+                        Report and PDF saved, but History has not been recorded.
+                      </div>
+                      <div className="mb-3">
+                        Do not submit the inspection again. Retry only the History record below.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-warning"
+                        disabled={isRetryingHistory}
+                        onClick={retryPendingAirConditioningHistory}
+                      >
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="alert alert-success mb-4">
+                      Report submitted successfully on {getUkLocalDate()}
+                    </div>
+                  )}
                 </div>
             )}
           </div>
