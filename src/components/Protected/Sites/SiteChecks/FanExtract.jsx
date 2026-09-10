@@ -26,6 +26,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -107,6 +108,8 @@ const FanExtract = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     EnvironmentalLogBook: null,
@@ -673,9 +676,17 @@ const FanExtract = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null, checkIdOverride = null) => {
+    let sourceReference = null;
     try {
       setIsUploading(true);
+      const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
+      const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
+      if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+        throw new Error('Could not determine Site Check ID for PDF upload');
+      }
+      sourceReference = `EF-${resolvedCheckId}-${Date.now()}`;
+
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -689,10 +700,22 @@ const FanExtract = ({
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
-      const formData = new FormData();
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const formData = new FormData();
+       * issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate)
+       *
+       * The local FormData variable hid the React formData state, so a missing
+       * override could produce an undefined document date.
+       */
+
+      // NEW: Keep upload data separate and use the exact submission date plus
+      // the check-specific History reference.
+      const uploadFormData = new FormData();
 
       if (exists && existingFile) {
-        formData.append('file', pdfFile);
+        uploadFormData.append('file', pdfFile);
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
@@ -701,19 +724,19 @@ const FanExtract = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-              uploaderUserId: loggedInUserData?.id || 0,
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+            uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `EF-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'put',
           url: '/api/document/file/newVersion/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -721,57 +744,57 @@ const FanExtract = ({
           }
         });
 
-        if (response.data) {
-          toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-          return true;
+        if (response?.status >= 200 && response?.status < 300) {
+          toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
+          return { stored: true, sourceReference };
         }
       } else {
-        formData.append('files', pdfFile);
+        uploadFormData.append('files', pdfFile);
         const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-              note: 'Extract Fan Certificate',
-            fileVersion: fileVersion,
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
+            note: 'Extract Fan Certificate',
+            fileVersion,
             siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `EF-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
-        formData.append('documentRequestString', JSON.stringify(documentRequestString));
+        uploadFormData.append('documentRequestString', JSON.stringify(documentRequestString));
         const response = await axios({
           method: 'post',
           url: '/api/document/files/upload',
-          data: formData,
+          data: uploadFormData,
           headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           }
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       }
 
-      throw new Error('Upload failed: No response data');
+      throw new Error('Upload failed: request did not return a successful status');
     } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
+      console.error('Error uploading Extract Fan PDF:', error);
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
   };
 
-  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null, checkIdOverride = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -881,12 +904,18 @@ const FanExtract = ({
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
 
+      let uploadResult = { stored: false, sourceReference: null };
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
+        uploadResult = await uploadPdfToServer(
+          blob,
+          fileName,
+          inspectionDateOverride || formData.inspectionDate,
+          checkIdOverride
+        );
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -894,6 +923,33 @@ const FanExtract = ({
       return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) {
+      return;
+    }
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(
+        error,
+        "History record could not be created."
+      );
+      console.error("Retry Generic Inspection history:", {
+        ...pendingHistoryRetry,
+        status: error?.response?.status,
+        message,
+        error,
+      });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
     }
   };
 
@@ -1039,14 +1095,78 @@ const FanExtract = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
+      const resolvedCheckIdForHistory = Number(
+        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
 
-      // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      // Generate the existing PDF, but retain the exact new Site Document
+      // reference so this final submission can be recorded immutably.
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate,
+        resolvedCheckIdForHistory
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Extract Fan report saved and PDF generated successfully!");
+      const sourceReference = String(
+        pdfResult?.uploadResult?.sourceReference || ""
+      ).trim();
+
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error(
+          "Extract Fan was saved, but History cannot be recorded because the Site Check ID is invalid."
+        );
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error(
+          "Extract Fan was saved, but History cannot be recorded because the saved inspection record ID was not returned."
+        );
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error(
+          "Extract Fan was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
+        );
+      }
+      if (!sourceReference) {
+        throw new Error(
+          "Extract Fan was saved, but History cannot be recorded because the PDF reference was not returned."
+        );
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(
+          historyError,
+          "History record could not be created."
+        );
+        console.error("Record Extract Fan history:", {
+          ...historyPayload,
+          status: historyError?.response?.status,
+          message: historyMessage,
+          error: historyError,
+        });
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+        toast.error(
+          `Report and PDF were saved, but History was not recorded: ${historyMessage}`
+        );
+        return;
+      }
+
+      toast.success("Extract Fan report saved, PDF generated, and History recorded successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -1808,9 +1928,28 @@ const FanExtract = ({
                 </div>
             ) : (
                 <div className="text-center">
-                  <div className="alert alert-success mb-4">
-                    Report submitted successfully on {getUkLocalDate()}
-                  </div>
+                  {pendingHistoryRetry ? (
+                    <div className="alert alert-warning mb-4">
+                      <div className="fw-bold mb-2">
+                        Report and PDF saved, but History has not been recorded.
+                      </div>
+                      <div className="mb-3">
+                        Do not submit the inspection again. Retry only the History record below.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-warning"
+                        disabled={isRetryingHistory}
+                        onClick={retryPendingHistory}
+                      >
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="alert alert-success mb-4">
+                      Report submitted successfully on {getUkLocalDate()}
+                    </div>
+                  )}
                 </div>
             )}
           </div>

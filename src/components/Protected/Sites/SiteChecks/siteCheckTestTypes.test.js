@@ -23,4 +23,22 @@ describe("Site Check developer test catalogue", () => {
       requiresAssignees: false,
     });
   });
+  test("contains the three current History regression routes", () => {
+    expect(getSiteCheckTestType("extract-fan")).toMatchObject({
+      type: "Inspection",
+      subType: "Plant and Equipment Inspection",
+      category: "Extract Fan Cleaning",
+    });
+    expect(getSiteCheckTestType("external-lighting")).toMatchObject({
+      type: "Inspection",
+      subType: "Electrical",
+      category: "External Lighting Testing",
+    });
+    expect(getSiteCheckTestType("wc-alarm")).toMatchObject({
+      type: "Inspection",
+      subType: "Electrical",
+      category: "WC Alarm Testing",
+    });
+  });
+
 });

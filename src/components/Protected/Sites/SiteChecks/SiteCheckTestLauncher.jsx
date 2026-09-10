@@ -26,6 +26,7 @@ import {
 
 const DEFAULT_FREQUENCY = "6-Monthly";
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "6-Monthly", "Yearly"];
+const HISTORY_TEST_SET_KEYS = ["extract-fan", "external-lighting", "wc-alarm"];
 
 const isActiveUser = (user) =>
   Boolean(user?.id) &&
@@ -78,6 +79,7 @@ const SiteCheckTestLauncher = ({
   const [repeatFrequency, setRepeatFrequency] = useState(DEFAULT_FREQUENCY);
   const [leadUserId, setLeadUserId] = useState("");
   const [assistantUserId, setAssistantUserId] = useState("");
+  const [createdHistoryTests, setCreatedHistoryTests] = useState([]);
 
   const selectedType = getSiteCheckTestType(testTypeKey);
   const { activeUsers, leadUserId: defaultLead, assistantUserId: defaultAssistant } =
@@ -113,6 +115,7 @@ const SiteCheckTestLauncher = ({
 
   const handleOpen = () => {
     resetDefaults();
+    setCreatedHistoryTests([]);
     setOpen(true);
   };
 
@@ -189,6 +192,88 @@ const SiteCheckTestLauncher = ({
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const handleCreateHistoryTestSet = async () => {
+    if (!siteSelectedForGlobal?.siteId) {
+      toast.error("Please select a site before creating History test inspections.");
+      return;
+    }
+    if (!startDate) {
+      toast.error("Start Date is required.");
+      return;
+    }
+    if (!repeatFrequency || !dueDate) {
+      toast.error("A valid repeat frequency is required.");
+      return;
+    }
+    if (!leadUserId || !assistantUserId) {
+      toast.error("Lead and Assistant are required for the History test set.");
+      return;
+    }
+
+    const testTypes = HISTORY_TEST_SET_KEYS.map(getSiteCheckTestType);
+    if (testTypes.some((item) => !item)) {
+      toast.error("The History test catalogue is incomplete. No test checks were created.");
+      return;
+    }
+
+    setIsCreating(true);
+    const results = [];
+
+    for (const testType of testTypes) {
+      const body = {
+        siteId: siteSelectedForGlobal.siteId,
+        type: testType.type,
+        subType: testType.subType,
+        category: testType.category,
+        status: "Open",
+        startDate: `${toSiteCheckDateOnly(startDate)}T00:00:00`,
+        dueDate,
+        repeatFrequency,
+        leadUserID: String(leadUserId),
+        assistantUserID: String(assistantUserId),
+      };
+
+      try {
+        const response = await post("/api/site-check/", body);
+        const checkId = response?.data?.checkId;
+        if (!checkId) {
+          throw new Error("The Site Check was created without returning a Check ID.");
+        }
+        results.push({
+          key: testType.key,
+          label: testType.label,
+          checkId,
+          success: true,
+        });
+      } catch (error) {
+        results.push({
+          key: testType.key,
+          label: testType.label,
+          success: false,
+          error: getSiteCheckErrorMessage(error, "Unable to create this test inspection."),
+        });
+      }
+    }
+
+    setCreatedHistoryTests(results);
+    setIsCreating(false);
+
+    const successCount = results.filter((item) => item.success).length;
+    if (successCount === results.length) {
+      toast.success(`Created ${successCount} History test Site Checks.`);
+    } else {
+      toast.error(`Created ${successCount} of ${results.length} History test Site Checks. Review the results below.`);
+    }
+  };
+
+  const handleOpenCreatedTest = (checkId) => {
+    if (!checkId || typeof onCreated !== "function") {
+      return;
+    }
+    setOpen(false);
+    onCreated(checkId);
   };
 
   return (
@@ -358,10 +443,51 @@ const SiteCheckTestLauncher = ({
               />
             </Grid>
           </Grid>
+
+          {createdHistoryTests.length > 0 && (
+            <div className="mt-3">
+              <div className="fw-bold mb-2">History Test Set</div>
+              {createdHistoryTests.map((item) => (
+                <div
+                  key={item.key}
+                  className={`alert ${item.success ? "alert-success" : "alert-danger"} py-2 d-flex justify-content-between align-items-center`}
+                >
+                  <span>
+                    {item.label}
+                    {item.success
+                      ? ` — Check ID ${item.checkId}`
+                      : ` — ${item.error}`}
+                  </span>
+                  {item.success && (
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => handleOpenCreatedTest(item.checkId)}
+                    >
+                      Open
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleClose} disabled={isCreating}>
             Cancel
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={handleCreateHistoryTestSet}
+            disabled={
+              isCreating ||
+              createdHistoryTests.length > 0 ||
+              !siteSelectedForGlobal?.siteId ||
+              activeUsers.length === 0
+            }
+            title="Create Extract Fan, External Lighting and WC Alarm test Site Checks"
+          >
+            {isCreating ? "Creating..." : "Create History Test Set (3)"}
           </Button>
           <Button
             variant="contained"

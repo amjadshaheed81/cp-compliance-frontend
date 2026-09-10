@@ -30,6 +30,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -122,6 +123,8 @@ const ExternalLightningCertificate = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     electricalManagement: null,
@@ -860,13 +863,20 @@ const ExternalLightningCertificate = ({
   const uploadPdfToServer = async (
     pdfBlob,
     fileName,
-    inspectionDateOverride
+    inspectionDateOverride,
+    checkIdOverride
   ) => {
+    let sourceReference = null;
     try {
       setIsUploading(true);
 
       const inspectionDateForUpload =
         inspectionDateOverride || formData.inspectionDate;
+      const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
+      if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+        throw new Error('Could not determine Site Check ID for PDF upload');
+      }
+      sourceReference = `ELC-${resolvedCheckId}-${Date.now()}`;
 
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
@@ -888,7 +898,6 @@ const ExternalLightningCertificate = ({
 
       const { exists, file: existingFile } =
         await checkFileExists(targetFolderId, fileName);
-
       /*
        * OLD CODE - COMMENTED FOR REVIEW
        *
@@ -899,8 +908,8 @@ const ExternalLightningCertificate = ({
        * formData.inspectionDate was undefined during document upload.
        */
 
-      // NEW: Use a clearly named upload FormData object and the same
-      // current UK inspection date used by the Site Check submission.
+      // NEW: Keep the upload FormData separate from React form state and use
+      // the exact submission date plus a check-specific History reference.
       const uploadFormData = new FormData();
 
       if (exists && existingFile) {
@@ -914,9 +923,7 @@ const ExternalLightningCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: toJavaLocalDateTime(
-              inspectionDateForUpload
-            ),
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
             expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
@@ -925,7 +932,7 @@ const ExternalLightningCertificate = ({
             ),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `ELC-${new Date().getTime()}`,
+            referenceNumber: sourceReference,
           }],
         };
 
@@ -945,11 +952,11 @@ const ExternalLightningCertificate = ({
           },
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(
             `PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`
           );
-          return true;
+          return { stored: true, sourceReference };
         }
       } else {
         uploadFormData.append('files', pdfFile);
@@ -963,9 +970,7 @@ const ExternalLightningCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: toJavaLocalDateTime(
-              inspectionDateForUpload
-            ),
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
             expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
@@ -978,7 +983,7 @@ const ExternalLightningCertificate = ({
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `ELC-${new Date().getTime()}`,
+            referenceNumber: sourceReference,
           }],
         };
 
@@ -997,18 +1002,18 @@ const ExternalLightningCertificate = ({
           },
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(
             `PDF uploaded successfully as version ${fileVersion}!`
           );
-          return true;
+          return { stored: true, sourceReference };
         }
       }
 
-      throw new Error('Upload failed: No response data');
+      throw new Error('Upload failed: request did not return a successful status');
     } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
+      console.error('Error uploading External Lighting PDF:', error);
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
@@ -1029,7 +1034,8 @@ const ExternalLightningCertificate = ({
 
   const generatePDF = async (
     uploadToServer = true,
-    inspectionDateOverride
+    inspectionDateOverride,
+    checkIdOverride
   ) => {
     try {
       setIsGeneratingPDF(true);
@@ -1190,26 +1196,26 @@ const ExternalLightningCertificate = ({
 
       const savedToPublic = await savePdfToPublic(blob, fileName);
 
-      // Upload to server if requested
-      let uploadedToServer = false;
+      // Upload to server if requested. Keep the exact document reference so
+      // immutable History can be linked only after the existing upload succeeds.
+      let uploadResult = { stored: false, sourceReference: null };
       if (uploadToServer && savedToPublic) {
-        uploadedToServer = await uploadPdfToServer(
+        uploadResult = await uploadPdfToServer(
           blob,
           fileName,
-          effectiveInspectionDate
+          effectiveInspectionDate,
+          checkIdOverride
         );
       } else if (savedToPublic) {
-        // If not uploading to server but still need to download
         saveAs(blob, fileName);
       }
 
-      // Show success message
-      if (savedToPublic && (!uploadToServer || uploadedToServer)) {
+      if (savedToPublic && (!uploadToServer || uploadResult.stored)) {
         toast.success('PDF generated successfully!');
         setShowPdfButton(true);
       }
 
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1217,6 +1223,33 @@ const ExternalLightningCertificate = ({
       return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) {
+      return;
+    }
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(
+        error,
+        "History record could not be created."
+      );
+      console.error("Retry Generic Inspection history:", {
+        ...pendingHistoryRetry,
+        status: error?.response?.status,
+        message,
+        error,
+      });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
     }
   };
 
@@ -1391,16 +1424,76 @@ const ExternalLightningCertificate = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      // Generate PDF
+      const resolvedCheckIdForHistory = Number(
+        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
+
       const pdfResult = await generatePDF(
         true,
-        submissionInspectionDate
+        submissionInspectionDate,
+        resolvedCheckIdForHistory
       );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("External lighting report saved and PDF generated successfully!");
+      const sourceReference = String(
+        pdfResult?.uploadResult?.sourceReference || ""
+      ).trim();
+
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error(
+          "External Lighting was saved, but History cannot be recorded because the Site Check ID is invalid."
+        );
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error(
+          "External Lighting was saved, but History cannot be recorded because the saved inspection record ID was not returned."
+        );
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error(
+          "External Lighting was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
+        );
+      }
+      if (!sourceReference) {
+        throw new Error(
+          "External Lighting was saved, but History cannot be recorded because the PDF reference was not returned."
+        );
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(
+          historyError,
+          "History record could not be created."
+        );
+        console.error("Record External Lighting history:", {
+          ...historyPayload,
+          status: historyError?.response?.status,
+          message: historyMessage,
+          error: historyError,
+        });
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+        toast.error(
+          `Report and PDF were saved, but History was not recorded: ${historyMessage}`
+        );
+        return;
+      }
+
+      toast.success("External lighting report saved, PDF generated, and History recorded successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -2095,9 +2188,28 @@ const ExternalLightningCertificate = ({
                 </div>
             ) : (
                 <div className="text-center">
-                  <div className="alert alert-success mb-4">
-                    Report submitted successfully on {getUkLocalDate()}
-                  </div>
+                  {pendingHistoryRetry ? (
+                    <div className="alert alert-warning mb-4">
+                      <div className="fw-bold mb-2">
+                        Report and PDF saved, but History has not been recorded.
+                      </div>
+                      <div className="mb-3">
+                        Do not submit the inspection again. Retry only the History record below.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-warning"
+                        disabled={isRetryingHistory}
+                        onClick={retryPendingHistory}
+                      >
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="alert alert-success mb-4">
+                      Report submitted successfully on {getUkLocalDate()}
+                    </div>
+                  )}
                 </div>
             )}
           </div>

@@ -31,6 +31,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -114,6 +115,8 @@ const DisabledWCAlarmCertificate = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
@@ -857,13 +860,20 @@ const DisabledWCAlarmCertificate = ({
   const uploadPdfToServer = async (
     pdfBlob,
     fileName,
-    inspectionDateOverride
+    inspectionDateOverride,
+    checkIdOverride
   ) => {
+    let sourceReference = null;
     try {
       setIsUploading(true);
 
       const inspectionDateForUpload =
         inspectionDateOverride || formData.inspectionDate;
+      const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
+      if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+        throw new Error('Could not determine Site Check ID for PDF upload');
+      }
+      sourceReference = `DWC-${resolvedCheckId}-${Date.now()}`;
 
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
@@ -884,7 +894,6 @@ const DisabledWCAlarmCertificate = ({
 
       const { exists, file: existingFile } =
         await checkFileExists(targetFolderId, fileName);
-
       /*
        * OLD CODE - COMMENTED FOR REVIEW
        *
@@ -894,8 +903,8 @@ const DisabledWCAlarmCertificate = ({
        * The local FormData variable hid the React formData state.
        */
 
-      // NEW: Use a clearly named upload object and the exact UK date used
-      // by the Site Check, inspection record and PDF.
+      // NEW: Keep the upload FormData separate from React form state and use
+      // the exact submission date plus a check-specific History reference.
       const uploadFormData = new FormData();
 
       if (exists && existingFile) {
@@ -909,9 +918,7 @@ const DisabledWCAlarmCertificate = ({
             originalFileName: fileName,
             fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: toJavaLocalDateTime(
-              inspectionDateForUpload
-            ),
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
             expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
@@ -920,7 +927,7 @@ const DisabledWCAlarmCertificate = ({
             ),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `DWC-${new Date().getTime()}`,
+            referenceNumber: sourceReference,
           }],
         };
 
@@ -940,11 +947,11 @@ const DisabledWCAlarmCertificate = ({
           },
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(
             `PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`
           );
-          return true;
+          return { stored: true, sourceReference };
         }
       } else {
         uploadFormData.append('files', pdfFile);
@@ -958,9 +965,7 @@ const DisabledWCAlarmCertificate = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: toJavaLocalDateTime(
-              inspectionDateForUpload
-            ),
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
             expiryDate: toJavaLocalDateTime(
               calculateExpiryDate(
                 inspectionDateForUpload,
@@ -973,7 +978,7 @@ const DisabledWCAlarmCertificate = ({
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `DWC-${new Date().getTime()}`,
+            referenceNumber: sourceReference,
           }],
         };
 
@@ -992,18 +997,18 @@ const DisabledWCAlarmCertificate = ({
           },
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(
             `PDF uploaded successfully as version ${fileVersion}!`
           );
-          return true;
+          return { stored: true, sourceReference };
         }
       }
 
-      throw new Error('Upload failed: No response data');
+      throw new Error('Upload failed: request did not return a successful status');
     } catch (error) {
-      console.error('Error uploading PDF:', error);
-      return false;
+      console.error('Error uploading Disabled WC Alarm PDF:', error);
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
@@ -1011,7 +1016,8 @@ const DisabledWCAlarmCertificate = ({
 
   const generatePDF = async (
     uploadToServer = true,
-    inspectionDateOverride
+    inspectionDateOverride,
+    checkIdOverride
   ) => {
     try {
       setIsGeneratingPDF(true);
@@ -1140,16 +1146,18 @@ const DisabledWCAlarmCertificate = ({
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
 
+      let uploadResult = { stored: false, sourceReference: null };
       if (uploadToServer) {
-        await uploadPdfToServer(
+        uploadResult = await uploadPdfToServer(
           blob,
           fileName,
-          effectiveInspectionDate
+          effectiveInspectionDate,
+          checkIdOverride
         );
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1157,6 +1165,33 @@ const DisabledWCAlarmCertificate = ({
       return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
+    }
+  };
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) {
+      return;
+    }
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(
+        error,
+        "History record could not be created."
+      );
+      console.error("Retry Generic Inspection history:", {
+        ...pendingHistoryRetry,
+        status: error?.response?.status,
+        message,
+        error,
+      });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
     }
   };
 
@@ -1337,16 +1372,77 @@ const DisabledWCAlarmCertificate = ({
         throw new Error('Failed to save inspection data');
       }
 
+      const resolvedCheckIdForHistory = Number(
+        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
+
       const pdfResult = await generatePDF(
         true,
-        submissionInspectionDate
+        submissionInspectionDate,
+        resolvedCheckIdForHistory
       );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
+      const sourceReference = String(
+        pdfResult?.uploadResult?.sourceReference || ""
+      ).trim();
+
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error(
+          "Disabled WC Alarm was saved, but History cannot be recorded because the Site Check ID is invalid."
+        );
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error(
+          "Disabled WC Alarm was saved, but History cannot be recorded because the saved inspection record ID was not returned."
+        );
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error(
+          "Disabled WC Alarm was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
+        );
+      }
+      if (!sourceReference) {
+        throw new Error(
+          "Disabled WC Alarm was saved, but History cannot be recorded because the PDF reference was not returned."
+        );
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(
+          historyError,
+          "History record could not be created."
+        );
+        console.error("Record Disabled WC Alarm history:", {
+          ...historyPayload,
+          status: historyError?.response?.status,
+          message: historyMessage,
+          error: historyError,
+        });
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+        toast.error(
+          `Report and PDF were saved, but History was not recorded: ${historyMessage}`
+        );
+        return;
+      }
+
       toast.success(
-        "Disabled WC Alarm report saved and PDF generated successfully!"
+        "Disabled WC Alarm report saved, PDF generated, and History recorded successfully!"
       );
       setShowPdfButton(true);
       setIsSubmitted(true);
@@ -2132,9 +2228,28 @@ const DisabledWCAlarmCertificate = ({
                 </div>
             ) : (
                 <div className="text-center">
-                  <div className="alert alert-success mb-4">
-                    Report submitted successfully on {new Date().toISOString().split("T")[0]}
-                  </div>
+                  {pendingHistoryRetry ? (
+                    <div className="alert alert-warning mb-4">
+                      <div className="fw-bold mb-2">
+                        Report and PDF saved, but History has not been recorded.
+                      </div>
+                      <div className="mb-3">
+                        Do not submit the inspection again. Retry only the History record below.
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-warning"
+                        disabled={isRetryingHistory}
+                        onClick={retryPendingHistory}
+                      >
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="alert alert-success mb-4">
+                      Report submitted successfully on {new Date().toISOString().split("T")[0]}
+                    </div>
+                  )}
                 </div>
             )}
           </div>
