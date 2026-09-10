@@ -28,6 +28,7 @@ import {
 import { getSites, getSiteCheckUserOptions } from "../../../../store/thunk/site";
 import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 import { calculateSiteCheckDueDateTime, calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import SiteCheckTestLauncher from "./SiteCheckTestLauncher";
 
 const SiteChecks = ({
   siteSelectedForGlobal,
@@ -669,6 +670,13 @@ const SiteChecks = ({
                         </button>
                       </div>
                     )}
+                    <SiteCheckTestLauncher
+                      siteSelectedForGlobal={siteSelectedForGlobal}
+                      siteUsers={managerList}
+                      onCreated={(checkId) =>
+                        goTo(`/site-checks/${checkId}/update`)
+                      }
+                    />
                     <div className="col-md-1 col-sm-4 mt-2">
                       <CSVLink
                         filename={
