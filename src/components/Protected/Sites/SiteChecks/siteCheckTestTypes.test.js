@@ -41,4 +41,23 @@ describe("Site Check developer test catalogue", () => {
     });
   });
 
+
+  test("contains the three Batch 2 History regression routes", () => {
+    expect(getSiteCheckTestType("microwave-oven")).toMatchObject({
+      type: "Inspection",
+      subType: "Electrical",
+      category: "Microwave Oven Testing",
+    });
+    expect(getSiteCheckTestType("storage-tank")).toMatchObject({
+      type: "Inspection",
+      subType: "Legionella",
+      category: "Water - Visual Inspection of Storage Tank",
+    });
+    expect(getSiteCheckTestType("water-heater")).toMatchObject({
+      type: "Inspection",
+      subType: "Legionella",
+      category: "Water Heater Inspection & Service",
+    });
+  });
+
 });

@@ -27,6 +27,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -107,6 +108,8 @@ const StorageTankService = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [inspectionDetails, setInspectionDetails] = useState(null);
 
@@ -616,9 +619,23 @@ const StorageTankService = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
+  const uploadPdfToServer = async (
+    pdfBlob,
+    fileName,
+    inspectionDateOverride = null,
+    checkIdOverride = null
+  ) => {
+    let sourceReference = null;
     try {
       setIsUploading(true);
+      const inspectionDateForUpload =
+        inspectionDateOverride || formData.inspectionDate;
+      const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
+      if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+        throw new Error('Could not determine Site Check ID for PDF upload');
+      }
+      sourceReference = `SAR-${resolvedCheckId}-${Date.now()}`;
+
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -631,7 +648,6 @@ const StorageTankService = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
 
-      // First check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
       const uploadFormData = new FormData();
 
@@ -643,13 +659,18 @@ const StorageTankService = ({
             id: existingFile.id,
             name: fileName,
             originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1, // Increment version
+            fileVersion: existingFile.fileVersion + 1,
             siteId: authoritativeSiteId || 0,
-            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-              uploaderUserId: loggedInUserData?.id || 0,
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+            expiryDate: toJavaLocalDateTime(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                inspectionDetails?.repeatFrequency
+              )
+            ),
+            uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `SAR-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -665,9 +686,9 @@ const StorageTankService = ({
           }
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       } else {
         uploadFormData.append('files', pdfFile);
@@ -677,15 +698,20 @@ const StorageTankService = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
-              note: 'Storage Tank Service Report',
-            fileVersion: fileVersion,
+            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
+            expiryDate: toJavaLocalDateTime(
+              calculateExpiryDate(
+                inspectionDateForUpload,
+                inspectionDetails?.repeatFrequency
+              )
+            ),
+            note: 'Storage Tank Service Report',
+            fileVersion,
             siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `SAR-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -700,16 +726,16 @@ const StorageTankService = ({
           }
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       }
 
-      throw new Error('Upload failed: No response data');
+      throw new Error('Upload failed: the Site Document API did not confirm success');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      return false;
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
@@ -769,7 +795,7 @@ const StorageTankService = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null, checkIdOverride = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -949,12 +975,21 @@ const StorageTankService = ({
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
 
+      let uploadResult = { stored: false, sourceReference: null };
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
+        uploadResult = await uploadPdfToServer(
+          blob,
+          fileName,
+          effectiveInspectionDate,
+          checkIdOverride
+        );
+        if (!uploadResult?.stored) {
+          throw new Error('PDF was generated but could not be stored in Site Documents');
+        }
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1106,6 +1141,33 @@ const StorageTankService = ({
   };
 
 
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) {
+      return;
+    }
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(
+        error,
+        "History record could not be created."
+      );
+      console.error("Retry Generic Inspection history:", {
+        ...pendingHistoryRetry,
+        status: error?.response?.status,
+        message,
+        error,
+      });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('Form submitted');
@@ -1242,13 +1304,75 @@ const StorageTankService = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const resolvedCheckIdForHistory = Number(
+        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
+
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate,
+        resolvedCheckIdForHistory
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Storage Tank Service report saved and PDF generated successfully!");
+      const sourceReference = String(
+        pdfResult?.uploadResult?.sourceReference || ""
+      ).trim();
+
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error(
+          "Storage Tank Service was saved, but History cannot be recorded because the Site Check ID is invalid."
+        );
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error(
+          "Storage Tank Service was saved, but History cannot be recorded because the saved inspection record ID was not returned."
+        );
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error(
+          "Storage Tank Service was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
+        );
+      }
+      if (!sourceReference) {
+        throw new Error(
+          "Storage Tank Service was saved, but History cannot be recorded because the PDF reference was not returned."
+        );
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(
+          historyError,
+          "History record could not be created."
+        );
+        console.error("Record Storage Tank Service history:", {
+          ...historyPayload,
+          status: historyError?.response?.status,
+          message: historyMessage,
+          error: historyError,
+        });
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        toast.error(
+          `Report and PDF were saved, but History was not recorded: ${historyMessage}`
+        );
+        return;
+      }
+
+      toast.success("Storage Tank Service report saved, PDF generated, and History recorded successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
 
@@ -2032,9 +2156,28 @@ const StorageTankService = ({
           </div>
         ) : (
           <div className="text-center print-hide">
-            <div className="alert alert-success mb-4">
-              Report submitted successfully on {formatDate(formData.inspectionDate)}
-            </div>
+            {pendingHistoryRetry ? (
+              <div className="alert alert-warning mb-4">
+                <div className="fw-bold mb-2">
+                  Report and PDF saved, but History has not been recorded.
+                </div>
+                <div className="mb-3">
+                  Do not submit the inspection again. Retry only the History record below.
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-warning"
+                  disabled={isRetryingHistory}
+                  onClick={retryPendingHistory}
+                >
+                  {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                </button>
+              </div>
+            ) : (
+              <div className="alert alert-success mb-4">
+                Report submitted successfully on {formatDate(formData.inspectionDate)}
+              </div>
+            )}
             {showPdfButton && generatedPdfBlob && (
               <button
                 className="btn btn-success"

@@ -26,7 +26,8 @@ import {
 
 const DEFAULT_FREQUENCY = "6-Monthly";
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "6-Monthly", "Yearly"];
-const HISTORY_TEST_SET_KEYS = ["extract-fan", "external-lighting", "wc-alarm"];
+const HISTORY_TEST_SET_BATCH_1_KEYS = ["extract-fan", "external-lighting", "wc-alarm"];
+const HISTORY_TEST_SET_BATCH_2_KEYS = ["microwave-oven", "storage-tank", "water-heater"];
 
 const isActiveUser = (user) =>
   Boolean(user?.id) &&
@@ -194,7 +195,7 @@ const SiteCheckTestLauncher = ({
     }
   };
 
-  const handleCreateHistoryTestSet = async () => {
+  const handleCreateHistoryTestSet = async (testKeys, testSetName) => {
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select a site before creating History test inspections.");
       return;
@@ -212,9 +213,9 @@ const SiteCheckTestLauncher = ({
       return;
     }
 
-    const testTypes = HISTORY_TEST_SET_KEYS.map(getSiteCheckTestType);
+    const testTypes = testKeys.map(getSiteCheckTestType);
     if (testTypes.some((item) => !item)) {
-      toast.error("The History test catalogue is incomplete. No test checks were created.");
+      toast.error(`The ${testSetName} catalogue is incomplete. No test checks were created.`);
       return;
     }
 
@@ -262,9 +263,9 @@ const SiteCheckTestLauncher = ({
 
     const successCount = results.filter((item) => item.success).length;
     if (successCount === results.length) {
-      toast.success(`Created ${successCount} History test Site Checks.`);
+      toast.success(`Created ${successCount} ${testSetName} Site Checks.`);
     } else {
-      toast.error(`Created ${successCount} of ${results.length} History test Site Checks. Review the results below.`);
+      toast.error(`Created ${successCount} of ${results.length} ${testSetName} Site Checks. Review the results below.`);
     }
   };
 
@@ -478,7 +479,12 @@ const SiteCheckTestLauncher = ({
           </Button>
           <Button
             variant="outlined"
-            onClick={handleCreateHistoryTestSet}
+            onClick={() =>
+              handleCreateHistoryTestSet(
+                HISTORY_TEST_SET_BATCH_1_KEYS,
+                "History Batch 1"
+              )
+            }
             disabled={
               isCreating ||
               createdHistoryTests.length > 0 ||
@@ -487,7 +493,25 @@ const SiteCheckTestLauncher = ({
             }
             title="Create Extract Fan, External Lighting and WC Alarm test Site Checks"
           >
-            {isCreating ? "Creating..." : "Create History Test Set (3)"}
+            {isCreating ? "Creating..." : "Create History Batch 1 (3)"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() =>
+              handleCreateHistoryTestSet(
+                HISTORY_TEST_SET_BATCH_2_KEYS,
+                "History Batch 2"
+              )
+            }
+            disabled={
+              isCreating ||
+              createdHistoryTests.length > 0 ||
+              !siteSelectedForGlobal?.siteId ||
+              activeUsers.length === 0
+            }
+            title="Create Microwave Oven, Storage Tank and Water Heater test Site Checks"
+          >
+            {isCreating ? "Creating..." : "Create History Batch 2 (3)"}
           </Button>
           <Button
             variant="contained"
