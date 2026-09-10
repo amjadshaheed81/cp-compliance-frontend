@@ -440,6 +440,7 @@ const WaterHeaterCertificate = ({
               subType: waterHeaterCheck.subType,
               category: waterHeaterCheck.category,
               dueDate: waterHeaterCheck.dueDate,
+              repeatFrequency: waterHeaterCheck.repeatFrequency,
               status: waterHeaterCheck.status
             };
             setInspectionDetails(inspectionDetails);

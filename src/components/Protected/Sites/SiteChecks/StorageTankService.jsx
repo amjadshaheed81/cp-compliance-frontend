@@ -432,6 +432,7 @@ const StorageTankService = ({
               subType: storageTankCheck.subType,
               category: storageTankCheck.category,
               dueDate: storageTankCheck.dueDate,
+              repeatFrequency: storageTankCheck.repeatFrequency,
               status: storageTankCheck.status
             };
             console.log('Setting inspection details:', inspectionDetails);
