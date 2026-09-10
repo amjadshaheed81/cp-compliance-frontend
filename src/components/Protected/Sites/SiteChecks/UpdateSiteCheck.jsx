@@ -19,7 +19,7 @@ import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA";
 import { useNavigate, useParams } from "react-router-dom";
 import { get, getSasToken, getPdf, getPdfFromUrl, put, post } from "../../../../api";
-import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Paper, styled } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Paper, styled, Tabs, Tab } from "@mui/material";
 import {
     deleteUser,
     getSites,
@@ -56,6 +56,7 @@ import GasBoilerService from "./GasBoilerService";
 import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
+import SiteCheckHistory from "./SiteCheckHistory";
 import { getUkLocalDate } from "./shared/siteCheckDateUtils";
 
 const Item = styled(Paper)(({ theme }) => ({
@@ -100,6 +101,7 @@ const SiteChecks = ({
     const [step, setStep] = useState();
     const checkId = params.id;
     const [siteCheck, setSiteCheck] = useState();
+    const [activeDetailTab, setActiveDetailTab] = useState("form");
     const navigate = useNavigate();
     const authoritativeUserSiteId = siteCheck?.siteId || siteSelectedForGlobal?.siteId;
     const managerList =
@@ -145,6 +147,7 @@ const SiteChecks = ({
     }, [siteCheck]);
 
     useEffect(() => {
+        setActiveDetailTab("form");
         getSiteChecks();
         getToken();
     }, [checkId]);
@@ -733,6 +736,19 @@ const SiteChecks = ({
                                 <Grid sm={4}></Grid>
                             </Grid>
                         </Item>
+                        <Item className="print-hide">
+                            <Tabs
+                                value={activeDetailTab}
+                                onChange={(_, value) => setActiveDetailTab(value)}
+                                aria-label="Site Check form and history tabs"
+                            >
+                                <Tab value="form" label="Form" />
+                                <Tab value="history" label="History" />
+                            </Tabs>
+                        </Item>
+
+                        <div style={{ display: activeDetailTab === "form" ? "block" : "none" }}>
+                            <Stack spacing={2}>
                         {step === "inspection-electrical-emergency" && (
                             <Item>
                                 <EmergencyLightingInspectionForm
@@ -1079,6 +1095,17 @@ const SiteChecks = ({
                                 </div>
                             )}
                         </Grid>
+                            </Stack>
+                        </div>
+
+                        {activeDetailTab === "history" && (
+                            <Item>
+                                <SiteCheckHistory checkId={checkId} />
+                                <div className="d-flex justify-content-end mt-3 print-hide">
+                                    <SiteCheckBackButton onClick={() => navigate("/site-checks")} />
+                                </div>
+                            </Item>
+                        )}
                     </Stack>
                 </div>
             </div>
