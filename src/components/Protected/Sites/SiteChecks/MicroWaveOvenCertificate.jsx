@@ -410,7 +410,7 @@ const MicroWaveOvenCertificate = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+            folder => ['6 - Log Books', 'Log Books'].includes(folder.name.trim())
         );
 
         if (logBooksFolder) {

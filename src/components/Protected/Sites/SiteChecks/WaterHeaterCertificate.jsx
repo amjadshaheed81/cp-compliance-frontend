@@ -363,7 +363,7 @@ const WaterHeaterCertificate = ({
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         // Find the Log Books folder
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
+            folder => ['6 - Log Books', 'Log Books'].includes(folder.name.trim())
         );
 
         if (logBooksFolder) {
@@ -385,7 +385,10 @@ const WaterHeaterCertificate = ({
               if (electricalResponse?.document?.childFolders) {
                 // Find the External Lighting folder
                 const externalLightingFolder = electricalResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Water Heater Inspection'
+                    folder => [
+                      'Unvented Water Heater - G3 Statutory Inspection',
+                      'Water Heater Inspection'
+                    ].includes(folder.name.trim())
                 );
 
                 // Update state with all found folder IDs
