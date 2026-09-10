@@ -906,11 +906,16 @@ const AirConditioning = ({
 
 
 
-    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride, checkIdOverride) => {
         try {
             setIsUploading(true);
 
             const inspectionDateForUpload = inspectionDateOverride || formData.inspectionDate;
+            const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
+            if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+                throw new Error('Could not determine Site Check ID for PDF upload');
+            }
+            const sourceReference = `AC-${resolvedCheckId}-${Date.now()}`;
 
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
             if (!savedLocally) {
@@ -941,7 +946,7 @@ const AirConditioning = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: `AC-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -957,9 +962,9 @@ const AirConditioning = ({
                     }
                 });
 
-                if (response.data) {
+                if (response?.status >= 200 && response?.status < 300) {
                     toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             } else {
                 uploadFormData.append('files', pdfFile);
@@ -977,7 +982,7 @@ const AirConditioning = ({
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: `AC-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -992,15 +997,16 @@ const AirConditioning = ({
                     }
                 });
 
-                if (response.data) {
+                if (response?.status >= 200 && response?.status < 300) {
                     toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             }
 
-            throw new Error('Upload failed: No response data');
-        } catch {
-            return false;
+            throw new Error('Upload failed: request did not return a successful status');
+        } catch (uploadError) {
+            console.error("Air Conditioning PDF upload:", uploadError);
+            return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);
         }
@@ -1014,7 +1020,7 @@ const AirConditioning = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true, inspectionDateOverride, signedDateOverride) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride, signedDateOverride, checkIdOverride) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -1136,12 +1142,18 @@ const AirConditioning = ({
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
 
+      let uploadResult = { stored: false, sourceReference: null };
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
+        uploadResult = await uploadPdfToServer(
+          blob,
+          fileName,
+          effectiveInspectionDate,
+          checkIdOverride
+        );
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       toast.error('Failed to generate PDF');
@@ -1266,10 +1278,13 @@ const AirConditioning = ({
       setCheckStatus('Done');
       setIsFormEditable(false);
 
+      const resolvedCheckIdForSave =
+        checkIdForSave || statusResponse?.data?.checkId;
+
       const saveResponse = await post(
         `/api/site-check/generic-inspection`,
         buildInspectionPayload(
-            checkIdForSave || statusResponse?.data?.checkId,
+            resolvedCheckIdForSave,
             undefined,
             submissionInspectionDate,
             submissionSignedDate
@@ -1280,10 +1295,48 @@ const AirConditioning = ({
         throw new Error('Failed to save inspection data');
       }
 
-      // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate, submissionSignedDate);
+      const savedInspectionRecordId = saveResponse?.data?.id;
+
+      // Keep the existing PDF flow. The returned upload metadata is used only
+      // to link this exact Air Conditioning submission to immutable history.
+      const pdfResult = await generatePDF(
+        true,
+        submissionInspectionDate,
+        submissionSignedDate,
+        resolvedCheckIdForSave
+      );
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
+      }
+
+      if (
+        resolvedCheckIdForSave &&
+        savedInspectionRecordId &&
+        pdfResult?.uploadResult?.stored &&
+        pdfResult?.uploadResult?.sourceReference
+      ) {
+        try {
+          await post(
+            `/api/site-check/${resolvedCheckIdForSave}/history/air-conditioning`,
+            {
+              sourceReference: pdfResult.uploadResult.sourceReference,
+              inspectionRecordId: savedInspectionRecordId,
+            }
+          );
+        } catch (historyError) {
+          console.error("Record Air Conditioning history:", historyError);
+          toast.error(
+            "Air Conditioning submitted and PDF uploaded, but the History record could not be created."
+          );
+        }
+      } else if (!savedInspectionRecordId) {
+        toast.error(
+          "Air Conditioning submitted, but History could not be created because the saved inspection record ID was not returned."
+        );
+      } else if (!pdfResult?.uploadResult?.stored) {
+        toast.error(
+          "Air Conditioning submitted, but History could not be created because the PDF was not stored in Site Documents."
+        );
       }
 
       toast.success("Air Conditioning report saved and PDF generated successfully!");
