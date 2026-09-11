@@ -21,11 +21,12 @@ import axios from "axios";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -112,6 +113,8 @@ const SounderAudibilityForm = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     plantAndEquipment: null,
@@ -624,10 +627,15 @@ const SounderAudibilityForm = ({
     const calculateExpiryDate = (visitDate, repeatFrequency) =>
       calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
-  const uploadPdfToServer = async (pdfBlob, fileName, dateOverride) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, dateOverride, resolvedCheckId) => {
     try {
       setIsUploading(true);
       const dateForUpload = dateOverride || formData.date;
+      const parsedCheckId = Number(resolvedCheckId);
+      if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+        throw new Error("Sounder Audibility Report PDF cannot be stored without a valid Site Check ID.");
+      }
+      const sourceReference = `SAR-${parsedCheckId}-${Date.now()}`;
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -659,7 +667,7 @@ const SounderAudibilityForm = ({
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateForUpload, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `SAR-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -675,9 +683,9 @@ const SounderAudibilityForm = ({
           }
         });
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       } else {
         uploadFormData.append('files', pdfFile);
@@ -695,7 +703,7 @@ const SounderAudibilityForm = ({
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `SAR-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -710,24 +718,25 @@ const SounderAudibilityForm = ({
           }
         });
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       }
 
-      throw new Error('Upload failed: No response data');
+      throw new Error('Upload failed: the document API did not confirm storage');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      return false;
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
   };
 
-  const generatePDF = async (uploadToServer = true, submissionDateOverride) => {
+  const generatePDF = async (uploadToServer = true, submissionDateOverride, resolvedCheckId) => {
     try {
       setIsGeneratingPDF(true);
+      let uploadResult = { stored: false, sourceReference: null };
 
       if (!PDFLib) {
         PDFLib = await import('pdf-lib');
@@ -823,11 +832,14 @@ const SounderAudibilityForm = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName, effectiveDate);
+        uploadResult = await uploadPdfToServer(blob, fileName, effectiveDate, resolvedCheckId);
+        if (!uploadResult?.stored) {
+          throw new Error("PDF was generated but was not stored in Site Documents");
+        }
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -900,6 +912,23 @@ const SounderAudibilityForm = ({
 
 
 
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) return;
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+      console.error("Retry Generic Inspection history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1008,6 +1037,9 @@ const SounderAudibilityForm = ({
         assetId: formData.selectedAsset?.assetId || formData.assetId,
         client: formData.clientUser?.id || formData.client,
         engineer: formData.engineer,
+        // Preserve the current Sounder date fields and also populate the
+        // GenericInspection entity's actual historical date column.
+        inspectionDate: toJavaLocalDate(submissionDate),
         date: submissionDate,
         clientDate: submissionClientDate,
         engineerDate: submissionEngineerDate,
@@ -1038,15 +1070,50 @@ const SounderAudibilityForm = ({
         throw new Error('Failed to save inspection data');
       }
 
-      console.log('Inspection data saved successfully:', saveResponse.data);
+      const resolvedCheckIdForHistory = Number(
+        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
 
-      // Generate PDF
-      const pdfResult = await generatePDF(true, submissionDate);
+      const pdfResult = await generatePDF(true, submissionDate, resolvedCheckIdForHistory);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Sounder Audibility Report saved and PDF generated successfully!");
+      const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error("Sounder Audibility Report was saved, but History cannot be recorded because the Site Check ID is invalid.");
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error("Sounder Audibility Report was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error("Sounder Audibility Report was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
+      }
+      if (!sourceReference) {
+        throw new Error("Sounder Audibility Report was saved, but History cannot be recorded because the PDF reference was not returned.");
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+        console.error("Record Sounder Audibility Report history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+        toast.error(`Report and PDF were saved, but History was not recorded: ${historyMessage}`);
+        return;
+      }
+
+      toast.success("Sounder Audibility Report saved, PDF generated, and History recorded successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -1584,6 +1651,20 @@ const SounderAudibilityForm = ({
               />
             </div>
           </div>
+
+          {pendingHistoryRetry && (
+            <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+              <span>Report and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+              <button
+                type="button"
+                className="btn btn-warning ms-3"
+                onClick={retryPendingHistory}
+                disabled={isRetryingHistory}
+              >
+                {isRetryingHistory ? "Retrying History..." : "Retry History"}
+              </button>
+            </div>
+          )}
 
           <div className="mt-4 print-hide">
             {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}

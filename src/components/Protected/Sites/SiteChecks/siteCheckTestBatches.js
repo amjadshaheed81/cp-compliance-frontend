@@ -10,6 +10,40 @@
  */
 export const SITE_CHECK_HISTORY_TEST_BATCHES = [
   {
+    number: 4,
+    label: "Refuge Intercom / Sounder Audibility / Ventilation",
+    testKeys: ["refuge-intercom", "fire-alarm-sounder", "ventilation"],
+    devices: [
+      {
+        key: "refuge-intercom-device",
+        testTypeKey: "refuge-intercom",
+        label: "Refuge Intercom Outstation",
+        category: "Electrical",
+        subCategory: "Fire Alarm",
+        subCategory2: "Disabled Refuge Outstation",
+        subCategory3: "",
+      },
+      {
+        key: "sounder-device",
+        testTypeKey: "fire-alarm-sounder",
+        label: "Fire Alarm Sounder",
+        category: "Electrical",
+        subCategory: "Fire Alarm",
+        subCategory2: "Sounder",
+        subCategory3: "",
+      },
+      {
+        key: "ventilation-device",
+        testTypeKey: "ventilation",
+        label: "Heat Recovery Unit",
+        category: "Mechanical",
+        subCategory: "Ventilation",
+        subCategory2: "Heat Recovery Unit",
+        subCategory3: "",
+      },
+    ],
+  },
+  {
     number: 3,
     label: "Fire Damper / CCTV / Intruder Alarm",
     testKeys: ["fire-damper", "cctv", "intruder-alarm"],

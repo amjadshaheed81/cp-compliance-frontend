@@ -26,6 +26,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -107,6 +108,8 @@ const VentilationReport = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [folderIds, setFolderIds] = useState({
     logBooks: null,
     EnvironmentalLogBook: null,
@@ -666,9 +669,14 @@ const VentilationReport = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride, resolvedCheckId) => {
     try {
       setIsUploading(true);
+      const parsedCheckId = Number(resolvedCheckId);
+      if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+        throw new Error("Ventilation report PDF cannot be stored without a valid Site Check ID.");
+      }
+      const sourceReference = `VENT-${parsedCheckId}-${Date.now()}`;
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -698,7 +706,7 @@ const VentilationReport = ({
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `VENT-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -714,9 +722,9 @@ const VentilationReport = ({
           }
         });
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       } else {
         uploadFormData.append('files', pdfFile);
@@ -734,7 +742,7 @@ const VentilationReport = ({
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `VENT-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -749,24 +757,25 @@ const VentilationReport = ({
           }
         });
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
       }
 
-      throw new Error('Upload failed: No response data');
+      throw new Error('Upload failed: the document API did not confirm storage');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      return false;
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
   };
 
-  const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride, resolvedCheckId) => {
     try {
       setIsGeneratingPDF(true);
+      let uploadResult = { stored: false, sourceReference: null };
 
       if (!PDFLib) {
         PDFLib = await import('pdf-lib');
@@ -874,11 +883,14 @@ const VentilationReport = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName, inspectionDateOverride);
+        uploadResult = await uploadPdfToServer(blob, fileName, inspectionDateOverride, resolvedCheckId);
+        if (!uploadResult?.stored) {
+          throw new Error("PDF was generated but was not stored in Site Documents");
+        }
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -896,6 +908,23 @@ const VentilationReport = ({
       user: newValue || {},
     }));
     setValidationErrors((prev) => ({ ...prev, engineer: "" }));
+  };
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) return;
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+      console.error("Retry Generic Inspection history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -1036,13 +1065,50 @@ const VentilationReport = ({
         throw new Error('Failed to save inspection data');
       }
 
-      // Generate PDF
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const resolvedCheckIdForHistory = Number(
+        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
+
+      const pdfResult = await generatePDF(true, submissionInspectionDate, resolvedCheckIdForHistory);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Ventilation report saved and PDF generated successfully!");
+      const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error("Ventilation report was saved, but History cannot be recorded because the Site Check ID is invalid.");
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error("Ventilation report was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error("Ventilation report was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
+      }
+      if (!sourceReference) {
+        throw new Error("Ventilation report was saved, but History cannot be recorded because the PDF reference was not returned.");
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+        console.error("Record Ventilation report history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+        setPendingHistoryRetry(historyPayload);
+        setShowPdfButton(true);
+        setIsSubmitted(true);
+        setSubmissionSuccess(true);
+        toast.error(`Report and PDF were saved, but History was not recorded: ${historyMessage}`);
+        return;
+      }
+
+      toast.success("Ventilation report saved, PDF generated, and History recorded successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
       setSubmissionSuccess(true);
@@ -1744,6 +1810,20 @@ const VentilationReport = ({
               />
             </div>
           </div>
+
+          {pendingHistoryRetry && (
+            <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+              <span>Report and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+              <button
+                type="button"
+                className="btn btn-warning ms-3"
+                onClick={retryPendingHistory}
+                disabled={isRetryingHistory}
+              >
+                {isRetryingHistory ? "Retrying History..." : "Retry History"}
+              </button>
+            </div>
+          )}
 
           <div className="mt-4 print-hide">
             {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
