@@ -19,6 +19,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
 const EmergencyLightingInspectionForm = ({
                                            checkId,
@@ -104,6 +105,8 @@ const EmergencyLightingInspectionForm = ({
   const [isFormEditable, setIsFormEditable] = useState(true);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isNewCheck, setIsNewCheck] = useState(!checkId); // Track if this is a new check\
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
 
   // NEW: Use the exact Site Check site/status for engineer/date behaviour.
   const authoritativeSiteId = siteCheck?.siteId
@@ -404,7 +407,7 @@ const EmergencyLightingInspectionForm = ({
     }
   };
   // Function to generate PDF
-  const generatePDF = async (inspectionDateOverride = null) => {
+  const generatePDF = async (inspectionDateOverride = null, resolvedCheckId = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -564,18 +567,19 @@ const EmergencyLightingInspectionForm = ({
       }
 
       // Upload to server
-      const uploadSuccess = await uploadPdfToServer(
+      const uploadResult = await uploadPdfToServer(
           blob,
           fileName,
           inspectionDetails?.category || 'Emergency Lighting',
-          effectiveInspectionDate
+          effectiveInspectionDate,
+          resolvedCheckId
       );
 
-      if (!uploadSuccess) {
+      if (!uploadResult?.stored) {
         console.error('PDF upload to server failed');
       }
 
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
     } catch (error) {
       console.error('Error generating PDF:', error);
       toast.error('Failed to generate PDF: ' + error.message);
@@ -765,9 +769,15 @@ const EmergencyLightingInspectionForm = ({
     }
   };
 
-  const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride = null) => {
+  const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride = null, resolvedCheckId = null) => {
     try {
       setIsUploading(true);
+
+      const parsedCheckId = Number(resolvedCheckId || currentCheckId);
+      if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+        throw new Error("Emergency Lighting PDF cannot be stored without a valid Site Check ID.");
+      }
+      const sourceReference = `EML-${parsedCheckId}-${Date.now()}`;
 
       // First save locally
       await savePdfToLocal(pdfBlob, fileName);
@@ -800,7 +810,7 @@ const EmergencyLightingInspectionForm = ({
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, (inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency))),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -817,9 +827,9 @@ const EmergencyLightingInspectionForm = ({
             }
         );
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF updated successfully as version ${documentRequest.files[0].fileVersion}`);
-          return true;
+          return { stored: true, sourceReference };
         }
       } else {
         // Create new file
@@ -838,7 +848,7 @@ const EmergencyLightingInspectionForm = ({
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, (inspectionDetails?.repeatFrequency || siteCheck?.repeatFrequency))),
               uploaderUserId: loggedInUserData?.id,
             reviewerUserId: loggedInUserData?.id,
-            referenceNumber: `EL-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
 
@@ -855,15 +865,15 @@ const EmergencyLightingInspectionForm = ({
             }
         );
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}`);
-          return true;
+          return { stored: true, sourceReference };
         }
       }
     } catch (error) {
       console.error('Error uploading PDF:', error);
       toast.error('Failed to upload PDF: ' + error.message);
-      return false;
+      return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
     }
@@ -1274,14 +1284,45 @@ const EmergencyLightingInspectionForm = ({
           ? await put(`/api/site-check/emergency-lighting/${checkIdToUse}`, inspectionPayload)
           : await post("/api/site-check/emergency-lighting", inspectionPayload);
 
-      // 4. Generate and upload PDF
-      const pdfResult = await generatePDF(submissionInspectionDate);
+      // 4. Generate and upload PDF, then record immutable History.
+      const resolvedCheckIdForHistory = Number(checkIdToUse);
+      const savedInspectionRecordId = Number(inspectionResponse?.data?.id);
+      const pdfResult = await generatePDF(submissionInspectionDate, resolvedCheckIdForHistory);
       if (!pdfResult.success) {
-        console.error("PDF generation/upload failed");
+        throw new Error(pdfResult.error || "Failed to generate PDF");
+      }
+
+      const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error("Emergency Lighting was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error("Emergency Lighting was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
+      }
+      if (!sourceReference) {
+        throw new Error("Emergency Lighting was saved, but History cannot be recorded because the PDF reference was not returned.");
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+      try {
+        await recordSpecializedInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+        console.error("Record Emergency Lighting history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+        setPendingHistoryRetry(historyPayload);
+        setIsSubmitted(true);
+        setIsFormEditable(false);
+        toast.error(`Inspection and PDF were saved, but History was not recorded: ${historyMessage}`);
+        return;
       }
 
       // 5. Update state
-      toast.success("Inspection submitted successfully");
+      toast.success("Inspection submitted and History recorded successfully");
       setIsSubmitted(true);
       setIsFormEditable(false);
 
@@ -1294,6 +1335,22 @@ const EmergencyLightingInspectionForm = ({
       toast.error(getSiteCheckErrorMessage(error, "Failed to submit inspection"));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) return;
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordSpecializedInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+      console.error("Retry Emergency Lighting history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
     }
   };
 
@@ -1866,6 +1923,14 @@ const EmergencyLightingInspectionForm = ({
                 Inspection submitted successfully on {formatDate(formData.inspectionDate)}
               </div>
             )}
+          {pendingHistoryRetry && (
+            <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+              <span>Inspection and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+              <button type="button" className="btn btn-warning btn-sm ms-3" onClick={retryPendingHistory} disabled={isRetryingHistory}>
+                {isRetryingHistory ? "Retrying History..." : "Retry History"}
+              </button>
+            </div>
+          )}
           {!isSubmitted && (
             <div className="d-flex justify-content-end print-hide">
               <SiteCheckDueSummary

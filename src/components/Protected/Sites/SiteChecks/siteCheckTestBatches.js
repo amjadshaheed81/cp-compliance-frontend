@@ -10,6 +10,40 @@
  */
 export const SITE_CHECK_HISTORY_TEST_BATCHES = [
   {
+    number: 6,
+    label: "Emergency Lighting / Gas Boiler / Fire Extinguisher",
+    testKeys: ["emergency-lighting", "gas-boiler", "fire-extinguisher"],
+    devices: [
+      {
+        key: "emergency-lighting-device",
+        testTypeKey: "emergency-lighting",
+        label: "Emergency Lighting Unit",
+        category: "Electrical",
+        subCategory: "Emergency Lighting Installation",
+        subCategory2: "Emergency Light",
+        subCategory3: "",
+      },
+      {
+        key: "gas-boiler-device",
+        testTypeKey: "gas-boiler",
+        label: "Gas Boiler",
+        category: "Mechanical",
+        subCategory: "Central Heating",
+        subCategory2: "Boiler",
+        subCategory3: "",
+      },
+      {
+        key: "fire-extinguisher-device",
+        testTypeKey: "fire-extinguisher",
+        label: "Foam Fire Extinguisher",
+        category: "Fire Fighting Equipment",
+        subCategory: "Fire Extinguishers",
+        subCategory2: "Foam Extinguisher 6 Litre",
+        subCategory3: "",
+      },
+    ],
+  },
+  {
     number: 5,
     label: "Water Chlorination / Shower Head Cleaning",
     testKeys: ["water-chlorination", "shower-head"],

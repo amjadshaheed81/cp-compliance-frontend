@@ -25,6 +25,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
 let PDFLib;
 
@@ -232,6 +233,8 @@ const GasBoilerService = ({
     const [isUploading, setIsUploading] = useState(false);
     const [currentCheckId, setCurrentCheckId] = useState(checkId || null);
     const [isFormEditable, setIsFormEditable] = useState(true);
+    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
     const [showRiskAssessment, setShowRiskAssessment] = useState(false);
     const [actionRaised, setActionRaised] = useState(false);
     const [existingAction, setExistingAction] = useState(null);
@@ -689,9 +692,14 @@ const GasBoilerService = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName, dateTimeOverride = null) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, dateTimeOverride = null, resolvedCheckId = null) => {
         try {
             setIsUploading(true);
+            const parsedCheckId = Number(resolvedCheckId || currentCheckId);
+            if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+                throw new Error("Gas Boiler PDF cannot be stored without a valid Site Check ID.");
+            }
+            const sourceReference = `GBS-${parsedCheckId}-${Date.now()}`;
             await savePdfToLocal(pdfBlob, fileName);
 
             const targetFolderId = folderIds.boilerService || await fetchFolderStructure(authoritativeSiteId);
@@ -718,7 +726,7 @@ const GasBoilerService = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
-                        referenceNumber: `GBS-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -734,9 +742,9 @@ const GasBoilerService = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF updated successfully as version ${documentRequest.files[0].fileVersion}`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             } else {
                 uploadFormData.append('files', pdfFile);
@@ -753,7 +761,7 @@ const GasBoilerService = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(dateTimeOverride || formData.dateTimeOfIssue, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
-                        referenceNumber: `GBS-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -769,16 +777,16 @@ const GasBoilerService = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF uploaded successfully as version ${fileVersion}`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             }
             throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
             //toast.error('Failed to upload PDF: ' + error.message);
-            return false;
+            return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);
         }
@@ -787,7 +795,7 @@ const GasBoilerService = ({
 
 
 
-    const generatePDF = async (uploadToServer = true, dateTimeOverride = null) => {
+    const generatePDF = async (uploadToServer = true, dateTimeOverride = null, resolvedCheckId = null) => {
         try {
             setIsGeneratingPDF(true);
             if (!PDFLib) {
@@ -960,11 +968,12 @@ const GasBoilerService = ({
             setGeneratedPdfBlob(blob);
             setShowPdfButton(true);
 
+            let uploadResult = { stored: false, sourceReference: null };
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName, effectiveDateTimeOfIssue);
+                uploadResult = await uploadPdfToServer(blob, fileName, effectiveDateTimeOfIssue, resolvedCheckId);
             }
 
-            return { success: true, fileName };
+            return { success: true, fileName, uploadResult };
         } catch (error) {
             console.error('Error generating PDF:', error);
             return { success: false, error: error.message };
@@ -1202,13 +1211,44 @@ const GasBoilerService = ({
                 throw new Error('Failed to save inspection data');
             }
 
-            // Generate and upload PDF
-            const pdfResult = await generatePDF(true, submissionDateTime);
+            // Generate and upload PDF, then record immutable History.
+            const resolvedCheckIdForHistory = Number(checkIdToUse);
+            const savedInspectionRecordId = Number(saveResponse?.data?.id);
+            const pdfResult = await generatePDF(true, submissionDateTime, resolvedCheckIdForHistory);
             if (!pdfResult.success) {
-                console.error("PDF generation/upload failed");
+                throw new Error(pdfResult.error || "Failed to generate PDF");
             }
 
-            toast.success("Inspection submitted successfully");
+            const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
+            if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+                throw new Error("Gas Boiler Service was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
+            }
+            if (!pdfResult?.uploadResult?.stored) {
+                throw new Error("Gas Boiler Service was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
+            }
+            if (!sourceReference) {
+                throw new Error("Gas Boiler Service was saved, but History cannot be recorded because the PDF reference was not returned.");
+            }
+
+            const historyPayload = {
+                checkId: resolvedCheckIdForHistory,
+                inspectionRecordId: savedInspectionRecordId,
+                sourceReference,
+            };
+            try {
+                await recordSpecializedInspectionHistory(historyPayload);
+                setPendingHistoryRetry(null);
+            } catch (historyError) {
+                const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+                console.error("Record Gas Boiler history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+                setPendingHistoryRetry(historyPayload);
+                setIsSubmitted(true);
+                setIsFormEditable(false);
+                toast.error(`Inspection and PDF were saved, but History was not recorded: ${historyMessage}`);
+                return;
+            }
+
+            toast.success("Inspection submitted and History recorded successfully");
             setIsSubmitted(true);
             setIsFormEditable(false);
 
@@ -1217,6 +1257,22 @@ const GasBoilerService = ({
             toast.error(getSiteCheckErrorMessage(error, "Failed to submit inspection"));
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const retryPendingHistory = async () => {
+        if (!pendingHistoryRetry || isRetryingHistory) return;
+        setIsRetryingHistory(true);
+        try {
+            const history = await recordSpecializedInspectionHistory(pendingHistoryRetry);
+            setPendingHistoryRetry(null);
+            toast.success(`History recorded successfully (History #${history.historyId}).`);
+        } catch (error) {
+            const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+            console.error("Retry Gas Boiler history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+            toast.error(`History retry failed: ${message}`);
+        } finally {
+            setIsRetryingHistory(false);
         }
     };
 
@@ -1900,6 +1956,14 @@ const GasBoilerService = ({
                         Report submitted successfully on {formatDate(formData.engineerSignatureDate)}
                     </div>
                 )}
+            {pendingHistoryRetry && (
+                <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+                    <span>Inspection and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+                    <button type="button" className="btn btn-warning btn-sm ms-3" onClick={retryPendingHistory} disabled={isRetryingHistory}>
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                    </button>
+                </div>
+            )}
             {!isSubmitted && (
               <div className="d-flex justify-content-end print-hide">
                 <SiteCheckDueSummary

@@ -24,6 +24,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
 // NOTE: You must have a PDF template at this path for the PDF generation to work correctly.
 import pdfTemplate from './pdf/FireFightingEquippement.pdf';
@@ -101,6 +102,8 @@ should be carried out more frequently.`;
     const navigate = useNavigate();
     const isInternalUserTaggedWithSite = true;
     const [inspectionDetails, setInspectionDetails] = useState(null);
+    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
 
     // NEW: same authoritative site/status and Engineer behaviour as Air Conditioning.
     const authoritativeSiteId = siteCheck?.siteId
@@ -266,7 +269,7 @@ should be carried out more frequently.`;
 
             if (parentFoldersResponse?.parentFolders?.length > 0) {
                 const logBooksFolder = parentFoldersResponse.parentFolders.find(
-                    folder => folder.name.trim() === 'Log Books'
+                    folder => ['6 - Log Books', 'Log Books'].includes(folder.name.trim())
                 );
 
                 if (logBooksFolder) {
@@ -399,6 +402,7 @@ should be carried out more frequently.`;
                     subType: fireEquipmentCheck.subType,
                     category: fireEquipmentCheck.category,
                     dueDate: fireEquipmentCheck.dueDate,
+                    repeatFrequency: fireEquipmentCheck.repeatFrequency,
                     status: fireEquipmentCheck.status
                 };
                 setInspectionDetails(inspectionDetails);
@@ -597,10 +601,15 @@ should be carried out more frequently.`;
         }
     }, [authoritativeSiteId]);
 
-    const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride) => {
+    const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride, resolvedCheckId = null) => {
         let exists;
         try {
             setState(prev => ({ ...prev, isUploading: true }));
+            const parsedCheckId = Number(resolvedCheckId || state.currentCheckId);
+            if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+                throw new Error("Fire Fighting Equipment PDF cannot be stored without a valid Site Check ID.");
+            }
+            const sourceReference = `FFR-${parsedCheckId}-${Date.now()}`;
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
             if (!savedLocally) {
                 throw new Error('Failed to save PDF locally');
@@ -632,7 +641,7 @@ should be carried out more frequently.`;
                     expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                     uploaderUserId: loggedInUserData?.id || 0,
                     reviewerUserId: loggedInUserData?.id || 0,
-                    referenceNumber: `FFR-${new Date().getTime()}`
+                    referenceNumber: sourceReference
                 }]
             };
 
@@ -659,16 +668,16 @@ should be carried out more frequently.`;
                 }
             });
 
-            if (response.data) {
+            if ([200, 201, 204].includes(response?.status)) {
                 toast.success(`PDF ${exists ? 'updated' : 'uploaded'} successfully as version ${fileVersion}!`);
-                return true;
+                return { stored: true, sourceReference };
             }
 
-            throw new Error('Upload failed: No response data');
+            throw new Error('Upload failed: document API did not confirm storage');
         } catch (error) {
             console.error('Error uploading PDF:', error);
 
-            return false;
+            return { stored: false, sourceReference: null };
         } finally {
             setState(prev => ({ ...prev, isUploading: false }));
         }
@@ -679,10 +688,11 @@ should be carried out more frequently.`;
         loggedInUserData,
         authoritativeSiteId,
         folderIds,
-        inspectionDetails
+        inspectionDetails,
+        state.currentCheckId
     ]);
 
-    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride) => {
+    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride, resolvedCheckId = null) => {
         try {
             setState(prev => ({ ...prev, isGeneratingPDF: true }));
 
@@ -765,17 +775,17 @@ should be carried out more frequently.`;
 
             setState(prev => ({ ...prev, generatedPdfBlob: blob }));
 
-            let uploadedToServer = false;
+            let uploadResult = { stored: false, sourceReference: null };
             if (uploadToServer) {
-                uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride);
+                uploadResult = await uploadPdfToServer(blob, fileName, inspectionDateOverride, resolvedCheckId);
             }
 
-            if (uploadedToServer || !uploadToServer) {
+            if (uploadResult?.stored || !uploadToServer) {
                 toast.success('PDF generated successfully!');
                 setState(prev => ({ ...prev, showPdfButton: true }));
             }
 
-            return { success: true, fileName };
+            return { success: true, fileName, uploadResult };
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast.error('Failed to generate PDF: ' + (error.message || 'Unknown error'));
@@ -863,24 +873,55 @@ should be carried out more frequently.`;
                 actionId: formData.actionId || null,
             };
 
+            let saveResponse;
             if (state.currentCheckId && formData.actionId) {
-                await put(
+                saveResponse = await put(
                     `/api/site-check/fire-fighting-equipment/${state.currentCheckId}`,
                     inspectionPayload
                 );
             } else {
-                await post(
+                saveResponse = await post(
                     `/api/site-check/fire-fighting-equipment`,
                     inspectionPayload
                 );
             }
 
-            const pdfResult = await generatePDF(true, submissionInspectionDate);
+            const resolvedCheckIdForHistory = Number(state.currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId);
+            const savedInspectionRecordId = Number(saveResponse?.data?.id);
+            const pdfResult = await generatePDF(true, submissionInspectionDate, resolvedCheckIdForHistory);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
 
-            toast.success("Fire Fighting Equipment report saved successfully!");
+            const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
+            if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+                throw new Error("Fire Fighting Equipment was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
+            }
+            if (!pdfResult?.uploadResult?.stored) {
+                throw new Error("Fire Fighting Equipment was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
+            }
+            if (!sourceReference) {
+                throw new Error("Fire Fighting Equipment was saved, but History cannot be recorded because the PDF reference was not returned.");
+            }
+
+            const historyPayload = {
+                checkId: resolvedCheckIdForHistory,
+                inspectionRecordId: savedInspectionRecordId,
+                sourceReference,
+            };
+            try {
+                await recordSpecializedInspectionHistory(historyPayload);
+                setPendingHistoryRetry(null);
+            } catch (historyError) {
+                const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+                console.error("Record Fire Fighting Equipment history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+                setPendingHistoryRetry(historyPayload);
+                setState(prev => ({ ...prev, showPdfButton: true, isSubmitted: true }));
+                toast.error(`Inspection and PDF were saved, but History was not recorded: ${historyMessage}`);
+                return;
+            }
+
+            toast.success("Fire Fighting Equipment report saved and History recorded successfully!");
             setState(prev => ({
                 ...prev,
                 showPdfButton: true,
@@ -893,6 +934,22 @@ should be carried out more frequently.`;
             toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));
         } finally {
             setState(prev => ({ ...prev, isLoading: false }));
+        }
+    };
+
+    const retryPendingHistory = async () => {
+        if (!pendingHistoryRetry || isRetryingHistory) return;
+        setIsRetryingHistory(true);
+        try {
+            const history = await recordSpecializedInspectionHistory(pendingHistoryRetry);
+            setPendingHistoryRetry(null);
+            toast.success(`History recorded successfully (History #${history.historyId}).`);
+        } catch (error) {
+            const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+            console.error("Retry Fire Fighting Equipment history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+            toast.error(`History retry failed: ${message}`);
+        } finally {
+            setIsRetryingHistory(false);
         }
     };
 
@@ -1771,6 +1828,14 @@ should be carried out more frequently.`;
                         </div>
                     )}
                 </div>
+            {pendingHistoryRetry && (
+                <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+                    <span>Inspection and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+                    <button type="button" className="btn btn-warning btn-sm ms-3" onClick={retryPendingHistory} disabled={isRetryingHistory}>
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                    </button>
+                </div>
+            )}
             {!state.isSubmitted && (
               <div className="d-flex justify-content-end print-hide">
                 <SiteCheckDueSummary
