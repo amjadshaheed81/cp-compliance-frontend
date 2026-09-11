@@ -10,7 +10,7 @@ import {
   TextField,
 } from "@mui/material";
 import { toast } from "react-toastify";
-import { post } from "../../../../api";
+import { del, get, post, putMultiPartFormData } from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
 import {
   calculateSiteCheckDueDateTime,
@@ -23,12 +23,53 @@ import {
   SITE_CHECK_TEST_TYPES,
   getSiteCheckTestType,
 } from "./siteCheckTestTypes";
+import { SITE_CHECK_HISTORY_TEST_BATCHES } from "./siteCheckTestBatches";
 
 const DEFAULT_FREQUENCY = "6-Monthly";
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "6-Monthly", "Yearly"];
-const HISTORY_TEST_SET_BATCH_1_KEYS = ["extract-fan", "external-lighting", "wc-alarm"];
-const HISTORY_TEST_SET_BATCH_2_KEYS = ["microwave-oven", "storage-tank", "water-heater"];
-const HISTORY_TEST_SET_BATCH_3_KEYS = ["fire-damper", "cctv", "intruder-alarm"];
+const TEST_TRACKING_PREFIX = "cafm-site-check-test-launcher-v1";
+
+const getTrackingKey = (siteId) => `${TEST_TRACKING_PREFIX}:${siteId}`;
+
+const readTrackedRuns = (siteId) => {
+  if (!siteId) return [];
+  try {
+    const parsed = JSON.parse(localStorage.getItem(getTrackingKey(siteId)) || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error("Unable to read Site Check test tracking data", error);
+    return [];
+  }
+};
+
+const writeTrackedRuns = (siteId, runs) => {
+  if (!siteId) return;
+  localStorage.setItem(getTrackingKey(siteId), JSON.stringify(runs || []));
+};
+
+const makeRunTag = (batchNumber) => `B${batchNumber}-${Date.now()}`;
+
+const buildTestAssetRequest = (device, batchNumber, runTag) => ({
+  assetId: null,
+  assetName: `CAFM TEST B${batchNumber} - ${device.label} - ${runTag}`,
+  manufacturer: "CAFM TEST",
+  category: device.category,
+  subCategory: device.subCategory || "",
+  subCategory2: device.subCategory2 || "",
+  subCategory3: device.subCategory3 || "",
+  model: `History Batch ${batchNumber}`,
+  serialNumber: `TEST-${runTag}-${device.key}`,
+  relatedAssetId: null,
+  folderId: null,
+  patItem: false,
+  pfpItem: false,
+  doorItem: false,
+  barcode: "",
+  deviceId: "",
+  position: "",
+  floor: "",
+  room: "",
+});
 
 const isActiveUser = (user) =>
   Boolean(user?.id) &&
@@ -182,6 +223,16 @@ const SiteCheckTestLauncher = ({
         throw new Error("The test Site Check was created without returning a Check ID.");
       }
 
+      rememberTrackedRun({
+        runId: `single-${checkId}-${Date.now()}`,
+        batchNumber: 0,
+        batchLabel: `Single test - ${selectedType.label}`,
+        siteId: siteSelectedForGlobal.siteId,
+        createdAt: new Date().toISOString(),
+        checks: [{ key: selectedType.key, label: selectedType.label, checkId }],
+        assets: [],
+      });
+
       toast.success(`Test inspection created (Check ID ${checkId}).`);
       setOpen(false);
       if (typeof onCreated === "function") {
@@ -196,9 +247,45 @@ const SiteCheckTestLauncher = ({
     }
   };
 
-  const handleCreateHistoryTestSet = async (testKeys, testSetName) => {
+  const rememberTrackedRun = (run) => {
+    const siteId = siteSelectedForGlobal?.siteId;
+    if (!siteId || !run) return;
+    const existing = readTrackedRuns(siteId);
+    writeTrackedRuns(siteId, [...existing, run]);
+  };
+
+  const rollbackNewTestRun = async (checks = [], assets = []) => {
+    const remainingChecks = [];
+    const remainingAssets = [];
+
+    for (const check of checks) {
+      try {
+        await del(`/api/site-check/check-id/${check.checkId}`);
+      } catch (error) {
+        remainingChecks.push(check);
+      }
+    }
+
+    // These assets were created moments ago for an incomplete batch and no real
+    // form was opened/submitted, so deleting only these exact IDs is safe.
+    for (const asset of assets) {
+      try {
+        await del(`/api/site/assets/${asset.assetId}`);
+      } catch (error) {
+        remainingAssets.push(asset);
+      }
+    }
+
+    return { remainingChecks, remainingAssets };
+  };
+
+  const handleCreateHistoryTestSet = async (batch) => {
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select a site before creating History test inspections.");
+      return;
+    }
+    if (!batch?.number || !Array.isArray(batch?.testKeys)) {
+      toast.error("The selected test batch is not configured correctly.");
       return;
     }
     if (!startDate) {
@@ -214,59 +301,233 @@ const SiteCheckTestLauncher = ({
       return;
     }
 
-    const testTypes = testKeys.map(getSiteCheckTestType);
+    const testTypes = batch.testKeys.map(getSiteCheckTestType);
     if (testTypes.some((item) => !item)) {
-      toast.error(`The ${testSetName} catalogue is incomplete. No test checks were created.`);
+      toast.error(`Test Batch ${batch.number} is incomplete. No test data was created.`);
       return;
     }
 
     setIsCreating(true);
-    const results = [];
+    setCreatedHistoryTests([]);
 
-    for (const testType of testTypes) {
-      const body = {
-        siteId: siteSelectedForGlobal.siteId,
-        type: testType.type,
-        subType: testType.subType,
-        category: testType.category,
-        status: "Open",
-        startDate: `${toSiteCheckDateOnly(startDate)}T00:00:00`,
-        dueDate,
-        repeatFrequency,
-        leadUserID: String(leadUserId),
-        assistantUserID: String(assistantUserId),
-      };
+    const siteId = siteSelectedForGlobal.siteId;
+    const runTag = makeRunTag(batch.number);
+    const createdAssets = [];
+    const createdChecks = [];
 
-      try {
+    try {
+      // Create only the exact test devices required by the real forms in this
+      // batch. All assets use the normal Create Asset API and are clearly named.
+      for (const device of batch.devices || []) {
+        const assetRequest = buildTestAssetRequest(
+          device,
+          batch.number,
+          runTag
+        );
+        const multipart = new FormData();
+        multipart.append("assetRequestString", JSON.stringify(assetRequest));
+
+        const response = await putMultiPartFormData(
+          `/api/site/${siteId}/assets`,
+          multipart
+        );
+        const assetId = response?.data?.assetId;
+        if (!assetId) {
+          throw new Error(
+            `Test device '${device.label}' was created without returning an Asset ID.`
+          );
+        }
+
+        createdAssets.push({
+          key: device.key,
+          testTypeKey: device.testTypeKey,
+          label: device.label,
+          assetId,
+          assetName: assetRequest.assetName,
+        });
+      }
+
+      for (const testType of testTypes) {
+        const body = {
+          siteId,
+          type: testType.type,
+          subType: testType.subType,
+          category: testType.category,
+          status: "Open",
+          startDate: `${toSiteCheckDateOnly(startDate)}T00:00:00`,
+          dueDate,
+          repeatFrequency,
+          leadUserID: String(leadUserId),
+          assistantUserID: String(assistantUserId),
+        };
+
         const response = await post("/api/site-check/", body);
         const checkId = response?.data?.checkId;
         if (!checkId) {
-          throw new Error("The Site Check was created without returning a Check ID.");
+          throw new Error(
+            `${testType.label} was created without returning a Check ID.`
+          );
         }
-        results.push({
+
+        const device = createdAssets.find(
+          (item) => item.testTypeKey === testType.key
+        );
+        const result = {
           key: testType.key,
           label: testType.label,
           checkId,
           success: true,
+          batchNumber: batch.number,
+          device: device || null,
+        };
+        createdChecks.push(result);
+      }
+
+      rememberTrackedRun({
+        runId: runTag,
+        batchNumber: batch.number,
+        batchLabel: batch.label,
+        siteId,
+        createdAt: new Date().toISOString(),
+        checks: createdChecks.map(({ key, label, checkId }) => ({
+          key,
+          label,
+          checkId,
+        })),
+        assets: createdAssets,
+      });
+
+      setCreatedHistoryTests(createdChecks);
+      toast.success(
+        `Test Batch ${batch.number} created: ${createdChecks.length} Site Checks and ${createdAssets.length} test devices.`
+      );
+    } catch (error) {
+      const rollback = await rollbackNewTestRun(createdChecks, createdAssets);
+
+      if (
+        rollback.remainingChecks.length > 0 ||
+        rollback.remainingAssets.length > 0
+      ) {
+        rememberTrackedRun({
+          runId: `${runTag}-rollback`,
+          batchNumber: batch.number,
+          batchLabel: `${batch.label} (partial cleanup required)`,
+          siteId,
+          createdAt: new Date().toISOString(),
+          checks: rollback.remainingChecks.map(({ key, label, checkId }) => ({
+            key,
+            label,
+            checkId,
+          })),
+          assets: rollback.remainingAssets,
         });
-      } catch (error) {
-        results.push({
-          key: testType.key,
-          label: testType.label,
-          success: false,
-          error: getSiteCheckErrorMessage(error, "Unable to create this test inspection."),
+      }
+
+      toast.error(
+        getSiteCheckErrorMessage(
+          error,
+          `Unable to create Test Batch ${batch.number}. Any newly-created Open test data was rolled back where possible.`
+        )
+      );
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleCleanTestData = async () => {
+    const siteId = siteSelectedForGlobal?.siteId;
+    if (!siteId) {
+      toast.error("Please select a site before cleaning test data.");
+      return;
+    }
+
+    const runs = readTrackedRuns(siteId);
+    if (runs.length === 0) {
+      toast.info("There is no launcher-created test data tracked for this site.");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "Clean launcher test data for this site? Only OPEN Site Checks created by this launcher and their unused launcher-created devices will be deleted. Completed submissions, History and PDFs will be preserved."
+    );
+    if (!confirmed) return;
+
+    setIsCreating(true);
+    let deletedChecks = 0;
+    let deletedAssets = 0;
+    let preservedCompletedChecks = 0;
+    let failedDeletes = 0;
+    const retainedRuns = [];
+
+    for (const run of runs) {
+      const retainedChecks = [];
+
+      for (const check of run.checks || []) {
+        try {
+          const current = await get(`/api/site-check/check-id/${check.checkId}`);
+          const status = String(current?.status || "").toLowerCase();
+
+          if (status === "open") {
+            await del(`/api/site-check/check-id/${check.checkId}`);
+            deletedChecks += 1;
+          } else {
+            // Never delete completed evidence through the developer cleanup.
+            retainedChecks.push(check);
+            preservedCompletedChecks += 1;
+          }
+        } catch (error) {
+          if (error?.response?.status === 404) {
+            // It has already been removed elsewhere, so drop it from tracking.
+            continue;
+          }
+          retainedChecks.push(check);
+          failedDeletes += 1;
+        }
+      }
+
+      const retainedAssets = [];
+      if (retainedChecks.length === 0) {
+        for (const asset of run.assets || []) {
+          try {
+            await del(`/api/site/assets/${asset.assetId}`);
+            deletedAssets += 1;
+          } catch (error) {
+            retainedAssets.push(asset);
+            failedDeletes += 1;
+          }
+        }
+      } else {
+        // Keep the batch devices whenever a completed/failed-to-delete test
+        // check remains. This prevents cleanup from removing a device that a
+        // preserved test submission may still reference.
+        retainedAssets.push(...(run.assets || []));
+      }
+
+      if (retainedChecks.length > 0 || retainedAssets.length > 0) {
+        retainedRuns.push({
+          ...run,
+          checks: retainedChecks,
+          assets: retainedAssets,
         });
       }
     }
 
-    setCreatedHistoryTests(results);
+    writeTrackedRuns(siteId, retainedRuns);
+    setCreatedHistoryTests([]);
     setIsCreating(false);
 
-    const successCount = results.filter((item) => item.success).length;
-    if (successCount === results.length) {
-      toast.success(`Created ${successCount} ${testSetName} Site Checks.`);
+    if (failedDeletes > 0) {
+      toast.error(
+        `Cleanup removed ${deletedChecks} Open checks and ${deletedAssets} test devices, but ${failedDeletes} item(s) could not be deleted. They remain tracked for another cleanup attempt.`
+      );
     } else {
-      toast.error(`Created ${successCount} of ${results.length} ${testSetName} Site Checks. Review the results below.`);
+      toast.success(
+        `Cleanup removed ${deletedChecks} Open checks and ${deletedAssets} unused test devices.${
+          preservedCompletedChecks > 0
+            ? ` ${preservedCompletedChecks} completed test check(s) were preserved with their History/PDF evidence.`
+            : ""
+        }`
+      );
     }
   };
 
@@ -296,8 +557,34 @@ const SiteCheckTestLauncher = ({
         <DialogTitle>Site Check Test</DialogTitle>
         <DialogContent dividers>
           <div className="alert alert-warning py-2 mb-3" role="alert">
-            Developer test helper. This is currently enabled for testing and creates a real Open Site Check using the normal
-            Site Check data model, then opens the real inspection form.
+            Developer test helper. This is currently enabled for testing and creates real test devices and Open Site Checks through the normal application APIs.
+          </div>
+
+          <div className="border rounded p-3 mb-3 bg-light">
+            <div className="fw-bold mb-1">History regression test batches</div>
+            <div className="small text-muted mb-2">
+              Newest batch is always first. A batch creates its required CAFM TEST devices first, then creates the three real Open Site Checks.
+            </div>
+            <div className="d-flex flex-wrap gap-2">
+              {SITE_CHECK_HISTORY_TEST_BATCHES.map((batch, index) => (
+                <Button
+                  key={batch.number}
+                  variant={index === 0 ? "contained" : "outlined"}
+                  onClick={() => handleCreateHistoryTestSet(batch)}
+                  disabled={
+                    isCreating ||
+                    createdHistoryTests.length > 0 ||
+                    !siteSelectedForGlobal?.siteId ||
+                    activeUsers.length === 0
+                  }
+                  title={`Test Batch ${batch.number}: ${batch.label}. Creates ${batch.devices.length} required test device(s) and ${batch.testKeys.length} Site Checks.`}
+                >
+                  {isCreating
+                    ? "Creating..."
+                    : `Test Batch ${batch.number} — Create Checks + Devices`}
+                </Button>
+              ))}
+            </div>
           </div>
 
           <Grid container spacing={2}>
@@ -455,10 +742,18 @@ const SiteCheckTestLauncher = ({
                   className={`alert ${item.success ? "alert-success" : "alert-danger"} py-2 d-flex justify-content-between align-items-center`}
                 >
                   <span>
-                    {item.label}
-                    {item.success
-                      ? ` — Check ID ${item.checkId}`
-                      : ` — ${item.error}`}
+                    <strong>{`Batch ${item.batchNumber}: ${item.label}`}</strong>
+                    {item.success ? ` — Check ID ${item.checkId}` : ` — ${item.error}`}
+                    {item.success && item.device && (
+                      <span className="d-block small mt-1">
+                        Test device: {item.device.assetName} (Asset ID {item.device.assetId})
+                      </span>
+                    )}
+                    {item.success && !item.device && (
+                      <span className="d-block small mt-1">
+                        This form does not require a test device.
+                      </span>
+                    )}
                   </span>
                   {item.success && (
                     <Button
@@ -474,63 +769,18 @@ const SiteCheckTestLauncher = ({
             </div>
           )}
         </DialogContent>
-        <DialogActions>
+        <DialogActions sx={{ flexWrap: "wrap", gap: 1 }}>
+          <Button
+            color="error"
+            variant="outlined"
+            onClick={handleCleanTestData}
+            disabled={isCreating || !siteSelectedForGlobal?.siteId}
+            title="Delete only launcher-created OPEN Site Checks and their unused launcher-created devices. Completed History/PDF evidence is preserved."
+          >
+            Clean Test Data
+          </Button>
           <Button onClick={handleClose} disabled={isCreating}>
             Cancel
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              handleCreateHistoryTestSet(
-                HISTORY_TEST_SET_BATCH_1_KEYS,
-                "History Batch 1"
-              )
-            }
-            disabled={
-              isCreating ||
-              createdHistoryTests.length > 0 ||
-              !siteSelectedForGlobal?.siteId ||
-              activeUsers.length === 0
-            }
-            title="Create Extract Fan, External Lighting and WC Alarm test Site Checks"
-          >
-            {isCreating ? "Creating..." : "Create History Batch 1 (3)"}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              handleCreateHistoryTestSet(
-                HISTORY_TEST_SET_BATCH_2_KEYS,
-                "History Batch 2"
-              )
-            }
-            disabled={
-              isCreating ||
-              createdHistoryTests.length > 0 ||
-              !siteSelectedForGlobal?.siteId ||
-              activeUsers.length === 0
-            }
-            title="Create Microwave Oven, Storage Tank and Water Heater test Site Checks"
-          >
-            {isCreating ? "Creating..." : "Create History Batch 2 (3)"}
-          </Button>
-          <Button
-            variant="outlined"
-            onClick={() =>
-              handleCreateHistoryTestSet(
-                HISTORY_TEST_SET_BATCH_3_KEYS,
-                "History Batch 3"
-              )
-            }
-            disabled={
-              isCreating ||
-              createdHistoryTests.length > 0 ||
-              !siteSelectedForGlobal?.siteId ||
-              activeUsers.length === 0
-            }
-            title="Create Fire Damper, CCTV and Intruder Alarm test Site Checks"
-          >
-            {isCreating ? "Creating..." : "Create History Batch 3 (3)"}
           </Button>
           <Button
             variant="contained"
@@ -541,7 +791,7 @@ const SiteCheckTestLauncher = ({
               (requiresAssignees && activeUsers.length === 0)
             }
           >
-            {isCreating ? "Creating..." : "Create & Open"}
+            {isCreating ? "Creating..." : "Create Single & Open"}
           </Button>
         </DialogActions>
       </Dialog>
