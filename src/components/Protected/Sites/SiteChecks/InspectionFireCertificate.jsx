@@ -23,6 +23,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
 const InspectionFireCertificate = ({
                                        checkId,
@@ -48,6 +49,8 @@ const InspectionFireCertificate = ({
     const [isLoading, setIsLoading] = useState(false);
     const [isNewCheck, setIsNewCheck] = useState(!checkId);
     const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
     const users = useSelector((state) => state.site.users || []);
 
     // NEW: Use the Site Check's own site and Open/Done status.
@@ -239,6 +242,7 @@ const InspectionFireCertificate = ({
                 subType: response.subType,
                 category: response.category,
                 dueDate: response.dueDate,
+                repeatFrequency: response.repeatFrequency,
                 status: response.status
             };
             setInspectionDetails(inspectionDetails);
@@ -376,7 +380,7 @@ const InspectionFireCertificate = ({
     };
 
     // Generate PDF function
-    const generatePDF = async (inspectionDateOverride) => {
+    const generatePDF = async (inspectionDateOverride, resolvedCheckId = null) => {
         try {
             setIsGeneratingPDF(true);
 
@@ -561,14 +565,18 @@ const InspectionFireCertificate = ({
             console.log('Generated filename:', fileName);
 
             // Upload to server
-            await uploadPdfToServer(
+            const uploadResult = await uploadPdfToServer(
                 blob,
                 fileName,
                 inspectionDetails?.category || 'Fire Alarm',
-                effectiveInspectionDate
+                effectiveInspectionDate,
+                resolvedCheckId
             );
+            if (!uploadResult?.stored) {
+                throw new Error("The Fire Alarm PDF was generated but could not be stored in Site Documents.");
+            }
 
-            return { success: true, fileName };
+            return { success: true, fileName, uploadResult };
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast.error('Failed to generate PDF: ' + error.message);
@@ -697,9 +705,15 @@ const InspectionFireCertificate = ({
     const calculateExpiryDate = (visitDate, repeatFrequency) =>
       calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
-    const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, category, inspectionDateOverride, resolvedCheckId = null) => {
+        let sourceReference = null;
         try {
             setIsUploading(true);
+            const parsedCheckId = Number(resolvedCheckId || currentCheckId);
+            if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+                throw new Error("Fire Alarm PDF cannot be stored without a valid Site Check ID.");
+            }
+            sourceReference = `FAI-${parsedCheckId}-${Date.now()}`;
             const inspectionDateForUpload =
                 inspectionDateOverride || formData.inspectionDate;
 
@@ -734,7 +748,7 @@ const InspectionFireCertificate = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
-                        referenceNumber: `FA-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -751,9 +765,9 @@ const InspectionFireCertificate = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF updated successfully as version ${documentRequest.files[0].fileVersion}`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             } else {
                 // Create new file
@@ -772,7 +786,7 @@ const InspectionFireCertificate = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateForUpload, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
-                        referenceNumber: `FA-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -789,15 +803,15 @@ const InspectionFireCertificate = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF uploaded successfully as version ${fileVersion}`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             }
         } catch (error) {
             console.error('Error uploading PDF:', error);
             toast.error('Failed to upload PDF: ' + error.message);
-            return false;
+            return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);
         }
@@ -1125,9 +1139,13 @@ const InspectionFireCertificate = ({
                 ? await put(`/api/site-check/${checkIdToUse}/completion`, statusPayload)
                 : await post('/api/site-check', statusPayload);
 
-            if (!checkIdToUse && statusResponse?.checkId) {
-                checkIdToUse = statusResponse.checkId;
+            if (!checkIdToUse && (statusResponse?.data?.checkId || statusResponse?.checkId)) {
+                checkIdToUse = statusResponse?.data?.checkId || statusResponse?.checkId;
                 setCurrentCheckId(checkIdToUse);
+            }
+            const resolvedCheckId = Number(checkIdToUse);
+            if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+                throw new Error("The completed Fire Alarm Site Check did not return a valid Check ID.");
             }
 
             // 2. Save inspection data
@@ -1142,17 +1160,42 @@ const InspectionFireCertificate = ({
             };
 
             const inspectionResponse = formData.id
-                ? await put(`/api/site-check/fire-alarm-inspection/${formData.id}`, inspectionPayload)
+                ? await put(`/api/site-check/fire-alarm-inspection/${resolvedCheckId}`, inspectionPayload)
                 : await post("/api/site-check/fire-alarm-inspection", inspectionPayload);
+            if (![200, 201, 204].includes(inspectionResponse?.status)) {
+                throw new Error("Failed to save Fire Alarm inspection data");
+            }
+            const inspectionRecordId = Number(inspectionResponse?.data?.id);
+            if (!Number.isInteger(inspectionRecordId) || inspectionRecordId <= 0) {
+                throw new Error("The saved Fire Alarm inspection did not return a valid inspection record ID.");
+            }
 
             // 3. Generate and upload PDF
-            const pdfResult = await generatePDF(submissionInspectionDate);
-            if (!pdfResult.success) {
-                console.error("PDF generation/upload failed");
+            const pdfResult = await generatePDF(submissionInspectionDate, resolvedCheckId);
+            if (!pdfResult.success || !pdfResult?.uploadResult?.stored || !pdfResult?.uploadResult?.sourceReference) {
+                throw new Error(pdfResult.error || "Failed to generate or store PDF");
+            }
+
+            const historyPayload = {
+                checkId: resolvedCheckId,
+                inspectionRecordId,
+                sourceReference: pdfResult.uploadResult.sourceReference,
+            };
+            try {
+                await recordSpecializedInspectionHistory(historyPayload);
+                setPendingHistoryRetry(null);
+            } catch (historyError) {
+                const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+                console.error("Record Fire Alarm history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+                setPendingHistoryRetry(historyPayload);
+                setIsSubmitted(true);
+                setIsFormEditable(false);
+                toast.error(`Inspection and PDF were saved, but History was not recorded: ${historyMessage}`);
+                return;
             }
 
             // 4. Update state
-            toast.success("Inspection submitted successfully");
+            toast.success("Inspection submitted and History recorded successfully");
             setIsSubmitted(true);
             setIsFormEditable(false);
 
@@ -1165,6 +1208,22 @@ const InspectionFireCertificate = ({
             toast.error(getSiteCheckErrorMessage(error, "Failed to submit inspection"));
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const retryPendingHistory = async () => {
+        if (!pendingHistoryRetry || isRetryingHistory) return;
+        setIsRetryingHistory(true);
+        try {
+            const history = await recordSpecializedInspectionHistory(pendingHistoryRetry);
+            setPendingHistoryRetry(null);
+            toast.success(`History recorded successfully (History #${history.historyId}).`);
+        } catch (error) {
+            const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+            console.error("Retry Fire Alarm history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+            toast.error(`History retry failed: ${message}`);
+        } finally {
+            setIsRetryingHistory(false);
         }
     };
 
@@ -1711,6 +1770,14 @@ const InspectionFireCertificate = ({
                             Inspection submitted successfully on {formatDate(formData.inspectionDate)}
                         </div>
                     )}
+                {pendingHistoryRetry && (
+                    <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+                        <span>Inspection and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+                        <button type="button" className="btn btn-warning btn-sm ms-3" onClick={retryPendingHistory} disabled={isRetryingHistory}>
+                            {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                        </button>
+                    </div>
+                )}
                 {!isSubmitted && (
                   <div className="d-flex justify-content-end print-hide">
                     <SiteCheckDueSummary

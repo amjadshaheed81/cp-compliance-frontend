@@ -3,6 +3,7 @@ import { SITE_CHECK_HISTORY_TEST_BATCHES } from "./siteCheckTestBatches";
 describe("Site Check History regression batches", () => {
   test("keeps newest numbered batch first", () => {
     expect(SITE_CHECK_HISTORY_TEST_BATCHES.map((batch) => batch.number)).toEqual([
+      7,
       6,
       5,
       4,
@@ -19,8 +20,34 @@ describe("Site Check History regression batches", () => {
     });
   });
 
+
+  test("uses the exact current Batch 7 device filters", () => {
+    const batch7 = SITE_CHECK_HISTORY_TEST_BATCHES[0];
+    expect(batch7.testKeys).toEqual([
+      "air-conditioning-f-gas",
+      "gas-safety",
+      "fire-alarm",
+    ]);
+    expect(batch7.devices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          testTypeKey: "air-conditioning-f-gas",
+          category: "Mechanical",
+          subCategory: "Air Conditioning",
+          subCategory2: "Air Conditioning Unit (Outdoor)",
+        }),
+        expect.objectContaining({
+          testTypeKey: "gas-safety",
+          category: "Mechanical",
+          subCategory: "Central Heating",
+          subCategory2: "Boiler",
+        }),
+      ])
+    );
+    expect(batch7.devices.some((device) => device.testTypeKey === "fire-alarm")).toBe(false);
+  });
   test("uses the exact current Batch 6 device filters", () => {
-    const batch6 = SITE_CHECK_HISTORY_TEST_BATCHES[0];
+    const batch6 = SITE_CHECK_HISTORY_TEST_BATCHES[1];
     expect(batch6.testKeys).toEqual([
       "emergency-lighting",
       "gas-boiler",
@@ -50,7 +77,7 @@ describe("Site Check History regression batches", () => {
   });
 
   test("uses the exact current Batch 5 Shower Head device filter", () => {
-    const batch5 = SITE_CHECK_HISTORY_TEST_BATCHES[1];
+    const batch5 = SITE_CHECK_HISTORY_TEST_BATCHES[2];
     expect(batch5.testKeys).toEqual(["water-chlorination", "shower-head"]);
     expect(batch5.devices).toEqual([
       expect.objectContaining({
@@ -64,7 +91,7 @@ describe("Site Check History regression batches", () => {
   });
 
   test("uses the exact current Batch 4 device filters", () => {
-    const batch4 = SITE_CHECK_HISTORY_TEST_BATCHES[2];
+    const batch4 = SITE_CHECK_HISTORY_TEST_BATCHES[3];
     expect(batch4.devices).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -90,7 +117,7 @@ describe("Site Check History regression batches", () => {
   });
 
   test("uses the exact current Batch 3 device filters", () => {
-    const batch3 = SITE_CHECK_HISTORY_TEST_BATCHES[3];
+    const batch3 = SITE_CHECK_HISTORY_TEST_BATCHES[4];
     expect(batch3.devices).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

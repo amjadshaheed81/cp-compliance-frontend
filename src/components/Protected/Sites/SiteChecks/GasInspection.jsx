@@ -26,6 +26,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
 let PDFLib;
 
@@ -164,6 +165,8 @@ const GasSafetyRecord = ({
     const [actionRaised, setActionRaised] = useState(false);
     const [showRiskAssessment, setShowRiskAssessment] = useState(false);
     const [nextInspectionDue, setNextInspectionDue] = useState(null);
+    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
 
     // NEW: Use the Site Check's site/status and the shared engineer selector.
     const authoritativeSiteId = siteCheck?.siteId
@@ -779,9 +782,15 @@ const GasSafetyRecord = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null, resolvedCheckId = null) => {
+        let sourceReference = null;
         try {
             setIsUploading(true);
+            const parsedCheckId = Number(resolvedCheckId || currentCheckId);
+            if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+                throw new Error("Gas Safety PDF cannot be stored without a valid Site Check ID.");
+            }
+            sourceReference = `GSA-${parsedCheckId}-${Date.now()}`;
             await savePdfToLocal(pdfBlob, fileName);
 
             const targetFolderId = folderIds.gasRecords || await fetchFolderStructure(authoritativeSiteId);
@@ -808,7 +817,7 @@ const GasSafetyRecord = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
-                        referenceNumber: `GBS-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -824,9 +833,9 @@ const GasSafetyRecord = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF updated successfully as version ${documentRequest.files[0].fileVersion}`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             } else {
                 uploadFormData.append('files', pdfFile);
@@ -843,7 +852,7 @@ const GasSafetyRecord = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id,
                         reviewerUserId: loggedInUserData?.id,
-                        referenceNumber: `GBS-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -859,15 +868,15 @@ const GasSafetyRecord = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF uploaded successfully as version ${fileVersion}`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             }
-            throw new Error('Upload failed: No response data');
+            throw new Error('Upload failed: document API did not confirm storage');
         } catch (error) {
             console.error('Error uploading PDF:', error);
-            return false;
+            return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);
         }
@@ -1022,7 +1031,7 @@ const GasSafetyRecord = ({
         }
     };
 
-    const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
+    const generatePDF = async (uploadToServer = true, inspectionDateOverride = null, resolvedCheckId = null) => {
         try {
             setIsGeneratingPDF(true);
             if (!PDFLib) {
@@ -1163,8 +1172,9 @@ const GasSafetyRecord = ({
             setTextField('Ratio1', formData.combustionHighRatio || '');
             setTextField('Label  Warning Notice', formData.LabelWarningNotice || '')
 
-            // Next Inspection
-            setTextField('DueDate', formatDateToReadable(nextInspectionDue));
+            // Next Inspection - calculate from this submitted inspection date, not the previous live due date.
+            const pdfNextInspectionDue = calculateExpiryDate(effectiveInspectionDate, inspectionDetails?.repeatFrequency);
+            setTextField('DueDate', formatDateToReadable(pdfNextInspectionDue));
 
             // Signatures
             setTextField('Gas Engineer Name', effectiveEngineer?.name || formData.engineerName || '');
@@ -1265,11 +1275,15 @@ const GasSafetyRecord = ({
             setGeneratedPdfBlob(blob);
             setShowPdfButton(true);
 
+            let uploadResult = { stored: false, sourceReference: null };
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
+                uploadResult = await uploadPdfToServer(blob, fileName, effectiveInspectionDate, resolvedCheckId);
+                if (!uploadResult?.stored) {
+                    throw new Error("The Gas Safety PDF was generated but could not be stored in Site Documents.");
+                }
             }
 
-            return { success: true, fileName };
+            return { success: true, fileName, uploadResult };
         } catch (error) {
             console.error('Error generating PDF:', error);
             return { success: false, error: error.message };
@@ -1319,6 +1333,10 @@ const GasSafetyRecord = ({
             toast.error("Please select an active engineer for this Site Check.");
             return;
         }
+        if (!formData.assetId || !selectedAsset) {
+            toast.error("Please select a Central Heating appliance before submitting.");
+            return;
+        }
 
         const hasFailures = [
             formData.flueVisualCondition,
@@ -1348,6 +1366,10 @@ const GasSafetyRecord = ({
             const submissionInspectionDate = formData.date;
             const submissionEngineerSignatureDate = formData.engineerSignatureDate;
             const submissionReceivedByDate = formData.receivedByDate;
+            const submissionNextDueDate = calculateExpiryDate(
+                submissionInspectionDate,
+                inspectionDetails?.repeatFrequency
+            );
 
             let existingInspection = null;
             if (currentCheckId) {
@@ -1368,7 +1390,7 @@ const GasSafetyRecord = ({
                 category: siteCheck?.category || 'Gas Safety Annual Inspection',
                 status: 'Done',
                 startDate: toJavaLocalDateTime(submissionInspectionDate),
-                dueDate: toJavaLocalDateTime(calculateExpiryDate(submissionInspectionDate, inspectionDetails?.repeatFrequency)),
+                dueDate: toJavaLocalDateTime(submissionNextDueDate),
                 leadUserID: loggedInUserData?.id,
                 assistantUserID: loggedInUserData?.id
             };
@@ -1378,9 +1400,13 @@ const GasSafetyRecord = ({
                 ? await put(`/api/site-check/${checkIdToUse}/completion`, statusPayload)
                 : await post('/api/site-check', statusPayload);
 
-            if (!checkIdToUse && statusResponse?.checkId) {
-                checkIdToUse = statusResponse.checkId;
+            if (!checkIdToUse && (statusResponse?.data?.checkId || statusResponse?.checkId)) {
+                checkIdToUse = statusResponse?.data?.checkId || statusResponse?.checkId;
                 setCurrentCheckId(checkIdToUse);
+            }
+            const resolvedCheckId = Number(checkIdToUse);
+            if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+                throw new Error("The completed Gas Safety Site Check did not return a valid Check ID.");
             }
 
             const inspectionPayload = {
@@ -1394,7 +1420,7 @@ const GasSafetyRecord = ({
                 registeredBusinessAddress: selectedEngineer?.companyAddress || formData.registeredBusinessAddress,
                 registeredBusinessPostcode: getPostCodeFromAddress(selectedEngineer?.companyAddress) || formData.registeredBusinessPostcode,
                 registeredBusinessContact: selectedEngineer?.phone || formData.registeredBusinessContact,
-                nextInspectionDue: formatDateForBackend(inspectionDetails?.dueDate),
+                nextInspectionDue: formatDateForBackend(submissionNextDueDate),
                 actionId: formData.actionId,
                 operatingPressure: formData.operatingPressure ? parseFloat(formData.operatingPressure) : null,
                 combustionAnalyserReading: formData.combustionAnalyserReading ? parseFloat(formData.combustionAnalyserReading) : null,
@@ -1418,13 +1444,35 @@ const GasSafetyRecord = ({
             if (![200, 201, 204].includes(saveResponse?.status)) {
                 throw new Error('Failed to save inspection data');
             }
-
-            const pdfResult = await generatePDF(true, submissionInspectionDate);
-            if (!pdfResult.success) {
-                console.error("PDF generation/upload failed");
+            const inspectionRecordId = Number(saveResponse?.data?.id);
+            if (!Number.isInteger(inspectionRecordId) || inspectionRecordId <= 0) {
+                throw new Error('The saved Gas Safety inspection did not return a valid inspection record ID.');
             }
 
-            toast.success("Gas Safety Record submitted successfully");
+            const pdfResult = await generatePDF(true, submissionInspectionDate, resolvedCheckId);
+            if (!pdfResult.success || !pdfResult?.uploadResult?.stored || !pdfResult?.uploadResult?.sourceReference) {
+                throw new Error(pdfResult.error || "Failed to generate or store PDF");
+            }
+
+            const historyPayload = {
+                checkId: resolvedCheckId,
+                inspectionRecordId,
+                sourceReference: pdfResult.uploadResult.sourceReference,
+            };
+            try {
+                await recordSpecializedInspectionHistory(historyPayload);
+                setPendingHistoryRetry(null);
+            } catch (historyError) {
+                const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+                console.error("Record Gas Safety history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+                setPendingHistoryRetry(historyPayload);
+                setIsSubmitted(true);
+                setIsFormEditable(false);
+                toast.error(`Inspection and PDF were saved, but History was not recorded: ${historyMessage}`);
+                return;
+            }
+
+            toast.success("Gas Safety Record submitted and History recorded successfully");
             setIsSubmitted(true);
             setIsFormEditable(false);
 
@@ -1436,6 +1484,22 @@ const GasSafetyRecord = ({
         }
     };
 
+
+    const retryPendingHistory = async () => {
+        if (!pendingHistoryRetry || isRetryingHistory) return;
+        setIsRetryingHistory(true);
+        try {
+            const history = await recordSpecializedInspectionHistory(pendingHistoryRetry);
+            setPendingHistoryRetry(null);
+            toast.success(`History recorded successfully (History #${history.historyId}).`);
+        } catch (error) {
+            const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+            console.error("Retry Gas Safety history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+            toast.error(`History retry failed: ${message}`);
+        } finally {
+            setIsRetryingHistory(false);
+        }
+    };
 
     const filteredAssets =
         siteAssets?.filter(
@@ -2576,6 +2640,14 @@ const GasSafetyRecord = ({
                         )}
                     </div>
                 )}
+            {pendingHistoryRetry && (
+                <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+                    <span>Inspection and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+                    <button type="button" className="btn btn-warning btn-sm ms-3" onClick={retryPendingHistory} disabled={isRetryingHistory}>
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                    </button>
+                </div>
+            )}
             {!isSubmitted && (
               <div className="d-flex justify-content-end print-hide">
                 <SiteCheckDueSummary

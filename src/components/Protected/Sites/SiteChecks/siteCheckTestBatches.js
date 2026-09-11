@@ -10,6 +10,32 @@
  */
 export const SITE_CHECK_HISTORY_TEST_BATCHES = [
   {
+    number: 7,
+    label: "Air Conditioning F-Gas / Gas Safety / Fire Alarm",
+    testKeys: ["air-conditioning-f-gas", "gas-safety", "fire-alarm"],
+    devices: [
+      {
+        key: "f-gas-device",
+        testTypeKey: "air-conditioning-f-gas",
+        label: "Air Conditioning Outdoor Unit",
+        category: "Mechanical",
+        subCategory: "Air Conditioning",
+        subCategory2: "Air Conditioning Unit (Outdoor)",
+        subCategory3: "",
+      },
+      {
+        key: "gas-safety-device",
+        testTypeKey: "gas-safety",
+        label: "Gas Safety Appliance",
+        category: "Mechanical",
+        subCategory: "Central Heating",
+        subCategory2: "Boiler",
+        subCategory3: "",
+      },
+      // Fire Alarm Inspection has no asset selector in the current form.
+    ],
+  },
+  {
     number: 6,
     label: "Emergency Lighting / Gas Boiler / Fire Extinguisher",
     testKeys: ["emergency-lighting", "gas-boiler", "fire-extinguisher"],

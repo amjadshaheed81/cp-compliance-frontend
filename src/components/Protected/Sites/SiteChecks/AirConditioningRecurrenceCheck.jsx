@@ -16,6 +16,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
 let PDFLib;
 
@@ -113,6 +114,8 @@ const AirConditioningRecurrenceCheck = ({
         EnvironmentalLogBook: null,
         airConditioning: null
     });
+    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
 
     const sites = useSelector((state) => state.site.sites);
     const navigate = useNavigate();
@@ -869,9 +872,15 @@ const AirConditioningRecurrenceCheck = ({
     const calculateExpiryDate = (visitDate, repeatFrequency) =>
       calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
-    const uploadPdfToServer = async (pdfBlob, fileName, signedDateOverride) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, signedDateOverride, resolvedCheckId = null) => {
+        let sourceReference = null;
         try {
             setIsUploading(true);
+            const parsedCheckId = Number(resolvedCheckId || currentCheckId);
+            if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+                throw new Error("F-Gas PDF cannot be stored without a valid Site Check ID.");
+            }
+            sourceReference = `FGAS-${parsedCheckId}-${Date.now()}`;
             const savedLocally = await savePdfToLocal(pdfBlob, fileName);
             if (!savedLocally) {
                 throw new Error('Failed to save PDF locally');
@@ -902,7 +911,7 @@ const AirConditioningRecurrenceCheck = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: `AC-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -919,9 +928,9 @@ const AirConditioningRecurrenceCheck = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             } else {
                 uploadFormData.append('files', pdfFile);
@@ -939,7 +948,7 @@ const AirConditioningRecurrenceCheck = ({
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: `AC-${new Date().getTime()}`
+                        referenceNumber: sourceReference
                     }]
                 };
 
@@ -956,16 +965,16 @@ const AirConditioningRecurrenceCheck = ({
                     }
                 );
 
-                if (response.data) {
+                if ([200, 201, 204].includes(response?.status)) {
                     toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-                    return true;
+                    return { stored: true, sourceReference };
                 }
             }
 
-            throw new Error('Upload failed: No response data');
+            throw new Error('Upload failed: document API did not confirm storage');
         } catch (error) {
             console.error('Error uploading PDF:', error);
-            return false;
+            return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);
         }
@@ -979,7 +988,7 @@ const AirConditioningRecurrenceCheck = ({
         }
     }, [authoritativeSiteId]);
 
-    const generatePDF = async (uploadToServer = true, signedDateOverride) => {
+    const generatePDF = async (uploadToServer = true, signedDateOverride, resolvedCheckId = null) => {
         try {
             setIsGeneratingPDF(true);
 
@@ -1096,12 +1105,16 @@ const AirConditioningRecurrenceCheck = ({
             setGeneratedPdfBlob(blob);
             setShowPdfButton(true);
 
+            let uploadResult = { stored: false, sourceReference: null };
             if (uploadToServer) {
-                await uploadPdfToServer(blob, fileName, signedDateOverride);
+                uploadResult = await uploadPdfToServer(blob, fileName, signedDateOverride, resolvedCheckId);
+                if (!uploadResult?.stored) {
+                    throw new Error("The F-Gas PDF was generated but could not be stored in Site Documents.");
+                }
             }
 
             toast.success('PDF generated successfully!');
-            return { success: true, fileName };
+            return { success: true, fileName, uploadResult };
 
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -1141,6 +1154,7 @@ const AirConditioningRecurrenceCheck = ({
         if (!formData.gwpLevel) errors.gwpLevel = "Please enter GWP level";
         if (!formData.chargeWeight) errors.chargeWeight = "Please enter charge weight";
         if (!formData.schematicDrawing) errors.schematicDrawing = "Please select Schematic Drawing";
+        if (!selectedAsset?.assetId) errors.asset = "Please select an Air Conditioning unit";
         if (!formData.engineer || !selectedEngineer) {
             errors.engineer = "Please select an active engineer for this Site Check.";
         }
@@ -1194,6 +1208,11 @@ const AirConditioningRecurrenceCheck = ({
                 throw new Error('Failed to update site check status');
             }
 
+            const resolvedCheckId = Number(currentCheckId || statusResponse?.data?.checkId);
+            if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
+                throw new Error('The completed F-Gas Site Check did not return a valid Check ID.');
+            }
+
             console.log('Site check status updated successfully:', statusResponse.data);
             setCheckStatus('Done');
             setIsFormEditable(false);
@@ -1225,7 +1244,7 @@ const AirConditioningRecurrenceCheck = ({
                 type: 'Inspection',
                 subType: 'Recurrence Check',
                 category: 'Air Conditioning',
-                checkId: currentCheckId || statusResponse?.data?.checkId,
+                checkId: resolvedCheckId,
                 actionId: formData.actionId,
                 tableRows
             };
@@ -1241,14 +1260,37 @@ const AirConditioningRecurrenceCheck = ({
             }
 
             console.log('Recurrence check data saved successfully:', saveResponse.data);
-
-            // Generate PDF
-            const pdfResult = await generatePDF(true, submissionSignedDate);
-            if (!pdfResult.success) {
-                throw new Error(pdfResult.error || "Failed to generate PDF");
+            const inspectionRecordId = Number(saveResponse?.data?.id);
+            if (!Number.isInteger(inspectionRecordId) || inspectionRecordId <= 0) {
+                throw new Error('The saved F-Gas inspection did not return a valid inspection record ID.');
             }
 
-            toast.success("Air Conditioning F-Gas Report saved successfully!");
+            // Generate PDF
+            const pdfResult = await generatePDF(true, submissionSignedDate, resolvedCheckId);
+            if (!pdfResult.success || !pdfResult?.uploadResult?.stored || !pdfResult?.uploadResult?.sourceReference) {
+                throw new Error(pdfResult.error || "Failed to generate or store PDF");
+            }
+
+            const historyPayload = {
+                checkId: resolvedCheckId,
+                inspectionRecordId,
+                sourceReference: pdfResult.uploadResult.sourceReference,
+            };
+            try {
+                await recordSpecializedInspectionHistory(historyPayload);
+                setPendingHistoryRetry(null);
+            } catch (historyError) {
+                const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+                console.error("Record F-Gas history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+                setPendingHistoryRetry(historyPayload);
+                setShowPdfButton(true);
+                setIsSubmitted(true);
+                setSubmissionSuccess(true);
+                toast.error(`Inspection and PDF were saved, but History was not recorded: ${historyMessage}`);
+                return;
+            }
+
+            toast.success("Air Conditioning F-Gas Report submitted and History recorded successfully!");
             setShowPdfButton(true);
             setIsSubmitted(true);
             setSubmissionSuccess(true);
@@ -1267,6 +1309,21 @@ const AirConditioningRecurrenceCheck = ({
     };
 
 
+    const retryPendingHistory = async () => {
+        if (!pendingHistoryRetry || isRetryingHistory) return;
+        setIsRetryingHistory(true);
+        try {
+            const history = await recordSpecializedInspectionHistory(pendingHistoryRetry);
+            setPendingHistoryRetry(null);
+            toast.success(`History recorded successfully (History #${history.historyId}).`);
+        } catch (error) {
+            const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+            console.error("Retry F-Gas history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+            toast.error(`History retry failed: ${message}`);
+        } finally {
+            setIsRetryingHistory(false);
+        }
+    };
 
     const filteredAssets =
         siteAssets?.filter(
@@ -1362,6 +1419,8 @@ const AirConditioningRecurrenceCheck = ({
                                             label="Select an Air Conditioning Unit"
                                             variant="outlined"
                                             placeholder="Search devices..."
+                                            error={Boolean(validationErrors.asset)}
+                                            helperText={validationErrors.asset || ""}
                                         />
                                     )}
                                     sx={{ width: "100%" }}
@@ -1712,6 +1771,14 @@ const AirConditioningRecurrenceCheck = ({
                         </div>
                     )}
                 </div>
+            {pendingHistoryRetry && (
+                <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+                    <span>Inspection and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+                    <button type="button" className="btn btn-warning btn-sm ms-3" onClick={retryPendingHistory} disabled={isRetryingHistory}>
+                        {isRetryingHistory ? "Retrying History..." : "Retry History"}
+                    </button>
+                </div>
+            )}
             {!isSubmitted && (
               <div className="d-flex justify-content-end print-hide">
                 <SiteCheckDueSummary
