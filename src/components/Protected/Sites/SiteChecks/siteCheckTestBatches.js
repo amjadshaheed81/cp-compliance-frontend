@@ -10,6 +10,23 @@
  */
 export const SITE_CHECK_HISTORY_TEST_BATCHES = [
   {
+    number: 5,
+    label: "Water Chlorination / Shower Head Cleaning",
+    testKeys: ["water-chlorination", "shower-head"],
+    devices: [
+      // Water Chlorination intentionally has no asset selector in the current form.
+      {
+        key: "shower-head-device",
+        testTypeKey: "shower-head",
+        label: "Shower Head",
+        category: "Mechanical",
+        subCategory: "Water Services",
+        subCategory2: "Outlet",
+        subCategory3: "Shower",
+      },
+    ],
+  },
+  {
     number: 4,
     label: "Refuge Intercom / Sounder Audibility / Ventilation",
     testKeys: ["refuge-intercom", "fire-alarm-sounder", "ventilation"],

@@ -3,6 +3,7 @@ import { SITE_CHECK_HISTORY_TEST_BATCHES } from "./siteCheckTestBatches";
 describe("Site Check History regression batches", () => {
   test("keeps newest numbered batch first", () => {
     expect(SITE_CHECK_HISTORY_TEST_BATCHES.map((batch) => batch.number)).toEqual([
+      5,
       4,
       3,
       2,
@@ -10,15 +11,29 @@ describe("Site Check History regression batches", () => {
     ]);
   });
 
-  test("contains three Site Checks per current batch", () => {
+  test("contains unique Site Checks in every batch", () => {
     SITE_CHECK_HISTORY_TEST_BATCHES.forEach((batch) => {
-      expect(batch.testKeys).toHaveLength(3);
-      expect(new Set(batch.testKeys).size).toBe(3);
+      expect(batch.testKeys.length).toBeGreaterThan(0);
+      expect(new Set(batch.testKeys).size).toBe(batch.testKeys.length);
     });
   });
 
+  test("uses the exact current Batch 5 Shower Head device filter", () => {
+    const batch5 = SITE_CHECK_HISTORY_TEST_BATCHES[0];
+    expect(batch5.testKeys).toEqual(["water-chlorination", "shower-head"]);
+    expect(batch5.devices).toEqual([
+      expect.objectContaining({
+        testTypeKey: "shower-head",
+        category: "Mechanical",
+        subCategory: "Water Services",
+        subCategory2: "Outlet",
+        subCategory3: "Shower",
+      }),
+    ]);
+  });
+
   test("uses the exact current Batch 4 device filters", () => {
-    const batch4 = SITE_CHECK_HISTORY_TEST_BATCHES[0];
+    const batch4 = SITE_CHECK_HISTORY_TEST_BATCHES[1];
     expect(batch4.devices).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -44,7 +59,7 @@ describe("Site Check History regression batches", () => {
   });
 
   test("uses the exact current Batch 3 device filters", () => {
-    const batch3 = SITE_CHECK_HISTORY_TEST_BATCHES[1];
+    const batch3 = SITE_CHECK_HISTORY_TEST_BATCHES[2];
     expect(batch3.devices).toEqual(
       expect.arrayContaining([
         expect.objectContaining({

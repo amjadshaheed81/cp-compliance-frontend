@@ -26,6 +26,7 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 const ShowerHeadCertificate = ({
                                    sasToken,
@@ -88,6 +89,8 @@ const ShowerHeadCertificate = ({
     const navigate = useNavigate();
     const isInternalUserTaggedWithSite = true;
     const [inspectionDetails, setInspectionDetails] = useState(null);
+    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
 
     // NEW: Use the actual Site Check as the authoritative site/status source.
     const authoritativeSiteId = siteCheck?.siteId
@@ -165,6 +168,10 @@ const ShowerHeadCertificate = ({
             selectedAsset: newValue || null,
             manufacturer: newValue?.manufacturer || "",
             location: newValue ? `${newValue.floor || ''} ${newValue.room || ''} ${newValue.position || ''}`.trim() : ""
+        }));
+        setState(prev => ({
+            ...prev,
+            validationErrors: { ...prev.validationErrors, asset: "" }
         }));
     };
 
@@ -494,11 +501,17 @@ const ShowerHeadCertificate = ({
         }
     }, [siteSelectedForGlobal]);
 
-   const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride = null) => {
+   const uploadPdfToServer = useCallback(async (pdfBlob, fileName, inspectionDateOverride = null, resolvedCheckId = null) => {
     let exists;
     try {
         setState(prev => ({ ...prev, isUploading: true }));
-        // First save the PDF locally
+
+        const parsedCheckId = Number(resolvedCheckId);
+        if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+            throw new Error('Shower Head PDF cannot be stored without a valid Site Check ID.');
+        }
+        const sourceReference = `SHC-${parsedCheckId}-${Date.now()}`;
+
         const savedLocally = await savePdfToLocal(pdfBlob, fileName);
         if (!savedLocally) {
             throw new Error('Failed to save PDF locally');
@@ -518,7 +531,6 @@ const ShowerHeadCertificate = ({
             ? existingFile.fileVersion + 1
             : await getHighestFileVersion(targetFolderId, fileName);
 
-        const issueDate = new Date(inspectionDateOverride || formData.inspectionDate || new Date());
         const documentRequest = {
             folderId: targetFolderId,
             files: [{
@@ -528,20 +540,19 @@ const ShowerHeadCertificate = ({
                 fileVersion,
                 siteId: authoritativeSiteId || 0,
                 issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
-                expiryDate: toJavaLocalDateTime(calculateExpiryDate(issueDate, inspectionDetails?.repeatFrequency)),
+                expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                 uploaderUserId: loggedInUserData?.id || 0,
                 reviewerUserId: loggedInUserData?.id || 0,
-                referenceNumber: `SHC-${new Date().getTime()}`
+                referenceNumber: sourceReference
             }]
         };
 
-        // KEY FIX: Use 'files' for POST and 'file' for PUT
         if (exists) {
             multipartData.append('file', new File([pdfBlob], fileName, { type: 'application/pdf' }));
         } else {
             multipartData.append('files', new File([pdfBlob], fileName, { type: 'application/pdf' }));
         }
-        
+
         multipartData.append('documentRequestString', JSON.stringify(documentRequest));
 
         const method = exists ? 'put' : 'post';
@@ -559,16 +570,16 @@ const ShowerHeadCertificate = ({
             }
         });
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
             toast.success(`PDF ${exists ? 'updated' : 'uploaded'} successfully as version ${fileVersion}!`);
-            return true;
+            return { stored: true, sourceReference };
         }
 
-        throw new Error('Upload failed: No response data');
+        throw new Error('Upload failed: the document API did not confirm storage');
     } catch (error) {
         console.error('Error uploading PDF:', error);
         console.error(`Failed to ${exists ? 'update' : 'upload'} PDF: ${error.message}`);
-        return false;
+        return { stored: false, sourceReference: null };
     } finally {
         setState(prev => ({ ...prev, isUploading: false }));
     }
@@ -577,13 +588,16 @@ const ShowerHeadCertificate = ({
     checkFileExists,
     getHighestFileVersion,
     loggedInUserData,
-    siteSelectedForGlobal,
-    state.folderIds
+    authoritativeSiteId,
+    state.folderIds,
+    formData.inspectionDate,
+    inspectionDetails?.repeatFrequency
 ]);
 
-    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride = null) => {
+    const generatePDF = useCallback(async (uploadToServer = true, inspectionDateOverride = null, resolvedCheckId = null) => {
         try {
             setState(prev => ({ ...prev, isGeneratingPDF: true }));
+            let uploadResult = { stored: false, sourceReference: null };
 
             const pdfBytes = await fetchPdfTemplate();
             const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -648,17 +662,22 @@ const ShowerHeadCertificate = ({
 
             setState(prev => ({ ...prev, generatedPdfBlob: blob }));
 
-            let uploadedToServer = false;
             if (uploadToServer) {
-                uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
+                uploadResult = await uploadPdfToServer(
+                    blob,
+                    fileName,
+                    inspectionDateOverride || formData.inspectionDate,
+                    resolvedCheckId
+                );
+                if (!uploadResult?.stored) {
+                    throw new Error('PDF was generated but was not stored in Site Documents');
+                }
             }
 
-            if (uploadedToServer || !uploadToServer) {
-                toast.success('PDF generated successfully!');
-                setState(prev => ({ ...prev, showPdfButton: true }));
-            }
+            toast.success('PDF generated successfully!');
+            setState(prev => ({ ...prev, showPdfButton: true }));
 
-            return { success: true, fileName };
+            return { success: true, fileName, uploadResult };
         } catch (error) {
             console.error('Error generating PDF:', error);
             toast.error('Failed to generate PDF: ' + (error.message || 'Unknown error'));
@@ -674,6 +693,23 @@ const ShowerHeadCertificate = ({
         users
     ]);
 
+    const retryPendingHistory = async () => {
+        if (!pendingHistoryRetry || isRetryingHistory) return;
+
+        setIsRetryingHistory(true);
+        try {
+            const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+            setPendingHistoryRetry(null);
+            toast.success(`History recorded successfully (History #${history.historyId}).`);
+        } catch (error) {
+            const message = getSiteCheckErrorMessage(error, 'History record could not be created.');
+            console.error('Retry Shower Head history:', { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+            toast.error(`History retry failed: ${message}`);
+        } finally {
+            setIsRetryingHistory(false);
+        }
+    };
+
     // Main form submission handler
 
     const handleSubmit = async (e) => {
@@ -681,6 +717,9 @@ const ShowerHeadCertificate = ({
         if (state.isLoading) return;
 
         const validationErrors = {};
+        if (!formData.assetId || !selectedAsset) {
+            validationErrors.asset = 'Please select a Shower Head.';
+        }
         if (!formData.engineer || !selectedEngineer) {
             validationErrors.engineer = "Please select an active engineer for this Site Check.";
         }
@@ -741,27 +780,61 @@ const ShowerHeadCertificate = ({
                 actionId: formData.actionId || null,
             };
 
-            // Determine whether to PUT or POST based on actionId presence
+            let saveResponse;
             if (state.currentCheckId && formData.actionId) {
-                // If we have both checkId and actionId, do PUT (update existing)
-                await put(
+                saveResponse = await put(
                     `/api/site-check/generic-inspection/${state.currentCheckId}`,
                     cleaningPayload
                 );
             } else {
-                // Otherwise do POST (create new)
-                await post(
+                saveResponse = await post(
                     `/api/site-check/generic-inspection`,
                     cleaningPayload
                 );
             }
 
-            const pdfResult = await generatePDF(true, submissionInspectionDate);
+            const resolvedCheckIdForHistory = Number(
+                state.currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+            );
+            const savedInspectionRecordId = Number(saveResponse?.data?.id);
+
+            const pdfResult = await generatePDF(true, submissionInspectionDate, resolvedCheckIdForHistory);
             if (!pdfResult.success) {
                 throw new Error(pdfResult.error || "Failed to generate PDF");
             }
 
-            toast.success("Shower head cleaning certificate saved successfully!");
+            const sourceReference = String(pdfResult?.uploadResult?.sourceReference || '').trim();
+            if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+                throw new Error('Shower Head certificate was saved, but History cannot be recorded because the Site Check ID is invalid.');
+            }
+            if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+                throw new Error('Shower Head certificate was saved, but History cannot be recorded because the saved inspection record ID was not returned.');
+            }
+            if (!pdfResult?.uploadResult?.stored) {
+                throw new Error('Shower Head certificate was saved, but History cannot be recorded because the PDF was not stored in Site Documents.');
+            }
+            if (!sourceReference) {
+                throw new Error('Shower Head certificate was saved, but History cannot be recorded because the PDF reference was not returned.');
+            }
+
+            const historyPayload = {
+                checkId: resolvedCheckIdForHistory,
+                inspectionRecordId: savedInspectionRecordId,
+                sourceReference,
+            };
+            try {
+                await recordGenericInspectionHistory(historyPayload);
+                setPendingHistoryRetry(null);
+            } catch (historyError) {
+                const historyMessage = getSiteCheckErrorMessage(historyError, 'History record could not be created.');
+                console.error('Record Shower Head history:', { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+                setPendingHistoryRetry(historyPayload);
+                setState(prev => ({ ...prev, showPdfButton: true, isSubmitted: true }));
+                toast.error(`Certificate and PDF were saved, but History was not recorded: ${historyMessage}`);
+                return;
+            }
+
+            toast.success("Shower head cleaning certificate saved and History recorded successfully!");
             setState(prev => ({
                 ...prev,
                 showPdfButton: true,
@@ -1180,6 +1253,8 @@ const ShowerHeadCertificate = ({
                                             label="Select a Shower Head"
                                             variant="outlined"
                                             placeholder="Search shower heads..."
+                                            error={Boolean(state.validationErrors.asset)}
+                                            helperText={state.validationErrors.asset || ""}
                                         />
                                     )}
                                     sx={{ width: "100%" }}
@@ -1375,6 +1450,20 @@ const ShowerHeadCertificate = ({
                         />
                     </div>
                 </div>
+
+                {pendingHistoryRetry && (
+                    <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+                        <span>Certificate and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+                        <button
+                            type="button"
+                            className="btn btn-warning ms-3"
+                            onClick={retryPendingHistory}
+                            disabled={isRetryingHistory}
+                        >
+                            {isRetryingHistory ? 'Retrying History...' : 'Retry History'}
+                        </button>
+                    </div>
+                )}
 
                 <div className="mt-4 print-hide">
                     {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}

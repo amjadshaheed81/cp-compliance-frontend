@@ -635,7 +635,7 @@ const SounderAudibilityForm = ({
       if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
         throw new Error("Sounder Audibility Report PDF cannot be stored without a valid Site Check ID.");
       }
-      const sourceReference = `SAR-${parsedCheckId}-${Date.now()}`;
+      const sourceReference = `SOUND-${parsedCheckId}-${Date.now()}`;
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');

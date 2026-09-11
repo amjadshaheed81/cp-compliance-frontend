@@ -25,11 +25,12 @@ import { PDFDocument } from "pdf-lib";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
-import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime } from "./shared/siteCheckDateUtils";
+import { getUkLocalDate, isCurrentUkInspectionDate, toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
 import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
+import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 const WaterChlorinationCertificate = ({
   sasToken,
@@ -106,6 +107,8 @@ The capacity of the tank is ${capacity} litres`;
   const navigate = useNavigate();
   const isInternalUserTaggedWithSite = true;
   const [inspectionDetails, setInspectionDetails] = useState(null);
+  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
+  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
 
   // NEW: Use the actual Site Check for site/status selection.
   const authoritativeSiteId = siteCheck?.siteId
@@ -388,6 +391,7 @@ The capacity of the tank is ${capacity} litres`;
           subType: chlorinationCheck.subType,
           category: chlorinationCheck.category,
           dueDate: chlorinationCheck.dueDate,
+          repeatFrequency: chlorinationCheck.repeatFrequency,
           status: chlorinationCheck.status
         };
         console.log('Setting inspection details:', inspectionDetails);
@@ -507,12 +511,17 @@ The capacity of the tank is ${capacity} litres`;
     calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
   const uploadPdfToServer = useCallback(
-    async (pdfBlob, fileName, inspectionDateOverride = null) => {
+    async (pdfBlob, fileName, inspectionDateOverride = null, resolvedCheckId = null) => {
       let exists;
       try {
         setState((prev) => ({ ...prev, isUploading: true }));
 
-        // First save locally
+        const parsedCheckId = Number(resolvedCheckId);
+        if (!Number.isInteger(parsedCheckId) || parsedCheckId <= 0) {
+          throw new Error("Water Chlorination PDF cannot be stored without a valid Site Check ID.");
+        }
+        const sourceReference = `WTC-${parsedCheckId}-${Date.now()}`;
+
         const savedLocally = await savePdfToLocal(pdfBlob, fileName);
         if (!savedLocally) {
           throw new Error("Failed to save PDF locally");
@@ -523,7 +532,6 @@ The capacity of the tank is ${capacity} litres`;
           throw new Error("Could not determine target folder for PDF upload");
         }
 
-        // Check if file exists and get current version
         const fileCheck = await checkFileExists(targetFolderId, fileName);
         exists = fileCheck.exists;
         const existingFile = fileCheck.file;
@@ -532,14 +540,12 @@ The capacity of the tank is ${capacity} litres`;
           ? existingFile.fileVersion + 1
           : await getHighestFileVersion(targetFolderId, fileName);
 
-        // Prepare form data with comprehensive metadata
         const uploadFormData = new FormData();
         uploadFormData.append(
           exists ? "file" : "files",
           new File([pdfBlob], fileName, { type: "application/pdf" })
         );
 
-        // Add document metadata as JSON string
         const documentRequest = {
           folderId: targetFolderId,
           files: [{
@@ -552,12 +558,11 @@ The capacity of the tank is ${capacity} litres`;
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.date, inspectionDetails?.repeatFrequency)),
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: `WTC-${new Date().getTime()}`
+            referenceNumber: sourceReference
           }]
         };
         uploadFormData.append("documentRequestString", JSON.stringify(documentRequest));
 
-        // Make API request
         const method = exists ? "put" : "post";
         const url = exists
           ? "/api/document/file/newVersion/upload"
@@ -573,16 +578,16 @@ The capacity of the tank is ${capacity} litres`;
           }
         });
 
-        if (response.data) {
+        if ([200, 201, 204].includes(response?.status)) {
           toast.success(`PDF ${exists ? "updated" : "uploaded"} successfully as version ${fileVersion}!`);
-          return true;
+          return { stored: true, sourceReference };
         }
 
-        throw new Error("Upload failed: No response data");
+        throw new Error("Upload failed: the document API did not confirm storage");
       } catch (error) {
         console.error(`Error ${exists ? "updating" : "uploading"} PDF:`, error);
         toast.error(`Failed to ${exists ? "update" : "upload"} PDF`);
-        return false;
+        return { stored: false, sourceReference: null };
       } finally {
         setState((prev) => ({ ...prev, isUploading: false }));
       }
@@ -592,8 +597,10 @@ The capacity of the tank is ${capacity} litres`;
       checkFileExists,
       getHighestFileVersion,
       loggedInUserData,
-      siteSelectedForGlobal,
-      state.folderIds
+      authoritativeSiteId,
+      state.folderIds,
+      formData.date,
+      inspectionDetails?.repeatFrequency
     ]
   );
 
@@ -611,9 +618,10 @@ The capacity of the tank is ${capacity} litres`;
 
   console.log('report template -->', formData.report);
   const generatePDF = useCallback(
-    async (uploadToServer = true, inspectionDateOverride = null) => {
+    async (uploadToServer = true, inspectionDateOverride = null, resolvedCheckId = null) => {
       try {
         setState((prev) => ({ ...prev, isGeneratingPDF: true }));
+        let uploadResult = { stored: false, sourceReference: null };
 
         const pdfBytes = await fetchPdfTemplate();
         const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -726,17 +734,22 @@ The capacity of the tank is ${capacity} litres`;
 
         setState((prev) => ({ ...prev, generatedPdfBlob: blob }));
 
-        let uploadedToServer = false;
         if (uploadToServer) {
-          uploadedToServer = await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.date);
+          uploadResult = await uploadPdfToServer(
+            blob,
+            fileName,
+            inspectionDateOverride || formData.date,
+            resolvedCheckId
+          );
+          if (!uploadResult?.stored) {
+            throw new Error("PDF was generated but was not stored in Site Documents");
+          }
         }
 
-        if (uploadedToServer || !uploadToServer) {
-          toast.success("PDF generated successfully!");
-          setState((prev) => ({ ...prev, showPdfButton: true }));
-        }
+        toast.success("PDF generated successfully!");
+        setState((prev) => ({ ...prev, showPdfButton: true }));
 
-        return { success: true, fileName };
+        return { success: true, fileName, uploadResult };
       } catch (error) {
         console.error("Error generating PDF:", error);
         toast.error(
@@ -749,6 +762,23 @@ The capacity of the tank is ${capacity} litres`;
     },
     [fetchPdfTemplate, formData, uploadPdfToServer, users]
   );
+
+  const retryPendingHistory = async () => {
+    if (!pendingHistoryRetry || isRetryingHistory) return;
+
+    setIsRetryingHistory(true);
+    try {
+      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
+      setPendingHistoryRetry(null);
+      toast.success(`History recorded successfully (History #${history.historyId}).`);
+    } catch (error) {
+      const message = getSiteCheckErrorMessage(error, "History record could not be created.");
+      console.error("Retry Water Chlorination history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
+      toast.error(`History retry failed: ${message}`);
+    } finally {
+      setIsRetryingHistory(false);
+    }
+  };
 
   // Main form submission handler
   const handleSubmit = async (e) => {
@@ -813,6 +843,7 @@ The capacity of the tank is ${capacity} litres`;
         engineerName: selectedEngineer?.name || formData.engineerName || "",
         param5Remark: selectedEngineer?.signature || formData.param5Remark || "",
         date: submissionInspectionDate,
+        inspectionDate: toJavaLocalDate(submissionInspectionDate),
         clientDate: submissionClientDate,
         engineerDate: submissionEngineerDate,
         siteContact: formData.siteContactUser?.id || formData.siteContact,
@@ -823,28 +854,61 @@ The capacity of the tank is ${capacity} litres`;
         actionId: formData.actionId || null,
       };
 
-      // Determine whether to PUT or POST based on actionId presence
+      let saveResponse;
       if (state.currentCheckId && formData.actionId) {
-        // If we have both checkId and actionId, do PUT (update existing)
-        await put(
+        saveResponse = await put(
           `/api/site-check/generic-inspection/${state.currentCheckId}`,
           chlorinationPayload
         );
       } else {
-        // Otherwise do POST (create new)
-        await post(
+        saveResponse = await post(
           `/api/site-check/generic-inspection`,
           chlorinationPayload
         );
       }
 
+      const resolvedCheckIdForHistory = Number(
+        state.currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
+      );
+      const savedInspectionRecordId = Number(saveResponse?.data?.id);
 
-      const pdfResult = await generatePDF(true, submissionInspectionDate);
+      const pdfResult = await generatePDF(true, submissionInspectionDate, resolvedCheckIdForHistory);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      toast.success("Water chlorination certificate saved successfully!");
+      const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
+      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
+        throw new Error("Water Chlorination was saved, but History cannot be recorded because the Site Check ID is invalid.");
+      }
+      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
+        throw new Error("Water Chlorination was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
+      }
+      if (!pdfResult?.uploadResult?.stored) {
+        throw new Error("Water Chlorination was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
+      }
+      if (!sourceReference) {
+        throw new Error("Water Chlorination was saved, but History cannot be recorded because the PDF reference was not returned.");
+      }
+
+      const historyPayload = {
+        checkId: resolvedCheckIdForHistory,
+        inspectionRecordId: savedInspectionRecordId,
+        sourceReference,
+      };
+      try {
+        await recordGenericInspectionHistory(historyPayload);
+        setPendingHistoryRetry(null);
+      } catch (historyError) {
+        const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
+        console.error("Record Water Chlorination history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
+        setPendingHistoryRetry(historyPayload);
+        setState(prev => ({ ...prev, showPdfButton: true, isSubmitted: true }));
+        toast.error(`Certificate and PDF were saved, but History was not recorded: ${historyMessage}`);
+        return;
+      }
+
+      toast.success("Water chlorination certificate saved and History recorded successfully!");
       setState(prev => ({
         ...prev,
         showPdfButton: true,
@@ -1342,6 +1406,20 @@ The capacity of the tank is ${capacity} litres`;
             />
           </div>
         </div>
+
+        {pendingHistoryRetry && (
+          <div className="alert alert-warning d-flex justify-content-between align-items-center mt-3 print-hide">
+            <span>Certificate and PDF are saved, but History still needs to be recorded. Do not submit the inspection again.</span>
+            <button
+              type="button"
+              className="btn btn-warning ms-3"
+              onClick={retryPendingHistory}
+              disabled={isRetryingHistory}
+            >
+              {isRetryingHistory ? "Retrying History..." : "Retry History"}
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 print-hide">
           {/* SiteCheckPersistentSubmittedBack: keep navigation available after submission. */}
