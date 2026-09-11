@@ -444,7 +444,7 @@ const GasSafetyRecord = ({
                     combustionHighCO: gasSafetyData.combustionHighCO || prev.combustionHighCO,
                     combustionHighCO2: gasSafetyData.combustionHighCO2 || prev.combustionHighCO2,
                     combustionHighRatio: gasSafetyData.combustionHighRatio || prev.combustionHighRatio,
-                    LabelWarningNotice: gasSafetyData.LabelWarningNotice || prev.LabelWarningNotice,
+                    LabelWarningNotice: gasSafetyData.labelWarningNotice ?? gasSafetyData.LabelWarningNotice ?? prev.LabelWarningNotice,
 
                     // Images
                     param2: gasSafetyData.param2 || prev.param2,
@@ -1424,6 +1424,7 @@ const GasSafetyRecord = ({
                 actionId: formData.actionId,
                 operatingPressure: formData.operatingPressure ? parseFloat(formData.operatingPressure) : null,
                 combustionAnalyserReading: formData.combustionAnalyserReading ? parseFloat(formData.combustionAnalyserReading) : null,
+                labelWarningNotice: formData.LabelWarningNotice || '',
                 engineerSignatureDate: toJavaLocalDate(submissionEngineerSignatureDate),
                 checkId: checkIdToUse
             };

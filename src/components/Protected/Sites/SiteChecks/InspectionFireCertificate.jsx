@@ -604,19 +604,22 @@ const InspectionFireCertificate = ({
         }
     };
 
-    const getFolderNameFromCategory = (category) => {
-        // Keep original folder names exactly as they appear in the system
+    const normalizeFolderName = (name) => String(name || '').trim().replace(/\s+/g, ' ');
+
+    const getFolderNamesFromCategory = (category) => {
+        // Prefer the current frequency-specific folders. The repository's standard folder.csv
+        // also defines "Fire Alarm Weekly In House Testing" and "Fire Alarm Service & Test Records".
         switch (category) {
             case 'Fire Alarm - Weekly Call Point testing to meet BS5839':
-                return 'Fire Alarm -  Weekly Testing';
+                return ['Fire Alarm - Weekly Testing', 'Fire Alarm Weekly In House Testing'];
             case 'Fire Alarm - monthly testing to meet BS5839':
-                return 'Fire Alarm - Monthly Testing';
+                return ['Fire Alarm - Monthly Testing', 'Fire Alarm Service & Test Records'];
             case 'Fire Alarm - 6 monthly testing to meet BS5839':
-                return 'Fire Alarm - 6 Monthly Testing';
+                return ['Fire Alarm - 6 Monthly Testing', 'Fire Alarm Service & Test Records'];
             case 'Fire Alarm - 12 monthly testing to meet BS5839':
-                return 'Fire Alarm - 12 Monthly Testing';
+                return ['Fire Alarm - 12 Monthly Testing', 'Fire Alarm Service & Test Records'];
             default:
-                return 'Fire Alarm - Monthly Testing'; // Default fallback
+                return ['Fire Alarm - Monthly Testing', 'Fire Alarm Service & Test Records'];
         }
     };
 
@@ -632,63 +635,67 @@ const InspectionFireCertificate = ({
     // Fetch folder structure function
     const fetchFolderStructure = async (siteId, category) => {
         try {
-            // 1. Get parent folders
+            // 1. Get parent folders. Both names are already used by CAFM folder structures.
             const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
             if (!parentFoldersResponse?.parentFolders) {
                 throw new Error('No parent folders found');
             }
 
-            // 2. Find Log Books (exact match)
+            const logBooksNames = new Set(['6 - Log Books', 'Log Books'].map(normalizeFolderName));
             const logBooksFolder = parentFoldersResponse.parentFolders.find(
-                f => f.name === '6 - Log Books'
+                f => logBooksNames.has(normalizeFolderName(f.name))
             );
-            if (!logBooksFolder) throw new Error('Log Books folder not found');
+            if (!logBooksFolder) {
+                throw new Error('Neither "6 - Log Books" nor "Log Books" folder was found');
+            }
 
-            // 3. Get Fire Log Book children
+            // 2. Get Fire Log Book children.
             const logBooksChildren = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
             const fireLogBookFolder = logBooksChildren?.document?.childFolders?.find(
-                f => f.name === 'Fire Log Book'
+                f => normalizeFolderName(f.name) === 'Fire Log Book'
             );
             if (!fireLogBookFolder) throw new Error('Fire Log Book folder not found');
 
-            // 4. Get Fire Alarm children
+            // 3. Support both verified Fire Alarm folder names:
+            //    current component: Fire Alarm(BS5839)
+            //    repository folder.csv: Fire Alarm (BS5839)
             const fireLogChildren = await get(`/api/document/parent/${fireLogBookFolder.id}/folders?siteId=${siteId}`);
+            const fireAlarmNames = new Set(['Fire Alarm(BS5839)', 'Fire Alarm (BS5839)'].map(normalizeFolderName));
             const fireAlarmFolder = fireLogChildren?.document?.childFolders?.find(
-                f => f.name === 'Fire Alarm(BS5839)'
+                f => fireAlarmNames.has(normalizeFolderName(f.name))
             );
-            if (!fireAlarmFolder) throw new Error('Fire Alarm folder not found');
-
-            // 5. Get target subfolder (CRITICAL FIX)
-            const targetFolderName = getFolderNameFromCategory(category);
-            const fireAlarmChildren = await get(`/api/document/parent/${fireAlarmFolder.id}/folders?siteId=${siteId}`);
-
-            console.log('Searching for:', targetFolderName);
-            console.log('Available subfolders:',
-                fireAlarmChildren?.document?.childFolders?.map(f => `${f.name} (${f.id})`) || []);
-
-            // Find the EXACT matching subfolder
-            const targetFolder = fireAlarmChildren?.document?.childFolders?.find(
-                f => f.name === targetFolderName
-            );
-
-            if (!targetFolder) {
-                console.warn(`Exact subfolder "${targetFolderName}" not found, using parent folder`);
+            if (!fireAlarmFolder) {
+                throw new Error('Neither "Fire Alarm(BS5839)" nor "Fire Alarm (BS5839)" folder was found');
             }
 
-            // FINAL FOLDER ID ASSIGNMENT (FIXED)
+            // 4. Prefer the current frequency-specific folder. If it is not present, use only
+            //    the matching standard folder documented in site-service/src/main/resources/folder.csv.
+            const targetFolderNames = getFolderNamesFromCategory(category);
+            const targetFolderNamesNormalized = targetFolderNames.map(normalizeFolderName);
+            const fireAlarmChildren = await get(`/api/document/parent/${fireAlarmFolder.id}/folders?siteId=${siteId}`);
+            const availableFolders = fireAlarmChildren?.document?.childFolders || [];
+
+            let targetFolder = null;
+            for (const candidate of targetFolderNamesNormalized) {
+                targetFolder = availableFolders.find(f => normalizeFolderName(f.name) === candidate);
+                if (targetFolder) break;
+            }
+
+            console.log('Searching Fire Alarm folders:', targetFolderNames);
+            console.log('Available Fire Alarm subfolders:', availableFolders.map(f => `${f.name} (${f.id})`));
+
+            if (!targetFolder) {
+                throw new Error(`Fire Alarm target folder not found. Expected one of: ${targetFolderNames.join(', ')}`);
+            }
+
             const newFolderIds = {
                 logBooks: logBooksFolder.id,
                 fireLogBook: fireLogBookFolder.id,
                 fireAlarm: fireAlarmFolder.id,
-                monthlyTesting: targetFolder?.id || null // Don't fallback to parent ID
+                monthlyTesting: targetFolder.id
             };
 
             console.log('Final folder IDs:', newFolderIds);
-
-            if (!newFolderIds.monthlyTesting) {
-                throw new Error(`Target subfolder "${targetFolderName}" not found`);
-            }
-
             setFolderIds(newFolderIds);
             return newFolderIds.monthlyTesting;
 
