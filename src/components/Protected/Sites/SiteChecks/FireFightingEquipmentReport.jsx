@@ -865,6 +865,11 @@ should be carried out more frequently.`;
                 siteId: authoritativeSiteId,
                 inspectionDate: toJavaLocalDate(submissionInspectionDate),
                 signedDate: toJavaLocalDate(submissionSignedDate),
+                // FireFightingEquipment persists this field as engineerUserId.
+                // Keep the existing formData.engineer value for the UI/PDF, but also
+                // send the entity field explicitly so the saved inspection retains
+                // the selected engineer and immutable History can verify it.
+                engineerUserId: Number(formData.engineer),
                 type: 'Inspection',
                 subType: 'Fire Equipment',
                 category: 'Fire Fighting Equipment',

@@ -1934,6 +1934,12 @@ const GasBoilerService = ({
           )}
 
           {!isSubmitted ? (
+                    <>
+                    {!isgasEngineer && (
+                        <div className="alert alert-warning mt-3 print-hide">
+                            Submit is disabled because the logged-in user must be an External user with trade "Gas Engineer". Selecting a Gas Engineer in the form does not change this existing submission restriction.
+                        </div>
+                    )}
                     <div className="d-flex justify-content-between align-items-start mt-3 print-hide">
                         <SiteCheckBackButton />
                         <button
@@ -1951,6 +1957,7 @@ const GasBoilerService = ({
                             {isLoading ? 'Submitting...' : 'Submit Report'}
                         </button>
                     </div>
+                    </>
                 ) : (
                     <div className="alert alert-success">
                         Report submitted successfully on {formatDate(formData.engineerSignatureDate)}
