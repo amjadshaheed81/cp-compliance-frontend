@@ -967,7 +967,7 @@ const FireDamper = ({
             setTextField('Damper Location', equipmentDetails || '', smallFont);
             setTextField('Floor', selectedAsset?.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset?.subCategory3 || '', smallFont);
-            setTextField('Damper Size', selectedAsset?.damperSize.toString() || '', smallFont);
+            setTextField('Damper Size', String(selectedAsset?.damperSize ?? ''), smallFont);
 
             setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('Condition', formData.param2 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
@@ -1588,7 +1588,7 @@ const FireDamper = ({
                                             type="text"
                                             className="form-control"
                                             name="damperSize"
-                                            value={selectedAsset?.damperSize}
+                                            value={selectedAsset?.damperSize ?? ""}
                                             onChange={handleInputChange}
                                             required
                                             disabled

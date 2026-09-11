@@ -69,6 +69,7 @@ const buildTestAssetRequest = (device, batchNumber, runTag) => ({
   position: "",
   floor: "",
   room: "",
+  damperSize: device.damperSize ?? null,
 });
 
 const isActiveUser = (user) =>

@@ -22,6 +22,7 @@ export const SITE_CHECK_HISTORY_TEST_BATCHES = [
         subCategory: "Ventilation",
         subCategory2: "Damper",
         subCategory3: "Fire Damper",
+        damperSize: 600,
       },
       {
         key: "cctv-device",
