@@ -28,6 +28,7 @@ const DEFAULT_FREQUENCY = "6-Monthly";
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "6-Monthly", "Yearly"];
 const HISTORY_TEST_SET_BATCH_1_KEYS = ["extract-fan", "external-lighting", "wc-alarm"];
 const HISTORY_TEST_SET_BATCH_2_KEYS = ["microwave-oven", "storage-tank", "water-heater"];
+const HISTORY_TEST_SET_BATCH_3_KEYS = ["fire-damper", "cctv", "intruder-alarm"];
 
 const isActiveUser = (user) =>
   Boolean(user?.id) &&
@@ -512,6 +513,24 @@ const SiteCheckTestLauncher = ({
             title="Create Microwave Oven, Storage Tank and Water Heater test Site Checks"
           >
             {isCreating ? "Creating..." : "Create History Batch 2 (3)"}
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() =>
+              handleCreateHistoryTestSet(
+                HISTORY_TEST_SET_BATCH_3_KEYS,
+                "History Batch 3"
+              )
+            }
+            disabled={
+              isCreating ||
+              createdHistoryTests.length > 0 ||
+              !siteSelectedForGlobal?.siteId ||
+              activeUsers.length === 0
+            }
+            title="Create Fire Damper, CCTV and Intruder Alarm test Site Checks"
+          >
+            {isCreating ? "Creating..." : "Create History Batch 3 (3)"}
           </Button>
           <Button
             variant="contained"

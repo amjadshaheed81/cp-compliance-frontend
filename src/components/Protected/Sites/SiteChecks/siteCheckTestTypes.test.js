@@ -60,4 +60,22 @@ describe("Site Check developer test catalogue", () => {
     });
   });
 
+  test("contains the three Batch 3 History regression routes", () => {
+    expect(getSiteCheckTestType("fire-damper")).toMatchObject({
+      type: "Inspection",
+      subType: "Passive Fire",
+      category: "Passive Fire - Fire Damper Inspection",
+    });
+    expect(getSiteCheckTestType("cctv")).toMatchObject({
+      type: "Inspection",
+      subType: "Intruder Alarm",
+      category: "CCTV Servicing & Inspection",
+    });
+    expect(getSiteCheckTestType("intruder-alarm")).toMatchObject({
+      type: "Inspection",
+      subType: "Intruder Alarm",
+      category: "Intruder Alarm Servicing & Inspection",
+    });
+  });
+
 });
