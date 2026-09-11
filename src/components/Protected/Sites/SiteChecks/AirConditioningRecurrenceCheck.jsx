@@ -1046,16 +1046,16 @@ const AirConditioningRecurrenceCheck = ({
 
             const equipmentDetails = `${selectedAsset?.assetName || "N/A"} (Model - ${selectedAsset?.model || "N/A"} / Serial - ${selectedAsset?.serialNumber || "N/A"} / Asset No - ${selectedAsset?.assetId || "N/A"}) Located on ${selectedAsset?.position || "N/A"} Floor: ${selectedAsset?.floor || "N/A"} in Room No: ${selectedAsset?.room || "N/A"}`;
 
-            // Build related assets details (one or many) in same format, each on its own line
-            if (Array.isArray(relatedAssets) && relatedAssets.length > 0) {
-                const lines = relatedAssets.map(ra => (
+            // Build related assets details (one or many) in same format, each on its own line.
+            // Always write RelatedEquipmentDetails, even when empty. The PDF template marks this
+            // field as rich text; pdf-lib converts it to a normal text field when setText() is
+            // called. Leaving it untouched causes form.flatten() to fail on rich-text fields.
+            const relatedEquipmentDetails = Array.isArray(relatedAssets) && relatedAssets.length > 0
+                ? relatedAssets.map(ra => (
                     `${ra?.assetName || 'N/A'} (Model - ${ra?.model || 'N/A'} / Serial - ${ra?.serialNumber || 'N/A'} / Asset No - ${ra?.assetId || 'N/A'}) Located on ${ra?.position || 'N/A'} Floor: ${ra?.floor || 'N/A'} in Room No: ${ra?.room || 'N/A'}`
-                ));
-                // Also set a dedicated field for related equipment details if present in the PDF
-                const relatedOnly = lines.join('\n');
-                setTextField('RelatedEquipmentDetails', relatedOnly, mediumFont);
-            }
-
+                )).join('\n')
+                : '';
+            setTextField('RelatedEquipmentDetails', relatedEquipmentDetails, mediumFont);
 
             setTextField('EquipmentDetails', equipmentDetails || '', mediumFont);
 
