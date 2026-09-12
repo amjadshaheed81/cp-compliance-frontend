@@ -693,10 +693,24 @@ const FanExtract = ({
       }
 
       const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
-      const targetFolderId = folderIds.extractFan || folderIds.logBooks;
+
+      /*
+       * OLD CODE - COMMENTED FOR REVIEW
+       *
+       * const targetFolderId = folderIds.extractFan || folderIds.logBooks;
+       *
+       * Falling back to the Log Books root could file an Extract Fan certificate
+       * in the wrong Site Documents folder when Extract Fan Cleaning was missing.
+       */
+
+      // NEW: Extract Fan certificates must only be stored in the verified
+      // Extract Fan Cleaning folder. Never silently fall back to Log Books.
+      const targetFolderId = folderIds.extractFan;
 
       if (!targetFolderId) {
-        throw new Error('Could not determine target folder for PDF upload');
+        throw new Error(
+          "Extract Fan Cleaning folder was not found under '6 - Log Books / Plant and Equipment'. PDF was not uploaded."
+        );
       }
 
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
@@ -788,7 +802,11 @@ const FanExtract = ({
       throw new Error('Upload failed: request did not return a successful status');
     } catch (error) {
       console.error('Error uploading Extract Fan PDF:', error);
-      return { stored: false, sourceReference: null };
+      return {
+        stored: false,
+        sourceReference: null,
+        error: error?.message || 'Failed to upload Extract Fan PDF to Site Documents',
+      };
     } finally {
       setIsUploading(false);
     }
@@ -1127,6 +1145,7 @@ const FanExtract = ({
       }
       if (!pdfResult?.uploadResult?.stored) {
         throw new Error(
+          pdfResult?.uploadResult?.error ||
           "Extract Fan was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
         );
       }
