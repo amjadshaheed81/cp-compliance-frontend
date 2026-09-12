@@ -39,6 +39,8 @@ const SiteChecks = ({
   const datePickerRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [create, setCreate] = useState(false);
+  const [copyMode, setCopyMode] = useState(false);
+  const [copyQuantity, setCopyQuantity] = useState(1);
   const [typeoptions, settypeoptions] = useState([]);
   const [subtypeoptions, setsubtypeoptions] = useState([]);
   const [subtypeoptions2, setsubtypeoptions2] = useState([]);
@@ -352,6 +354,8 @@ const SiteChecks = ({
       assistantUserID: action.assistantUserID,
       repeatFrequency: action.repeatFrequency,
     });
+    setCopyQuantity(1);
+    setCopyMode(true);
     setCreate(true);
   };
 
@@ -424,26 +428,83 @@ const SiteChecks = ({
       setIsLoading(false);
       form.reportValidity();
     }
-    const body = formData;
-    if (body?.type === "Assessment") {
-      body.category = body.subType;
-    }
     if (!siteSelectedForGlobal?.siteId) {
       toast.error("Please select site from site search to proceed....");
       setIsLoading(false);
       return;
     }
+
+    const quantity = Number(copyQuantity);
+    if (copyMode && (!Number.isInteger(quantity) || quantity < 1)) {
+      toast.error("Number of Copies must be a whole number of at least 1.");
+      setIsLoading(false);
+      return;
+    }
+
+    const body = { ...formData };
+    if (body?.type === "Assessment") {
+      body.category = body.subType;
+    }
     body.siteId = siteSelectedForGlobal.siteId;
     body.dueDate = body?.dueDate ? new Date(body.dueDate) : "";
     body.startDate = body?.startDate ? new Date(body.startDate) : "";
-    const sitecheckres = await post("/api/site-check/", body);
-    body.checkId = sitecheckres?.data?.checkId;
-    if (body.startDate) {
-      setCalenderEvents(body);
+
+    try {
+      if (copyMode) {
+        const copyResponse = await post("/api/site-check/copies", {
+          quantity,
+          siteId: body.siteId,
+          type: body.type,
+          subType: body.subType,
+          category: body.category,
+          dueDate: body.dueDate || null,
+          startDate: body.startDate || null,
+          leadUserID: body.leadUserID,
+          assistantUserID: body.assistantUserID,
+          repeatFrequency: body.repeatFrequency,
+        });
+
+        const createdCopies = Array.isArray(copyResponse?.data)
+          ? copyResponse.data
+          : [];
+
+        createdCopies.forEach((createdCopy) => {
+          if (body.startDate && createdCopy?.checkId) {
+            setCalenderEvents({ ...body, checkId: createdCopy.checkId });
+          }
+        });
+
+        toast.success(
+          `${createdCopies.length || quantity} Site Check${
+            quantity === 1 ? "" : "s"
+          } created successfully.`
+        );
+      } else {
+        const sitecheckres = await post("/api/site-check/", body);
+        const createdBody = {
+          ...body,
+          checkId: sitecheckres?.data?.checkId,
+        };
+        if (createdBody.startDate) {
+          setCalenderEvents(createdBody);
+        }
+      }
+
+      await getSiteChecks();
+      setCreate(false);
+      setCopyMode(false);
+      setCopyQuantity(1);
+    } catch (error) {
+      const responseMessage = error?.response?.data;
+      const message =
+        typeof responseMessage === "string"
+          ? responseMessage
+          : responseMessage?.message ||
+            `Unable to ${copyMode ? "create Site Check copies" : "create Site Check"}. Please try again.`;
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
-    await getSiteChecks();
-    setCreate(false);
-    setIsLoading(false);
   };
 
   const setCalenderEvents = (body) => {
@@ -644,6 +705,8 @@ const SiteChecks = ({
                           style={{ width: "150px" }}
                           className="btn btn-primary text-white pr-2"
                           onClick={() => {
+                            setCopyMode(false);
+                            setCopyQuantity(1);
                             setCreate(true);
                             setFormData({
                               searchField: "",
@@ -892,7 +955,10 @@ const SiteChecks = ({
           {create && (
             <div>
               <form onSubmit={addSiteCheck}>
-                <BreadCrumHeader header={"Site Check - New"} page={"New"} />
+                <BreadCrumHeader
+                  header={copyMode ? "Site Check - Copy" : "Site Check - New"}
+                  page={copyMode ? "Copy" : "New"}
+                />
                 <Grid container>
                   <Grid sm={4}>
                     <div style={{ margin: "10px" }}>
@@ -1199,7 +1265,38 @@ const SiteChecks = ({
                         </div>
                       )}
                   </Grid>
-                  <Grid sm={4}></Grid>
+                  {copyMode && (
+                    <>
+                      <Grid sm={12}>
+                        <div
+                          className="alert alert-info"
+                          style={{ margin: "10px" }}
+                        >
+                          Creates new Site Checks from these details. Previous
+                          inspection data, PDFs and History are not copied.
+                        </div>
+                      </Grid>
+                      <Grid sm={4}>
+                        <div style={{ margin: "10px" }}>
+                          <label htmlFor="copyQuantity">Number of Copies</label>
+                          <input
+                            id="copyQuantity"
+                            name="copyQuantity"
+                            type="number"
+                            min="1"
+                            step="1"
+                            required
+                            className="form-control"
+                            value={copyQuantity}
+                            onChange={(event) =>
+                              setCopyQuantity(event.target.value)
+                            }
+                          />
+                        </div>
+                      </Grid>
+                    </>
+                  )}
+                  <Grid sm={copyMode ? 8 : 4}></Grid>
                   <hr />
                   <Grid sm={4}></Grid>
                   <Grid sm={4}></Grid>
@@ -1218,7 +1315,11 @@ const SiteChecks = ({
                           //onClick={() => { addSiteCheck() }}
                           type="submit"
                         >
-                          Save & Continue
+                          {copyMode
+                            ? Number(copyQuantity) === 1
+                              ? "Create Copy"
+                              : `Create ${copyQuantity || 0} Copies`
+                            : "Save & Continue"}
                         </button>
                         <button
                           style={{
@@ -1230,6 +1331,8 @@ const SiteChecks = ({
                           className="btn btn-primary btn-light"
                           onClick={() => {
                             setCreate(false);
+                            setCopyMode(false);
+                            setCopyQuantity(1);
                           }}
                         >
                           Cancel
