@@ -2001,7 +2001,7 @@ const WaterHeaterCertificate = ({
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Date</label>
+                <label className="form-label">Signed Date</label>
                 <input
                     type="date"
                     className="form-control"
@@ -2048,7 +2048,7 @@ const WaterHeaterCertificate = ({
                   error={validationErrors.engineer || engineerLoadError}
               />
               <div className="mb-3">
-                <label className="form-label">Date</label>
+                <label className="form-label">Signed Date</label>
                 <input
                     type="date"
                     className="form-control"
