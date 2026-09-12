@@ -28,6 +28,17 @@ import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 import { recordSpecializedInspectionHistory } from "./shared/specializedInspectionHistory";
 
+const getBasePhotoUrl = (url) => {
+    if (!url || typeof url !== "string") return "";
+    return url.split("?")[0];
+};
+
+const getPhotoDisplayUrl = (url, token) => {
+    const baseUrl = getBasePhotoUrl(url);
+    if (!baseUrl) return "";
+    return token ? `${baseUrl}?${token}` : baseUrl;
+};
+
 let PDFLib;
 
 if (typeof window !== 'undefined') {
@@ -902,22 +913,23 @@ const GasSafetyRecord = ({
 
             const uploadResults = await Promise.all(
                 filesToUpload.map(async (file, index) => {
-                    const response = await uploadSiteCheckDoc({
+                    const uploadedUrl = await uploadSiteCheckDoc({
                         siteId: authoritativeSiteId || 0,
                         file: file
                     });
 
-                    const baseUrl = response?.url ||
-                        `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+                    if (typeof uploadedUrl !== "string" || !uploadedUrl.trim()) {
+                        throw new Error(`Photo upload did not return a valid URL for ${file.name}`);
+                    }
 
-                    const imageUrl = `${baseUrl}?${token}`;
+                    const baseUrl = getBasePhotoUrl(uploadedUrl.trim());
 
                     return {
-                        url: imageUrl,
-                        baseUrl: baseUrl,
+                        url: getPhotoDisplayUrl(baseUrl, token),
+                        baseUrl,
                         paramKey: availableParams[index],
                         fileName: file.name,
-                        documentId: response?.documentId || uuidv4()
+                        documentId: uuidv4()
                     };
                 })
             );
@@ -936,7 +948,7 @@ const GasSafetyRecord = ({
                 ...prev,
                 ...uploadResults.map(photo => ({
                     ...photo,
-                    url: `${photo.baseUrl}?${token}`
+                    url: getPhotoDisplayUrl(photo.baseUrl, token)
                 }))
             ].slice(0, 4));
 
