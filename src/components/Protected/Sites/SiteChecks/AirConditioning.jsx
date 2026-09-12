@@ -74,6 +74,33 @@ const sortUsersByName = (userList) =>
     getUserLabel(a).localeCompare(getUserLabel(b), undefined, { sensitivity: "base" })
   );
 
+const getMostRecentGenericInspection = (items = []) => {
+  if (!Array.isArray(items) || items.length === 0) {
+    return null;
+  }
+
+  return items.reduce((latest, current) => {
+    if (!latest) {
+      return current;
+    }
+
+    const latestCreatedAt = Date.parse(latest.createdAt || "");
+    const currentCreatedAt = Date.parse(current.createdAt || "");
+
+    if (Number.isFinite(currentCreatedAt) && Number.isFinite(latestCreatedAt)) {
+      if (currentCreatedAt !== latestCreatedAt) {
+        return currentCreatedAt > latestCreatedAt ? current : latest;
+      }
+    } else if (Number.isFinite(currentCreatedAt)) {
+      return current;
+    } else if (Number.isFinite(latestCreatedAt)) {
+      return latest;
+    }
+
+    return Number(current.id || 0) > Number(latest.id || 0) ? current : latest;
+  }, null);
+};
+
 let PDFLib;
 
 if (typeof window !== 'undefined') {
@@ -140,7 +167,9 @@ const AirConditioning = ({
     param10: "", // temperatureChecks
     param1Remark: "", // ofn
     param2Remark: "", // welding
-    param3Remark: "", // refrigerant
+    param3Remark: "", // legacy refrigerant field retained for historical records
+    refrigerantType: "",
+    refrigerantQuantity: "",
     param4Remark: "", // reclaimCylinder
     param5Remark: "", // cleaningChemicals
     param6Remark: "", // airSpray
@@ -380,7 +409,9 @@ const AirConditioning = ({
 
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
       if (apiData && apiData.length > 0) {
-        const mostRecentItem = apiData[apiData.length - 1];
+        // The API returns all Generic Inspection rows for this checkId without
+        // a guaranteed order. Select the newest record explicitly.
+        const mostRecentItem = getMostRecentGenericInspection(apiData);
         setLastEngineerId(mostRecentItem.engineer || null);
         const restoredAsset = assetsForSite.find(
             (asset) =>
@@ -445,7 +476,21 @@ const AirConditioning = ({
           param10: mostRecentItem.param10 || prev.param10,
           param1Remark: mostRecentItem.param1Remark || prev.param1Remark,
           param2Remark: mostRecentItem.param2Remark || prev.param2Remark,
+          // Keep the legacy value visible for historical records. Only values
+          // that are already an exact known refrigerant type are used as a
+          // backward-compatible type fallback; ambiguous legacy values such as
+          // "Type" or "Quant" are never guessed or migrated in the UI.
           param3Remark: mostRecentItem.param3Remark || prev.param3Remark,
+          refrigerantType:
+              mostRecentItem.refrigerantType ||
+              (["R410A", "R32"].includes(String(mostRecentItem.param3Remark || "").trim().toUpperCase())
+                  ? String(mostRecentItem.param3Remark).trim().toUpperCase()
+                  : prev.refrigerantType),
+          refrigerantQuantity:
+              mostRecentItem.refrigerantQuantity !== null &&
+              mostRecentItem.refrigerantQuantity !== undefined
+                  ? String(mostRecentItem.refrigerantQuantity)
+                  : prev.refrigerantQuantity,
           param4Remark: mostRecentItem.param4Remark || prev.param4Remark,
           param5Remark: mostRecentItem.param5Remark || prev.param5Remark,
           param6Remark: mostRecentItem.param6Remark || prev.param6Remark,
@@ -759,6 +804,19 @@ const AirConditioning = ({
     }));
   };
 
+  const handleRefrigerantQuantityChange = (e) => {
+    const rawValue = e.target.value.replace(",", ".");
+
+    // Dan's requirement is a numeric value with at most one decimal place.
+    // Empty is allowed because the existing Materials Used fields are optional.
+    if (rawValue === "" || /^\d+(?:\.\d{0,1})?$/.test(rawValue)) {
+      setFormData((prev) => ({
+        ...prev,
+        refrigerantQuantity: rawValue,
+      }));
+    }
+  };
+
   const calculateExpiryDate = (visitDate, repeatFrequency) =>
     calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
@@ -794,7 +852,14 @@ const AirConditioning = ({
     param10: formData.param10,
     param1Remark: formData.param1Remark,
     param2Remark: formData.param2Remark,
-    param3Remark: formData.param3Remark,
+    // Legacy param3Remark is intentionally not reused for new AC submissions.
+    // Existing historical rows remain untouched in the database.
+    param3Remark: null,
+    refrigerantType: formData.refrigerantType || null,
+    refrigerantQuantity:
+        formData.refrigerantQuantity === ""
+            ? null
+            : Number(formData.refrigerantQuantity),
     param4Remark: formData.param4Remark,
     param5Remark: formData.param5Remark,
     param6Remark: formData.param6Remark,
@@ -1118,7 +1183,14 @@ const AirConditioning = ({
       // Materials used
       setTextField('OFN', formData.param1Remark || '', mediumFont);
       setTextField('Welding', formData.param2Remark || '', mediumFont);
-      setTextField('Refridgerant', formData.param3Remark || '', mediumFont);
+      setTextField('Refrigerant Type', formData.refrigerantType || '', mediumFont);
+      setTextField(
+          'Refrigerant Quantity',
+          formData.refrigerantQuantity === null || formData.refrigerantQuantity === undefined
+              ? ''
+              : String(formData.refrigerantQuantity),
+          mediumFont
+      );
       setTextField('Reclaim Cylinder', formData.param4Remark || '', mediumFont);
       setTextField('Cleaning Chemicals', formData.param5Remark || '', mediumFont);
       setTextField('Air Spray', formData.param6Remark || '', mediumFont);
@@ -2307,22 +2379,42 @@ const AirConditioning = ({
                     </div>
 
                     <div>
-                      <label className="form-label fw-bold">Refrigerant </label>
+                      <label className="form-label fw-bold">Refrigerant Type</label>
                       <select
                           className="form-select"
-                          value={formData.param3Remark}
+                          value={formData.refrigerantType}
                           onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                param3Remark: e.target.value,
-                              })
+                              setFormData((prev) => ({
+                                ...prev,
+                                refrigerantType: e.target.value,
+                              }))
                           }
                           disabled={isSubmitted}
                       >
                         <option value="">Select</option>
-                        <option value="Type">Type</option>
-                        <option value="Quant">Quant</option>
+                        <option value="R410A">R410A</option>
+                        <option value="R32">R32</option>
                       </select>
+                    </div>
+                    <div>
+                      <label className="form-label fw-bold">Refrigerant Quantity</label>
+                      <input
+                          type="text"
+                          className="form-control"
+                          value={formData.refrigerantQuantity}
+                          onChange={handleRefrigerantQuantityChange}
+                          disabled={isSubmitted}
+                          inputMode="decimal"
+                          pattern="^\\d+(?:\\.\\d)?$"
+                          title="Enter a non-negative number with at most one decimal place"
+                      />
+                      {!formData.refrigerantType &&
+                          !formData.refrigerantQuantity &&
+                          formData.param3Remark && (
+                              <div className="form-text">
+                                Legacy saved refrigerant value: {formData.param3Remark}
+                              </div>
+                          )}
                     </div>
                     <div>
                       <label className="form-label fw-bold">
