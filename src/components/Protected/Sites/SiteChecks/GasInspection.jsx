@@ -313,7 +313,9 @@ const GasSafetyRecord = ({
                 // API now returns a single object instead of array
                 const gasSafetyData = await get(`/api/site-check/gas-safety-inspection/${checkId}`);
 
-                if (!gasSafetyData) {
+                // The shared get() helper returns [] when the API body is null/empty.
+                // This endpoint returns one GasSafetyInspection object when a record exists.
+                if (!gasSafetyData || Array.isArray(gasSafetyData) || !gasSafetyData.id) {
                     console.log("No gas safety data found for this check");
                     return;
                 }
@@ -623,12 +625,9 @@ const GasSafetyRecord = ({
                     engineerSignatureDate: toJavaLocalDate(formData.engineerSignatureDate),
                 };
 
-                const existingInspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
-                if (existingInspections?.length > 0) {
-                    await put(`/api/site-check/gas-safety-inspection/${currentCheckId}`, inspectionPayload);
-                } else {
-                    await post(`/api/site-check/gas-safety-inspection`, inspectionPayload);
-                }
+                // POST is intentionally used for both create and update.
+                // saveGasSafetyInspection() already upserts by checkId on the backend.
+                await post(`/api/site-check/gas-safety-inspection`, inspectionPayload);
 
                 toast.success(`Action #${verifiedAction.actionId} successfully linked to inspection`);
             }
@@ -1357,15 +1356,8 @@ const GasSafetyRecord = ({
                 inspectionDetails?.repeatFrequency
             );
 
-            let existingInspection = null;
-            if (currentCheckId) {
-                try {
-                    // This endpoint returns one object (or null), not an array.
-                    existingInspection = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
-                } catch (error) {
-                    console.error('Error checking for existing inspection:', error);
-                }
-            }
+            // No pre-save existence check is required. The backend POST service
+            // already creates a missing Gas Safety row or updates the existing row by checkId.
 
             const statusPayload = {
                 siteId: authoritativeSiteId,
@@ -1415,18 +1407,12 @@ const GasSafetyRecord = ({
                 checkId: checkIdToUse
             };
 
-            let saveResponse;
-            if (existingInspection) {
-                saveResponse = await put(
-                    `/api/site-check/gas-safety-inspection/${checkIdToUse}`,
-                    inspectionPayload
-                );
-            } else {
-                saveResponse = await post(
-                    `/api/site-check/gas-safety-inspection`,
-                    inspectionPayload
-                );
-            }
+            // Use the backend upsert endpoint for both first-time and repeat saves.
+            // This avoids treating the shared get() helper's empty [] fallback as an existing row.
+            const saveResponse = await post(
+                `/api/site-check/gas-safety-inspection`,
+                inspectionPayload
+            );
 
             if (![200, 201, 204].includes(saveResponse?.status)) {
                 throw new Error('Failed to save inspection data');
