@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
+import { ROLE } from "../../../../Constant/Role";
 
 const SurveyWaterTemperatureMonitoring = ({
                                             checkId,
@@ -44,7 +45,10 @@ const SurveyWaterTemperatureMonitoring = ({
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sortOrderDirty, setSortOrderDirty] = useState(false);
+  const [draggedRowIndex, setDraggedRowIndex] = useState(null);
 
+  const isAdmin = loggedInUserData?.role === ROLE.ADMIN;
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -79,6 +83,8 @@ const SurveyWaterTemperatureMonitoring = ({
       data = removeduplciate(data);
       setFormData(data);
     }
+    setSortOrderDirty(false);
+    setDraggedRowIndex(null);
     setIsLoading(false);
   };
 
@@ -223,6 +229,39 @@ const SurveyWaterTemperatureMonitoring = ({
     //getSurvey();
   };
 
+  const handleCompletedOutletDrop = (fromIndex, toIndex) => {
+    if (!isAdmin || fromIndex === null || fromIndex === toIndex) {
+      setDraggedRowIndex(null);
+      return;
+    }
+
+    const sourceRow = formData?.[fromIndex];
+    const targetRow = formData?.[toIndex];
+    if (!sourceRow?.completed || !targetRow?.completed) {
+      setDraggedRowIndex(null);
+      return;
+    }
+
+    const reordered = [...formData];
+    const [movedRow] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, movedRow);
+
+    let nextSortOrder = 1;
+    const normalized = reordered.map((item) => {
+      // Existing rows have an id. Keep every persisted outlet in the automatic
+      // 1..N sequence, even if an older/incomplete row is not draggable.
+      if (!item?.id || !item?.assetId) return item;
+      return {
+        ...item,
+        sortOrder: nextSortOrder++,
+      };
+    });
+
+    setFormData(normalized);
+    setSortOrderDirty(true);
+    setDraggedRowIndex(null);
+  };
+
   const addSiteCheckSurvey2 = async (event) => {
     event.preventDefault();
     const form = event.target;
@@ -251,6 +290,23 @@ const SurveyWaterTemperatureMonitoring = ({
 
       }
     }
+
+    if (isAdmin && sortOrderDirty) {
+      const persistedOutlets = formData.filter(
+          (item) => item?.id && item?.assetId
+      );
+
+      if (persistedOutlets.length > 0) {
+        await put("/api/site-check/water-outlet-temp/sort-order-batch", {
+          checkId: Number(checkId),
+          orders: persistedOutlets.map((item) => ({
+            assetId: Number(item.assetId),
+            sortOrder: Number(item.sortOrder),
+          })),
+        });
+      }
+    }
+
     toast.success("Water outlet temperature data saved.");
     getSurvey();
   };
@@ -900,6 +956,13 @@ const SurveyWaterTemperatureMonitoring = ({
             </Grid>
 
             <Grid sm={12}>
+              {isAdmin && formData.some((item) => item?.completed) && (
+                  <div className="alert alert-info py-2 mb-2">
+                    <i className="fas fa-grip-vertical me-2"></i>
+                    Admin: drag saved outlets by the Order handle, then click Save.
+                    The order numbers are updated automatically.
+                  </div>
+              )}
               <div className="table-responsive">
                 <table className="table table-bordered f-11">
                   <thead className="table-dark">
@@ -950,10 +1013,41 @@ const SurveyWaterTemperatureMonitoring = ({
                         const selectedAssetOption = assetOptions.find(o => o.key == formData[idx]?.assetId) || null;
                         console.log("[SurveyWaterTemp] row", idx, "assetId", formData[idx]?.assetId, "assetOptions", assetOptions?.length, "selected", selectedAssetOption, "siteAssets", siteAssets?.length);
                         return (
-                            <tr key={idx}>
+                            <tr
+                                key={formData?.[idx]?.assetId ? `asset-${formData[idx].assetId}` : `new-${idx}`}
+                                onDragOver={(e) => {
+                                  if (isAdmin && formData?.[idx]?.completed && draggedRowIndex !== null) {
+                                    e.preventDefault();
+                                  }
+                                }}
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  handleCompletedOutletDrop(draggedRowIndex, idx);
+                                }}
+                            >
                               <td>
                                 {formData?.[idx]?.completed ? (
-                                    <p>{formData?.[idx]?.sortOrder}</p>
+                                    isAdmin ? (
+                                        <div className="d-flex align-items-center gap-2">
+                                          <span
+                                              draggable
+                                              title="Drag to change outlet order"
+                                              onDragStart={(e) => {
+                                                setDraggedRowIndex(idx);
+                                                e.dataTransfer.effectAllowed = "move";
+                                                e.dataTransfer.setData("text/plain", String(formData?.[idx]?.assetId ?? idx));
+                                              }}
+                                              onDragEnd={() => setDraggedRowIndex(null)}
+                                              style={{ cursor: "grab", padding: "4px 6px" }}
+                                              aria-label="Drag to change outlet order"
+                                          >
+                                            <i className="fas fa-grip-vertical"></i>
+                                          </span>
+                                          <strong>{formData?.[idx]?.sortOrder}</strong>
+                                        </div>
+                                    ) : (
+                                        <p>{formData?.[idx]?.sortOrder}</p>
+                                    )
                                 ) : (
                                     <input
                                         value={formData?.[idx]?.sortOrder}
