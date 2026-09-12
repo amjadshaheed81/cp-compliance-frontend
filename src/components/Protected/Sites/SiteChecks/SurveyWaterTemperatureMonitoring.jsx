@@ -1,7 +1,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
+import { useBlocker } from "react-router-dom";
 import { get, post, put } from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -22,6 +22,32 @@ import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
 import { ROLE } from "../../../../Constant/Role";
 
+const ADMIN_EDITABLE_FIELDS = [
+  "outletType",
+  "temperature",
+  "normalRunTime",
+  "usageFrequency",
+  "floor",
+  "room",
+];
+
+const TRACKED_UNSAVED_FIELDS = ["sortOrder", ...ADMIN_EDITABLE_FIELDS];
+
+const normalizeComparableValue = (value) => {
+  if (value === null || value === undefined) return "";
+  return String(value);
+};
+
+const buildSavedOutletBaseline = (rows = []) =>
+    rows.reduce((acc, row) => {
+      if (!row?.id || !row?.assetId) return acc;
+      acc[String(row.id)] = TRACKED_UNSAVED_FIELDS.reduce((snapshot, field) => {
+        snapshot[field] = normalizeComparableValue(row?.[field]);
+        return snapshot;
+      }, {});
+      return acc;
+    }, {});
+
 const SurveyWaterTemperatureMonitoring = ({
                                             checkId,
                                             siteAssets,
@@ -33,7 +59,6 @@ const SurveyWaterTemperatureMonitoring = ({
                                             repeatFrequency,
                                             leadUserID
                                           }) => {
-  const navigate = useNavigate();
   const [outletoptions, setoutletoptions] = useState([]);
   const [tempratureoptions, settempratureoptions] = useState([]);
   const [normruntime, setnormruntime] = useState([]);
@@ -47,8 +72,54 @@ const SurveyWaterTemperatureMonitoring = ({
   const [isLoading, setIsLoading] = useState(false);
   const [sortOrderDirty, setSortOrderDirty] = useState(false);
   const [draggedRowIndex, setDraggedRowIndex] = useState(null);
+  const [savedOutletBaseline, setSavedOutletBaseline] = useState({});
 
   const isAdmin = loggedInUserData?.role === ROLE.ADMIN;
+
+  const getChangedFields = (row) => {
+    if (!isAdmin || !row?.id) return [];
+    const baseline = savedOutletBaseline[String(row.id)];
+    if (!baseline) return [];
+
+    return TRACKED_UNSAVED_FIELDS.filter(
+        (field) =>
+            normalizeComparableValue(row?.[field]) !==
+            normalizeComparableValue(baseline?.[field])
+    );
+  };
+
+  const getConfigChangedFields = (row) =>
+      getChangedFields(row).filter((field) => field !== "sortOrder");
+
+  const hasUnsavedAdminChanges =
+      isAdmin && formData.some((row) => getChangedFields(row).length > 0);
+
+  const blocker = useBlocker(hasUnsavedAdminChanges);
+
+  useEffect(() => {
+    if (blocker.state !== "blocked") return;
+
+    const leaveWithoutSaving = window.confirm(
+        "You have unsaved Water Temperature Monitoring changes. Leave without saving them?"
+    );
+
+    if (leaveWithoutSaving) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+    }
+  }, [blocker]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (!hasUnsavedAdminChanges) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedAdminChanges]);
 
   useEffect(() => {
     if (siteSelectedForGlobal?.siteId) {
@@ -82,6 +153,9 @@ const SurveyWaterTemperatureMonitoring = ({
       //data = data.reverse();
       data = removeduplciate(data);
       setFormData(data);
+      setSavedOutletBaseline(buildSavedOutletBaseline(data));
+    } else {
+      setSavedOutletBaseline({});
     }
     setSortOrderDirty(false);
     setDraggedRowIndex(null);
@@ -171,14 +245,35 @@ const SurveyWaterTemperatureMonitoring = ({
     return node?.[0]?.nodeName??id ;
   };
 
+  const getLayoutNodeByStoredValue = (value, nodeType) =>
+      siteLayout.find(
+          (site) =>
+              site.nodeType === nodeType &&
+              (String(site.id) === String(value) || site.nodeName === value)
+      );
+
+  const getLayoutSelectValue = (value, nodeType) => {
+    if (value === null || value === undefined || value === "null") return "";
+    return getLayoutNodeByStoredValue(value, nodeType)?.nodeName ?? value;
+  };
+
   const handleInputChange = (e, idx) => {
     const { name, value } = e.target;
     const uformData = [...formData];
+    const currentRow = formData[idx];
+    const isAdminPersistedEdit =
+        isAdmin && Boolean(currentRow?.id && currentRow?.assetId);
+
     const udata = {
-      ...formData[idx],
+      ...currentRow,
       [name]: value,
-      update: true,
+      ...(isAdminPersistedEdit ? {} : { update: true }),
     };
+
+    if (name === "floor" && value !== currentRow?.floor) {
+      udata.room = "";
+    }
+
     uformData[idx] = udata;
     setFormData(uformData);
   };
@@ -258,7 +353,11 @@ const SurveyWaterTemperatureMonitoring = ({
     });
 
     setFormData(normalized);
-    setSortOrderDirty(true);
+    setSortOrderDirty(
+        normalized.some((row) =>
+            getChangedFields(row).includes("sortOrder")
+        )
+    );
     setDraggedRowIndex(null);
   };
 
@@ -267,6 +366,7 @@ const SurveyWaterTemperatureMonitoring = ({
     const form = event.target;
     if (!form.checkValidity()) {
       form.reportValidity();
+      return;
     }
     for (const data of formData) {
       if (!data.completed && (data.update || data.new )) {
@@ -302,6 +402,28 @@ const SurveyWaterTemperatureMonitoring = ({
           orders: persistedOutlets.map((item) => ({
             assetId: Number(item.assetId),
             sortOrder: Number(item.sortOrder),
+          })),
+        });
+      }
+    }
+
+    if (isAdmin) {
+      const changedOutletConfigs = formData
+          .filter((item) => item?.id && item?.assetId)
+          .filter((item) => getConfigChangedFields(item).length > 0);
+
+      if (changedOutletConfigs.length > 0) {
+        await put("/api/site-check/water-outlet-temp/admin-config-batch", {
+          checkId: Number(checkId),
+          updates: changedOutletConfigs.map((item) => ({
+            id: Number(item.id),
+            assetId: Number(item.assetId),
+            outletType: item.outletType,
+            temperature: item.temperature,
+            normalRunTime: item.normalRunTime,
+            usageFrequency: item.usageFrequency,
+            floor: item.floor,
+            room: item.room,
           })),
         });
       }
@@ -959,8 +1081,14 @@ const SurveyWaterTemperatureMonitoring = ({
               {isAdmin && formData.some((item) => item?.completed) && (
                   <div className="alert alert-info py-2 mb-2">
                     <i className="fas fa-grip-vertical me-2"></i>
-                    Admin: drag saved outlets by the Order handle, then click Save.
-                    The order numbers are updated automatically.
+                    Admin: drag saved outlets to change Order, and edit the saved dropdown fields directly.
+                    Click Save to persist the highlighted changes.
+                  </div>
+              )}
+              {hasUnsavedAdminChanges && (
+                  <div className="alert alert-warning py-2 mb-2">
+                    <strong>Unsaved changes:</strong> changed cells are highlighted.
+                    Save before leaving this Site Check, or you will be asked to confirm leaving without saving.
                   </div>
               )}
               <div className="table-responsive">
@@ -1000,7 +1128,19 @@ const SurveyWaterTemperatureMonitoring = ({
                             .map(
                                 (option) => option.assetId + " - "+ option.assetName + " - " + option.category
                             )?.[0];
-                        formData[idx].completed = formData?.[idx]?.completed && isAllFilled;
+                        const isPersistedRow = Boolean(
+                            formData?.[idx]?.id && formData?.[idx]?.assetId
+                        );
+                        if (!(isAdmin && isPersistedRow)) {
+                          formData[idx].completed =
+                              formData?.[idx]?.completed && isAllFilled;
+                        }
+                        const canAdminEditSavedRow = isAdmin && isPersistedRow;
+                        const changedFields = getChangedFields(formData?.[idx]);
+                        const changedFieldSet = new Set(changedFields);
+                        const rowHasUnsavedChanges = changedFields.length > 0;
+                        const changedCellClass = (field) =>
+                            changedFieldSet.has(field) ? "table-warning" : "";
                         // Asset options: exclude only other rows' assets so current row's selection stays visible
                         // Assets must have category=Mechanical, subCategory=Water Services, subCategory2=Outlet, subCategory3=Tap or Shower (add via Site > Assets)
                         const assetOptions = siteAssets
@@ -1025,7 +1165,7 @@ const SurveyWaterTemperatureMonitoring = ({
                                   handleCompletedOutletDrop(draggedRowIndex, idx);
                                 }}
                             >
-                              <td>
+                              <td className={changedCellClass("sortOrder")}>
                                 {formData?.[idx]?.completed ? (
                                     isAdmin ? (
                                         <div className="d-flex align-items-center gap-2">
@@ -1092,9 +1232,9 @@ const SurveyWaterTemperatureMonitoring = ({
                                     />
                                 )}
                               </td>
-                              <td>
+                              <td className={changedCellClass("outletType")}>
                                 <select
-                                    disabled={formData?.[idx]?.completed}
+                                    disabled={formData?.[idx]?.completed && !canAdminEditSavedRow}
                                     name="outletType"
                                     className="form-control form-select"
                                     id="outletType"
@@ -1110,9 +1250,9 @@ const SurveyWaterTemperatureMonitoring = ({
                                   ))}
                                 </select>
                               </td>
-                              <td>
+                              <td className={changedCellClass("temperature")}>
                                 <select
-                                    disabled={formData?.[idx]?.completed}
+                                    disabled={formData?.[idx]?.completed && !canAdminEditSavedRow}
                                     name="temperature"
                                     className="form-control form-select"
                                     id="temperature"
@@ -1129,9 +1269,12 @@ const SurveyWaterTemperatureMonitoring = ({
                                 </select>
                               </td>
 
-                              <td style={{ width: "150px" }}>
+                              <td
+                                  className={changedCellClass("normalRunTime")}
+                                  style={{ width: "150px" }}
+                              >
                                 <select
-                                    disabled={formData?.[idx]?.completed}
+                                    disabled={formData?.[idx]?.completed && !canAdminEditSavedRow}
                                     name="normalRunTime"
                                     className="form-control form-select"
                                     id="normalRunTime"
@@ -1147,9 +1290,9 @@ const SurveyWaterTemperatureMonitoring = ({
                                   ))}
                                 </select>
                               </td>
-                              <td>
+                              <td className={changedCellClass("usageFrequency")}>
                                 <select
-                                    disabled={formData?.[idx]?.completed}
+                                    disabled={formData?.[idx]?.completed && !canAdminEditSavedRow}
                                     name="usageFrequency"
                                     className="form-control form-select"
                                     id="usageFrequency"
@@ -1165,15 +1308,15 @@ const SurveyWaterTemperatureMonitoring = ({
                                   <option value="Yearly">Yearly</option>
                                 </select>
                               </td>
-                              <td>
-                                {formData?.[idx]?.completed ? (
+                              <td className={changedCellClass("floor")}>
+                                {formData?.[idx]?.completed && !canAdminEditSavedRow ? (
                                     formData?.[idx]?.floor != 'null' ? getNodeName(formData?.[idx]?.floor) : '--'
                                 ) : (
                                     <select
-                                        disabled={formData?.[idx]?.completed}
+                                        disabled={formData?.[idx]?.completed && !canAdminEditSavedRow}
                                         className="form-control form-select"
                                         name="floor"
-                                        value={formData?.[idx]?.floor}
+                                        value={getLayoutSelectValue(formData?.[idx]?.floor, "floor")}
                                         required
                                         onChange={(e) => handleInputChange(e, idx)}
                                     >
@@ -1187,15 +1330,15 @@ const SurveyWaterTemperatureMonitoring = ({
                                           ))}
                                     </select>)}
                               </td>
-                              <td>
-                                {formData?.[idx]?.completed ? (
+                              <td className={changedCellClass("room")}>
+                                {formData?.[idx]?.completed && !canAdminEditSavedRow ? (
                                     formData?.[idx]?.room != 'null' ? getNodeName(formData?.[idx]?.room) : '--'
                                 ) : (
                                     <select
-                                        disabled={formData?.[idx]?.completed}
+                                        disabled={formData?.[idx]?.completed && !canAdminEditSavedRow}
                                         className="form-control form-select"
                                         name="room"
-                                        value={formData?.[idx]?.room}
+                                        value={getLayoutSelectValue(formData?.[idx]?.room, "room")}
                                         required
                                         onChange={(e) => handleInputChange(e, idx)}
                                     >
@@ -1205,7 +1348,10 @@ const SurveyWaterTemperatureMonitoring = ({
                                           .filter(
                                               (site) =>
                                                   site.nodeType === "room" &&
-                                                  site.parentNode === siteLayout.filter(s=> s.nodeName === formData?.[idx]?.floor && s.nodeType === "floor")[0]?.id
+                                                  site.parentNode === getLayoutNodeByStoredValue(
+                                                      formData?.[idx]?.floor,
+                                                      "floor"
+                                                  )?.id
                                           )
                                           .map((site) => (
                                               <option key={site.id} value={site.nodeName}>
@@ -1243,6 +1389,13 @@ const SurveyWaterTemperatureMonitoring = ({
                               </td>
 
                               <td style={{ width: "120px" }}>
+                                {rowHasUnsavedChanges && (
+                                    <div className="mb-1">
+                                      <span className="badge bg-warning text-dark">
+                                        Unsaved
+                                      </span>
+                                    </div>
+                                )}
                                 {isAllFilled && (
                                     <button
                                         type="button"
