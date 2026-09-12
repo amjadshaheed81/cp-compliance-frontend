@@ -367,7 +367,10 @@ const SiteChecks = ({
         } else if (
             siteCheck.type === "Survey" &&
             siteCheck?.subType === "Water" &&
-            siteCheck.category === "Water Risk Assessment"
+            (
+                siteCheck.category === "Water Risk Assessment" ||
+                siteCheck.category === "Domestic RA"
+            )
         ) {
             setStep("survey-water-domestic-ra");
         } else if (
