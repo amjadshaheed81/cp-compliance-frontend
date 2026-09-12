@@ -2405,7 +2405,6 @@ const AirConditioning = ({
                           onChange={handleRefrigerantQuantityChange}
                           disabled={isSubmitted}
                           inputMode="decimal"
-                          pattern="^\\d+(?:\\.\\d)?$"
                           title="Enter a non-negative number with at most one decimal place"
                       />
                       {!formData.refrigerantType &&
