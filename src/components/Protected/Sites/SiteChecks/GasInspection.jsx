@@ -941,22 +941,14 @@ const GasSafetyRecord = ({
                 }))
             ].slice(0, 4));
 
-            // Save to API
+            // Persist each photo through the dedicated photo-only endpoint so a photo save
+            // never replaces the rest of the Gas Safety inspection.
             if (currentCheckId) {
-                const payload = {
-                    checkId: currentCheckId,
-                    siteId: authoritativeSiteId,
-                    type: 'Inspection',
-                    subType: 'Gas Safety',
-                    category: 'Gas Safety Record',
-                    ...formUpdates
-                };
-
-                const existingInspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
-                if (existingInspections?.length > 0) {
-                    await put(`/api/site-check/gas-safety-inspection/${currentCheckId}`, payload);
-                } else {
-                    await post("/api/site-check/gas-safety-inspection", payload);
+                for (const photo of uploadResults) {
+                    await put(`/api/site-check/gas-safety-inspection/${currentCheckId}/photo`, {
+                        paramKey: photo.paramKey,
+                        photoUrl: photo.baseUrl
+                    });
                 }
             }
 
@@ -982,16 +974,10 @@ const GasSafetyRecord = ({
         }
 
         if (currentCheckId && photoToRemove.paramKey) {
-            const payload = {
-                checkId: currentCheckId,
-                siteId: authoritativeSiteId,
-                type: 'Inspection',
-                subType: 'Gas Safety',
-                category: 'Gas Safety Record',
-                [photoToRemove.paramKey]: ""
-            };
-
-            put(`/api/site-check/gas-safety-inspection/${currentCheckId}`, payload)
+            put(`/api/site-check/gas-safety-inspection/${currentCheckId}/photo`, {
+                paramKey: photoToRemove.paramKey,
+                photoUrl: ""
+            })
                 .catch(error => {
                     console.error("Error removing photo from API:", error);
                     toast.error("Failed to update photo in database");
@@ -1374,8 +1360,8 @@ const GasSafetyRecord = ({
             let existingInspection = null;
             if (currentCheckId) {
                 try {
-                    const inspections = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
-                    existingInspection = inspections?.length > 0 ? inspections[0] : null;
+                    // This endpoint returns one object (or null), not an array.
+                    existingInspection = await get(`/api/site-check/gas-safety-inspection/${currentCheckId}`);
                 } catch (error) {
                     console.error('Error checking for existing inspection:', error);
                 }
