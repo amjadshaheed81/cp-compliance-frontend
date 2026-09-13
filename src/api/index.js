@@ -21,17 +21,27 @@ function handleError(error) {
 
   if (error.response) {
     const { status } = error.response;
+    const requestUrl = String(error?.config?.url || "");
+    const isLoginRequest = requestUrl.includes("/api/user/login");
+    const suppressAuthRedirect = Boolean(error?.config?.suppressAuthRedirect);
 
-    if (status === 401 || status === 403) {
+    // A rejected login must be handled by the login screen so the user sees
+    // the real error. Optional background work must never log the user out.
+    if (
+      (status === 401 || status === 403) &&
+      !isLoginRequest &&
+      !suppressAuthRedirect
+    ) {
       localStorage.clear();
       window.location.href = "/#/login";
     }
 
     if (status === 500) {
-      const errorMessage = error.response.data.message;
+      const errorMessage = String(error?.response?.data?.message || "");
       if (
-        errorMessage.includes("JWT expired at") ||
-        errorMessage.includes("JWT String argument cannot be null or empty.")
+        !suppressAuthRedirect &&
+        (errorMessage.includes("JWT expired at") ||
+          errorMessage.includes("JWT String argument cannot be null or empty."))
       ) {
         localStorage.clear();
         window.location.href = "/#/login";
@@ -61,6 +71,50 @@ export function post(url, userData) {
   } catch (error) {
     return handleError(error);
   }
+}
+
+
+export function postWithTimeout(url, userData, timeoutMs = 20000) {
+  configAxios();
+  return axiosInstance({
+    method: "POST",
+    url,
+    data: userData,
+    headers: getHeaders(),
+    timeout: timeoutMs,
+  });
+}
+
+export async function getWithTimeout(url, timeoutMs = 15000) {
+  configAxios();
+  try {
+    const res = await axiosInstance({
+      method: "GET",
+      url,
+      headers: getHeaders(),
+      timeout: timeoutMs,
+    });
+    return res?.data ?? null;
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+export function putWithTimeout(
+  url,
+  data,
+  timeoutMs = 10000,
+  { suppressAuthRedirect = false } = {}
+) {
+  configAxios();
+  return axiosInstance({
+    method: "PUT",
+    url,
+    data,
+    headers: getHeaders(),
+    timeout: timeoutMs,
+    suppressAuthRedirect,
+  });
 }
 
 export function postMultiPartFormData(url, userData) {

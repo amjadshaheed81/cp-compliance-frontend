@@ -17,6 +17,7 @@ import BuildNumber from "../common/BuildNumber/BuildNumber";
 const LoginForm = ({ login, loginUser }) => {
   const navigate = useNavigate();
   const [isLoading, setLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
   const {
     register,
     formState: { errors },
@@ -25,11 +26,30 @@ const LoginForm = ({ login, loginUser }) => {
   const goTo = (link) => {
     navigate(link);
   };
-  const handleLoginSubmit = (data) => {
-    const payload = { ...data, email: String(data?.email).toLowerCase() || "" };
+  const handleLoginSubmit = async (data) => {
+    if (isLoading) {
+      return;
+    }
+
+    const payload = {
+      ...data,
+      email: String(data?.email || "").trim().toLowerCase(),
+    };
+
+    setLoginError("");
     setLoading(true);
     localStorage.clear();
-    loginUser(payload, goTo, setLoading);
+
+    try {
+      const result = await loginUser(payload);
+      if (result?.success) {
+        goTo("/dashboard");
+        return;
+      }
+      setLoginError(result?.message || "Unable to sign in. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -111,15 +131,26 @@ const LoginForm = ({ login, loginUser }) => {
                 <button
                   type="submit"
                   className="btn btn-primary rounded w-100 login-submit"
+                  disabled={isLoading}
+                  aria-busy={isLoading}
                 >
                   {isLoading ? (
-                    <CircularProgress sx={{ color: "white" }} />
+                    <span className="d-flex align-items-center justify-content-center gap-2">
+                      <CircularProgress size={20} sx={{ color: "white" }} />
+                      Signing in...
+                    </span>
                   ) : (
                     "Login"
                   )}
                 </button>
               </div>
               {/* )} */}
+
+              {loginError && (
+                <div className="alert alert-danger mt-2 mb-0" role="alert">
+                  {loginError}
+                </div>
+              )}
 
               <div className="mt-2 text-center">
                 <p>

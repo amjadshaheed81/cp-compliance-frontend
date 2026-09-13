@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken, isSupported } from "firebase/messaging";
 
 const firebaseConfig = {
   apiKey: "AIzaSyARwHyh0QX1omIEqz92RWM4x6NyOlZxhJM",
@@ -12,32 +12,59 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+let messagingInstance = null;
 
-export const requestForToken = async () => {
+export const getMessagingInstance = async () => {
   try {
-    const currentToken = await getToken(messaging, { 
-      vapidKey: "BGWhSFhFVmc2ph5nJCT_BtVwaMjMrYlK4ZPBQMPCo9Wj1-XiPvfBWl-ZeeaylpLJ8mUK4RnA-NbV7XgZ2AMCCmM" 
-    });
-    if (currentToken) {
-      console.log('current token for client: ', currentToken);
-      return currentToken;
-    } else {
-      console.log('No registration token available. Request permission to generate one.');
+    const supported = await isSupported();
+    if (!supported) {
       return null;
     }
-  } catch (err) {
-    console.log('An error occurred while retrieving token. ', err);
+    if (!messagingInstance) {
+      messagingInstance = getMessaging(app);
+    }
+    return messagingInstance;
+  } catch (error) {
+    console.warn("Firebase messaging is not available in this browser.", error);
     return null;
   }
 };
 
-// export const onMessageListener = () =>
-//   new Promise((resolve) => {
-//     onMessage(messaging, (payload) => {
-//       console.log("Message received. ", payload);
-//       resolve(payload);
-//     });
-//   });
+const withTimeout = (promise, timeoutMs) =>
+  Promise.race([
+    promise,
+    new Promise((resolve) =>
+      window.setTimeout(() => resolve(null), timeoutMs)
+    ),
+  ]);
 
-export { messaging };
+export const requestForToken = async ({ timeoutMs = 8000 } = {}) => {
+  try {
+    if (typeof window === "undefined" || typeof navigator === "undefined") {
+      return null;
+    }
+    if (!("serviceWorker" in navigator) || !("Notification" in window)) {
+      return null;
+    }
+    if (Notification.permission === "denied") {
+      return null;
+    }
+
+    const messaging = await getMessagingInstance();
+    if (!messaging) {
+      return null;
+    }
+
+    const currentToken = await withTimeout(
+      getToken(messaging, {
+        vapidKey: "BGWhSFhFVmc2ph5nJCT_BtVwaMjMrYlK4ZPBQMPCo9Wj1-XiPvfBWl-ZeeaylpLJ8mUK4RnA-NbV7XgZ2AMCCmM"
+      }),
+      timeoutMs
+    );
+
+    return currentToken || null;
+  } catch (err) {
+    console.warn("Notification token registration skipped.", err);
+    return null;
+  }
+};

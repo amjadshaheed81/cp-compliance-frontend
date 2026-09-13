@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { onMessage } from "firebase/messaging";
-import { messaging } from "./firebase";
+import { getMessagingInstance } from "./firebase";
 import { Toast } from 'react-bootstrap';
 import { getGroupKeyFromPayload, shouldShowNotification } from './utils/notificationGroupFilter';
 
@@ -14,19 +14,40 @@ const Notification = () => {
   };
 
   useEffect(() => {
-    onMessage(messaging, (payload) => {
-      console.log('notification', payload);
-      const groupKey = getGroupKeyFromPayload(payload);
-      if (groupKey != null && !shouldShowNotification(groupKey)) {
+    let unsubscribe = null;
+    let active = true;
+
+    const registerForegroundNotifications = async () => {
+      const messaging = await getMessagingInstance();
+      if (!active || !messaging) {
         return;
       }
-      setNotification({
-        title: payload?.notification?.title ?? '',
-        body: payload?.notification?.body ?? ''
+
+      unsubscribe = onMessage(messaging, (payload) => {
+        console.log('notification', payload);
+        const groupKey = getGroupKeyFromPayload(payload);
+        if (groupKey != null && !shouldShowNotification(groupKey)) {
+          return;
+        }
+        setNotification({
+          title: payload?.notification?.title ?? '',
+          body: payload?.notification?.body ?? ''
+        });
+        setShow(true);
+        playSound();
       });
-      setShow(true);
-      playSound();
+    };
+
+    registerForegroundNotifications().catch((error) => {
+      console.warn('Foreground notifications are unavailable.', error);
     });
+
+    return () => {
+      active = false;
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   return (

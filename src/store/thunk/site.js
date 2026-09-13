@@ -3,6 +3,9 @@ import {
   del,
   get,
   post,
+  postWithTimeout,
+  getWithTimeout,
+  putWithTimeout,
   postMultiPartFormData,
   put,
   putMultiPartFormData,
@@ -1413,41 +1416,95 @@ export const deleteUser = (id) => {
   };
 };
 
-export const loginUser = (formData, goTo, setLoading) => {
+const syncNotificationTokenInBackground = async () => {
+  try {
+    const fcmToken = await requestForToken({ timeoutMs: 8000 });
+    if (!fcmToken) {
+      return;
+    }
+
+    await putWithTimeout(
+      "/api/user/fcm-token",
+      { fcmToken },
+      10000,
+      { suppressAuthRedirect: true }
+    );
+  } catch (error) {
+    // Notifications are optional. Never fail or interrupt an authenticated session.
+    console.warn("FCM token sync skipped after login.", error);
+  }
+};
+
+const getLoginErrorMessage = (error) => {
+  const apiMessage = error?.response?.data?.message;
+
+  if (apiMessage === "Bad credentials" || error?.response?.status === 401) {
+    return "Please enter valid email and password.";
+  }
+  if (apiMessage === "License trial expired") {
+    return "License expired. Please contact your admin.";
+  }
+  if (error?.code === "ECONNABORTED") {
+    return "Login timed out. Please check your connection and try again.";
+  }
+  if (!error?.response) {
+    return "Unable to reach the server. Please check your connection and try again.";
+  }
+  return "Something went wrong while signing in. Please try again.";
+};
+
+export const loginUser = (formData) => {
   return async (dispatch) => {
     try {
-      const url = `/api/user/login`;
-      const fcmToken = await requestForToken();
       const body = {
         email: formData?.email,
         password: formData?.password,
-        fcmToken
+        // Notification registration is intentionally not part of authentication.
+        fcmToken: null,
+      };
+
+      // Login gets its own short timeout instead of the shared ~33 minute API timeout.
+      const userData = await postWithTimeout("/api/user/login", body, 20000);
+      const user = userData?.data?.user;
+
+      if (!user?.id) {
+        const message = "Please enter valid email and password.";
+        toast.error(message);
+        return { success: false, message };
       }
 
-      const userData = await post(url, body);
-      if (userData?.data?.user?.id) {
-        const userLicenseData = await get('/api/user/clients/'+userData?.data?.user?.licenseId);
-        localStorage.setItem("license", JSON.stringify(userLicenseData));
-        
-        dispatch({
-          type: USER_LOGIN,
-          payload: userData?.data?.user,
-        });
-        toast.success("Successfully logged in.");
-        goTo("/dashboard");
-      } else {
-        toast.error("Please enter valid email and password.");
+      // New backend returns the already-loaded safe licence summary in the login response.
+      // The short fallback keeps staged deployments compatible with an older backend.
+      let userLicenseData = userData?.data?.license || null;
+      if (!userLicenseData && user?.licenseId) {
+        userLicenseData = await getWithTimeout(
+          `/api/user/clients/${user.licenseId}`,
+          10000
+        );
       }
-      setLoading(false);
+
+      if (!userLicenseData) {
+        const message = "Signed in, but licence details could not be loaded. Please try again.";
+        toast.error(message);
+        return { success: false, message };
+      }
+
+      localStorage.setItem("license", JSON.stringify(userLicenseData));
+      dispatch({
+        type: USER_LOGIN,
+        payload: user,
+      });
+
+      toast.success("Successfully logged in.");
+
+      // Fire-and-forget: Firebase/service-worker/browser issues cannot block login.
+      void syncNotificationTokenInBackground();
+
+      return { success: true };
     } catch (error) {
-      if(error?.response?.data?.message === "Bad credentials") {
-        toast.error("Please enter valid email and password.");
-      } else if(error?.response?.data?.message === "License trial expired") {
-          toast.error("License expired ! please contact your admin");
-      } else {
-        toast.error("Something went wrong. Please try again.");
-      }
-      setLoading(false);
+      const message = getLoginErrorMessage(error);
+      toast.error(message);
+      return { success: false, message };
     }
   };
 };
