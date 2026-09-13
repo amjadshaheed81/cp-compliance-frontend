@@ -288,7 +288,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
         ? `linear-gradient(135deg, ${meta.color} 0%, ${meta.dark} 100%)`
         : meta.soft,
       color: active ? "#ffffff" : meta.dark,
-      padding: "14px 16px",
+      padding: "16px 18px",
       boxShadow: active ? `0 10px 22px ${meta.border}80` : "none",
       transform: active ? "translateY(-2px)" : "none",
       opacity: isRiskSummaryComplete ? (active ? 1 : 0.74) : 0.68,
@@ -311,14 +311,21 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
           <Box
             sx={{
               mb: 3,
-              p: { xs: 2, md: 2.5 },
+              p: { xs: 2.25, sm: 2.5, md: 3 },
               borderRadius: 3,
               background: `linear-gradient(135deg, ${currentSummaryMeta.soft} 0%, #ffffff 72%)`,
               borderLeft: `6px solid ${currentSummaryMeta.color}`,
             }}
           >
-            <Grid container alignItems="stretch" spacing={2.5}>
-              <Grid item xs={12} lg={5}>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 5fr) minmax(0, 7fr)" },
+                gap: { xs: 2.5, md: 3, lg: 3.5 },
+                alignItems: "stretch",
+              }}
+            >
+              <Box sx={{ minWidth: 0, pr: { lg: 0.5 } }}>
                 <Box display="flex" alignItems="center" justifyContent="space-between" gap={2}>
                   <Box>
                     <Typography
@@ -389,18 +396,19 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       : "Complete all 35 risk factors before a final Low, Medium or High overall risk rating is assigned."}
                   </Typography>
                 </Box>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} lg={7}>
-                <Box
-                  sx={{
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 1.25,
-                    flexWrap: { xs: "wrap", sm: "nowrap" },
-                  }}
-                >
+              <Box
+                sx={{
+                  minWidth: 0,
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: { xs: 1.25, md: 1.5 },
+                  flexWrap: { xs: "wrap", sm: "nowrap" },
+                  py: { xs: 0.5, lg: 0 },
+                }}
+              >
                   {["high", "medium", "low"].map((band) => {
                     const meta = riskBandMeta[band];
                     return (
@@ -417,9 +425,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
                       </Box>
                     );
                   })}
-                </Box>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Box>
 
           {riskFactor?.map((q, idx) => {
