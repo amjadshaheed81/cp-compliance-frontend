@@ -210,79 +210,268 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
         ? "medium"
         : "low";
 
-  const riskBandStyle = (band) => ({
-    opacity: isRiskSummaryComplete ? (overallRiskBand === band ? 1 : 0.55) : 0.7,
-    boxShadow:
-      isRiskSummaryComplete && overallRiskBand === band
-        ? "0 0 0 3px rgba(33, 37, 41, 0.45)"
-        : "none",
-    transform:
-      isRiskSummaryComplete && overallRiskBand === band ? "scale(1.04)" : "none",
-    transition: "all 0.15s ease-in-out",
-  });
+  const riskBandMeta = {
+    high: {
+      label: "High Risk",
+      range: ">250",
+      color: "#b42318",
+      dark: "#7a271a",
+      soft: "#fef3f2",
+      border: "#fda29b",
+    },
+    medium: {
+      label: "Medium Risk",
+      range: "150 - 250",
+      color: "#b54708",
+      dark: "#7a2e0e",
+      soft: "#fffaeb",
+      border: "#fec84b",
+    },
+    low: {
+      label: "Low Risk",
+      range: "<150",
+      color: "#027a48",
+      dark: "#05603a",
+      soft: "#ecfdf3",
+      border: "#6ce9a6",
+    },
+    incomplete: {
+      label: "Survey Incomplete",
+      range: "Complete all factors",
+      color: "#175cd3",
+      dark: "#1849a9",
+      soft: "#eff8ff",
+      border: "#84caff",
+    },
+  };
+
+  const currentSummaryMeta = riskBandMeta[overallRiskBand || "incomplete"];
+  const completionPercent = totalRiskFactors > 0
+    ? Math.round((answeredRiskFactors / totalRiskFactors) * 100)
+    : 0;
+
+  const getFactorRiskMeta = (response) => {
+    const score = response?.score;
+    const hasScore = score !== null && score !== undefined && String(score).trim() !== "";
+    if (!hasScore) {
+      return {
+        label: "Not scored",
+        color: "#667085",
+        soft: "#f9fafb",
+        border: "#d0d5dd",
+      };
+    }
+
+    const weightedScore = Number(response?.weightedScore ?? 0);
+    const safeWeightedScore = Number.isFinite(weightedScore) ? weightedScore : 0;
+    if (safeWeightedScore > 17) {
+      return { label: "High factor", color: "#b42318", soft: "#fef3f2", border: "#fda29b" };
+    }
+    if (safeWeightedScore > 10) {
+      return { label: "Elevated", color: "#c4320a", soft: "#fff6ed", border: "#fdba74" };
+    }
+    if (safeWeightedScore > 5) {
+      return { label: "Moderate", color: "#b54708", soft: "#fffaeb", border: "#fec84b" };
+    }
+    return { label: "Low factor", color: "#027a48", soft: "#ecfdf3", border: "#6ce9a6" };
+  };
+
+  const riskBandStyle = (band) => {
+    const meta = riskBandMeta[band];
+    const active = isRiskSummaryComplete && overallRiskBand === band;
+    return {
+      flex: "1 1 118px",
+      minWidth: "112px",
+      borderRadius: "14px",
+      border: `1px solid ${meta.border}`,
+      background: active
+        ? `linear-gradient(135deg, ${meta.color} 0%, ${meta.dark} 100%)`
+        : meta.soft,
+      color: active ? "#ffffff" : meta.dark,
+      padding: "14px 16px",
+      boxShadow: active ? `0 10px 22px ${meta.border}80` : "none",
+      transform: active ? "translateY(-2px)" : "none",
+      opacity: isRiskSummaryComplete ? (active ? 1 : 0.74) : 0.68,
+      transition: "all 0.18s ease-in-out",
+    };
+  };
 
   return (
 
     <Box p={3}>
-      <Card>
-        <CardContent>
-          <Grid container alignItems="center" justifyContent="space-between" spacing={2} mb={2}>
-            <Grid item xs={12} md={7}>
-              <Typography variant="h6">Risk Factor Summary</Typography>
-              <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
-                <Chip
-                  variant="outlined"
-                  label={`Answered: ${answeredRiskFactors} / ${totalRiskFactors}`}
-                />
-                <Chip
-                  variant="outlined"
-                  icon={<InfoOutlinedIcon />}
-                  label={`Current Weighted Score: ${totalrisks}`}
-                />
-              </Box>
-              <Typography
-                variant="body2"
-                sx={{ mt: 1, fontWeight: 600 }}
-              >
-                {isRiskSummaryComplete
-                  ? `Survey complete - Overall risk: ${String(overallRiskBand).toUpperCase()}`
-                  : "Survey incomplete - complete all risk factors before the overall risk band is assigned."}
-              </Typography>
-            </Grid>
+      <Card
+        sx={{
+          borderRadius: 3,
+          overflow: "hidden",
+          border: `1px solid ${currentSummaryMeta.border}`,
+          boxShadow: "0 10px 28px rgba(16, 24, 40, 0.08)",
+        }}
+      >
+        <CardContent sx={{ p: { xs: 2, md: 3 } }}>
+          <Box
+            sx={{
+              mb: 3,
+              p: { xs: 2, md: 2.5 },
+              borderRadius: 3,
+              background: `linear-gradient(135deg, ${currentSummaryMeta.soft} 0%, #ffffff 72%)`,
+              borderLeft: `6px solid ${currentSummaryMeta.color}`,
+            }}
+          >
+            <Grid container alignItems="stretch" spacing={2.5}>
+              <Grid item xs={12} lg={5}>
+                <Box display="flex" alignItems="center" justifyContent="space-between" gap={2}>
+                  <Box>
+                    <Typography
+                      variant="overline"
+                      sx={{ color: currentSummaryMeta.color, fontWeight: 800, letterSpacing: 1.1 }}
+                    >
+                      Risk Factor Summary
+                    </Typography>
+                    <Typography variant="h5" sx={{ fontWeight: 800, color: "#101828", mt: -0.4 }}>
+                      {currentSummaryMeta.label}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      minWidth: 94,
+                      textAlign: "center",
+                      px: 1.5,
+                      py: 1,
+                      borderRadius: 2.5,
+                      backgroundColor: "#ffffff",
+                      border: `1px solid ${currentSummaryMeta.border}`,
+                    }}
+                  >
+                    <Typography variant="caption" sx={{ color: "#667085", fontWeight: 700 }}>
+                      SCORE
+                    </Typography>
+                    <Typography variant="h4" sx={{ lineHeight: 1.05, fontWeight: 900, color: currentSummaryMeta.color }}>
+                      {totalrisks}
+                    </Typography>
+                  </Box>
+                </Box>
 
-            <Grid item xs={12} md={5}>
-              <Box display="flex" alignItems="center" justifyContent={{ xs: "flex-start", md: "flex-end" }} flexWrap="wrap">
-                <span
-                  className="badge bg-danger p-3 m-2 risk-span"
-                  style={riskBandStyle("high")}
+                <Box mt={2}>
+                  <Box display="flex" justifyContent="space-between" alignItems="center" mb={0.75}>
+                    <Typography variant="body2" sx={{ color: "#475467", fontWeight: 600 }}>
+                      Assessment progress
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#344054", fontWeight: 800 }}>
+                      {answeredRiskFactors} / {totalRiskFactors} ({completionPercent}%)
+                    </Typography>
+                  </Box>
+                  <Box sx={{ height: 10, borderRadius: 10, overflow: "hidden", backgroundColor: "#eaecf0" }}>
+                    <Box
+                      sx={{
+                        width: `${completionPercent}%`,
+                        height: "100%",
+                        borderRadius: 10,
+                        background: `linear-gradient(90deg, ${currentSummaryMeta.color}, ${currentSummaryMeta.dark})`,
+                        transition: "width 0.25s ease",
+                      }}
+                    />
+                  </Box>
+                </Box>
+
+                <Box
+                  mt={2}
+                  sx={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                    color: currentSummaryMeta.dark,
+                  }}
                 >
-                  High <br/><br/> {">250"}
-                </span>
-                <span
-                  className="badge bg-warning p-3 m-2 risk-span"
-                  style={riskBandStyle("medium")}
+                  <InfoOutlinedIcon sx={{ fontSize: 19, mt: "1px" }} />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {isRiskSummaryComplete
+                      ? `Assessment complete. Overall weighted score ${totalrisks} is ${String(overallRiskBand).toUpperCase()} risk.`
+                      : "Complete all 35 risk factors before a final Low, Medium or High overall risk rating is assigned."}
+                  </Typography>
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} lg={7}>
+                <Box
+                  sx={{
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.25,
+                    flexWrap: { xs: "wrap", sm: "nowrap" },
+                  }}
                 >
-                  Medium<br/><br/>{"150 - 250"}
-                </span>
-                <span
-                  className="badge bg-success p-3 m-2 risk-span"
-                  style={riskBandStyle("low")}
-                >
-                  Low<br/><br/>{"<150"}
-                </span>
-              </Box>
+                  {["high", "medium", "low"].map((band) => {
+                    const meta = riskBandMeta[band];
+                    return (
+                      <Box key={band} sx={riskBandStyle(band)}>
+                        <Typography variant="subtitle2" sx={{ fontWeight: 900, textTransform: "uppercase", letterSpacing: 0.4 }}>
+                          {meta.label}
+                        </Typography>
+                        <Typography variant="h6" sx={{ fontWeight: 900, mt: 0.5 }}>
+                          {meta.range}
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontWeight: 700, opacity: 0.88 }}>
+                          Overall weighted score
+                        </Typography>
+                      </Box>
+                    );
+                  })}
+                </Box>
+              </Grid>
             </Grid>
-          </Grid>
-          <hr />
+          </Box>
+
           {riskFactor?.map((q, idx) => {
+            const factorMeta = getFactorRiskMeta(riskFactor[idx]?.response);
+            const factorWeightedScore = riskFactor[idx]?.response?.weightedScore ?? 0;
 
-            return (<Accordion defaultExpanded={idx === openIndex}>
-              <AccordionSummary expandIcon={<ExpandMore />}>
-                <Typography>{q.riskFactor}</Typography> &nbsp;&nbsp;&nbsp;&nbsp;
-                  <Chip
-                    style={getChipColor(riskFactor[idx]?.response?.weightedScore)}
-                    label={"Weighted Score : " + (riskFactor[idx]?.response?.weightedScore ?? 0)}
-                  />
+            return (<Accordion
+              defaultExpanded={idx === openIndex}
+              sx={{
+                mb: 1.25,
+                borderRadius: "10px !important",
+                border: `1px solid ${factorMeta.border}`,
+                borderLeft: `5px solid ${factorMeta.color}`,
+                boxShadow: "0 2px 8px rgba(16, 24, 40, 0.05)",
+                overflow: "hidden",
+                "&:before": { display: "none" },
+              }}
+            >
+              <AccordionSummary
+                expandIcon={<ExpandMore sx={{ color: factorMeta.color }} />}
+                sx={{
+                  backgroundColor: factorMeta.soft,
+                  "& .MuiAccordionSummary-content": {
+                    alignItems: "center",
+                    gap: 1.25,
+                    flexWrap: "wrap",
+                  },
+                }}
+              >
+                <Typography sx={{ fontWeight: 700, color: "#101828", flex: "1 1 280px" }}>
+                  {q.riskFactor}
+                </Typography>
+                <Chip
+                  size="small"
+                  label={factorMeta.label}
+                  sx={{
+                    fontWeight: 800,
+                    color: factorMeta.color,
+                    backgroundColor: "#ffffff",
+                    border: `1px solid ${factorMeta.border}`,
+                  }}
+                />
+                <Chip
+                  size="small"
+                  label={`Weighted Score: ${factorWeightedScore}`}
+                  sx={{
+                    fontWeight: 800,
+                    color: factorMeta.color,
+                    backgroundColor: factorMeta.soft,
+                    border: `1px solid ${factorMeta.border}`,
+                  }}
+                />
                   {/* <Chip
                     style={getChipColor(riskFactor[idx]?.response?.totalRiskScore)}
                     label={"Risk Score : " + (riskFactor[idx]?.response?.totalRiskScore ?? 0)}
