@@ -30,6 +30,9 @@ import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 import { calculateSiteCheckDueDateTime, calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 import SiteCheckTestLauncher from "./SiteCheckTestLauncher";
 
+// Developer-only Site Check test launcher. Keep hidden for every other account.
+const SITE_CHECK_TEST_LAUNCHER_EMAIL = "amjad.shaheed81@gmail.com";
+
 const SiteChecks = ({
   siteSelectedForGlobal,
   loggedInUserData,
@@ -81,6 +84,10 @@ const SiteChecks = ({
     Number(siteSelectedForGlobal?.siteId)
       ? siteCheckUserOptions?.siteUsers || []
       : [];
+
+  const canUseSiteCheckTestLauncher =
+    String(loggedInUserData?.email || "").trim().toLowerCase() ===
+    SITE_CHECK_TEST_LAUNCHER_EMAIL;
 
   const [itemsPerPage] = useState(7);
   const [currentPage, setCurrentPage] = useState(1);
@@ -733,13 +740,15 @@ const SiteChecks = ({
                         </button>
                       </div>
                     )}
-                    <SiteCheckTestLauncher
-                      siteSelectedForGlobal={siteSelectedForGlobal}
-                      siteUsers={managerList}
-                      onCreated={(checkId) =>
-                        goTo(`/site-checks/${checkId}/update`)
-                      }
-                    />
+                    {canUseSiteCheckTestLauncher && (
+                      <SiteCheckTestLauncher
+                        siteSelectedForGlobal={siteSelectedForGlobal}
+                        siteUsers={managerList}
+                        onCreated={(checkId) =>
+                          goTo(`/site-checks/${checkId}/update`)
+                        }
+                      />
+                    )}
                     <div className="col-md-1 col-sm-4 mt-2">
                       <CSVLink
                         filename={

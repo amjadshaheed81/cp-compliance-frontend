@@ -15,6 +15,8 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
 
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [totalrisks, settotalrisks] = useState(0)
+  const [answeredRiskFactors, setAnsweredRiskFactors] = useState(0);
+  const [totalRiskFactors, setTotalRiskFactors] = useState(0);
   const [scoreoptions, setscoreoptions] = useState(null);
 
 
@@ -105,20 +107,29 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
     const risksN = [0, 0, 0, 0]
     let weightedScore = 0
     riskFactorResponse.forEach(r => {
-      weightedScore = weightedScore + r.weightedScore;
-      if (r.weightedScore > 17) {
+      const responseWeightedScore = Number(r?.weightedScore ?? 0);
+      const safeWeightedScore = Number.isFinite(responseWeightedScore) ? responseWeightedScore : 0;
+      weightedScore += safeWeightedScore;
+      if (safeWeightedScore > 17) {
         risksN[0] = risksN[0] + 1;
-      } else if (r.weightedScore > 10) {
+      } else if (safeWeightedScore > 10) {
         risksN[1] = risksN[1] + 1;
-      } else if (r.weightedScore > 5) {
+      } else if (safeWeightedScore > 5) {
         risksN[2] = risksN[2] + 1;
       } else {
         risksN[3] = risksN[3] + 1;
       }
 
     })
+
+    const answeredCount = riskFactorResponse.filter((response) => {
+      const score = response?.score;
+      return score !== null && score !== undefined && String(score).trim() !== "";
+    }).length;
+
     setrisks(risksN)
-    
+    setAnsweredRiskFactors(answeredCount);
+    setTotalRiskFactors(riskFactorFromDB.length);
     settotalrisks(weightedScore)
     setRiskFactor(riskFactorFromDB);
     const body = {
@@ -188,46 +199,77 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
   }
 
 
+  const isRiskSummaryComplete =
+    totalRiskFactors > 0 && answeredRiskFactors === totalRiskFactors;
+
+  const overallRiskBand = !isRiskSummaryComplete
+    ? null
+    : totalrisks > 250
+      ? "high"
+      : totalrisks >= 150
+        ? "medium"
+        : "low";
+
+  const riskBandStyle = (band) => ({
+    opacity: isRiskSummaryComplete ? (overallRiskBand === band ? 1 : 0.55) : 0.7,
+    boxShadow:
+      isRiskSummaryComplete && overallRiskBand === band
+        ? "0 0 0 3px rgba(33, 37, 41, 0.45)"
+        : "none",
+    transform:
+      isRiskSummaryComplete && overallRiskBand === band ? "scale(1.04)" : "none",
+    transition: "all 0.15s ease-in-out",
+  });
+
   return (
 
     <Box p={3}>
       <Card>
         <CardContent>
-          <Grid container alignItems="center" justifyContent="space-between" mb={2}>
-            <Grid item>
-              <Typography variant="h6">Risk Factor Summary 
-                {/* <span style={{ backgroundColor: '#FF9800', color: 'white', padding: '7px 8px', borderRadius: '5px' }}><InfoOutlinedIcon />&nbsp; Overall Risk Score: {totalrisks}
-                </span> */}
-                </Typography>
-
+          <Grid container alignItems="center" justifyContent="space-between" spacing={2} mb={2}>
+            <Grid item xs={12} md={7}>
+              <Typography variant="h6">Risk Factor Summary</Typography>
+              <Box mt={1} display="flex" flexWrap="wrap" gap={1}>
+                <Chip
+                  variant="outlined"
+                  label={`Answered: ${answeredRiskFactors} / ${totalRiskFactors}`}
+                />
+                <Chip
+                  variant="outlined"
+                  icon={<InfoOutlinedIcon />}
+                  label={`Current Weighted Score: ${totalrisks}`}
+                />
+              </Box>
+              <Typography
+                variant="body2"
+                sx={{ mt: 1, fontWeight: 600 }}
+              >
+                {isRiskSummaryComplete
+                  ? `Survey complete - Overall risk: ${String(overallRiskBand).toUpperCase()}`
+                  : "Survey incomplete - complete all risk factors before the overall risk band is assigned."}
+              </Typography>
             </Grid>
 
-
-            <Grid item>
-
-              <Box display="flex" alignItems="center">
-
-                <Box ml={6} display="flex" alignItems="center">
-                  {/* <Box width={32} height={32} bgcolor="#F44336" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
-                    {/* <Typography variant="body2" color="white"></Typography> */}
-                    <span className="badge bg-danger p-3 m-2 risk-span">
-                      High <br/><br/> {">250"}
-                    </span>
-                  {/* </Box> */}
-                  {/* <Box width={32} height={32} bgcolor="#FF9800" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
-                    {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
-                    <span className="badge bg-warning p-3 m-2 risk-span">
-                      Medium<br/><br/>{"150 - 250"}
-                    </span>
-                  {/* </Box> */}
-                  
-                  {/* <Box width={32} height={32} bgcolor="#4CAF50" display="flex" alignItems="center" justifyContent="center" borderRadius="4px" mx={0.5}> */}
-                    {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
-                    <span className="badge bg-success p-3 m-2 risk-span">
-                      Low<br/><br/>{"<150"}
-                    </span>
-                  {/* </Box> */}
-                </Box>
+            <Grid item xs={12} md={5}>
+              <Box display="flex" alignItems="center" justifyContent={{ xs: "flex-start", md: "flex-end" }} flexWrap="wrap">
+                <span
+                  className="badge bg-danger p-3 m-2 risk-span"
+                  style={riskBandStyle("high")}
+                >
+                  High <br/><br/> {">250"}
+                </span>
+                <span
+                  className="badge bg-warning p-3 m-2 risk-span"
+                  style={riskBandStyle("medium")}
+                >
+                  Medium<br/><br/>{"150 - 250"}
+                </span>
+                <span
+                  className="badge bg-success p-3 m-2 risk-span"
+                  style={riskBandStyle("low")}
+                >
+                  Low<br/><br/>{"<150"}
+                </span>
               </Box>
             </Grid>
           </Grid>
