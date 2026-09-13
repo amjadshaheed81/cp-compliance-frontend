@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
+import { useBlocker } from "react-router-dom";
 import { connect } from "react-redux";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
@@ -14,6 +15,8 @@ import {
   Grid,
 } from "@mui/material";
 import { toast } from "react-toastify";
+import SortableOrderControl from "../../common/SortableOrderControl";
+import { ROLE } from "../../../Constant/Role";
 
 const AdminDropdowns = ({ loggedInUserData }) => {
   const [data, setData] = useState([]);
@@ -23,6 +26,49 @@ const AdminDropdowns = ({ loggedInUserData }) => {
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const [addNewDrp, setAddNewDrp] = useState(false);
+  const [statutoryOrderBaseline, setStatutoryOrderBaseline] = useState({});
+  const [draggedStatutoryId, setDraggedStatutoryId] = useState(null);
+  const [isSavingStatutoryOrder, setIsSavingStatutoryOrder] = useState(false);
+
+  const isStatutoryCategory = selectedLovType === "STATUARY_CATEGORY";
+  const canReorderStatutoryCategory =
+    isStatutoryCategory &&
+    (loggedInUserData?.role === ROLE.ADMIN || loggedInUserData?.superAdmin);
+
+  const buildStatutoryOrderBaseline = (rows = []) =>
+    rows.reduce((acc, row) => {
+      if (row?.id) acc[String(row.id)] = Number(row.attribite3);
+      return acc;
+    }, {});
+
+  const hasUnsavedStatutoryOrder =
+    canReorderStatutoryCategory &&
+    data.some(
+      (row) =>
+        row?.id &&
+        Number(row.attribite3) !== Number(statutoryOrderBaseline[String(row.id)])
+    );
+
+  const statutoryOrderBlocker = useBlocker(hasUnsavedStatutoryOrder);
+
+  useEffect(() => {
+    if (statutoryOrderBlocker.state !== "blocked") return;
+    const leaveWithoutSaving = window.confirm(
+      "You have unsaved STATUARY_CATEGORY order changes. Leave without saving them?"
+    );
+    if (leaveWithoutSaving) statutoryOrderBlocker.proceed();
+    else statutoryOrderBlocker.reset();
+  }, [statutoryOrderBlocker]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (!hasUnsavedStatutoryOrder) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedStatutoryOrder]);
 
   useEffect(() => {
     getLovTypes();
@@ -55,13 +101,23 @@ const AdminDropdowns = ({ loggedInUserData }) => {
     setIsLoading(true);
     const lovtypesData = await get("/api/lov/" + type);
     if (type === "STATUARY_CATEGORY") {
-      setData(
-        lovtypesData.sort(
-          (a, b) => parseInt(a.attribite3) - parseInt(b.attribite3)
-        )
-      );
+      const orderedRows = [...lovtypesData].sort((a, b) => {
+        const aOrder = Number(a.attribite3);
+        const bOrder = Number(b.attribite3);
+        if (!Number.isFinite(aOrder) && !Number.isFinite(bOrder)) return Number(a.id) - Number(b.id);
+        if (!Number.isFinite(aOrder)) return 1;
+        if (!Number.isFinite(bOrder)) return -1;
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        return Number(a.id) - Number(b.id);
+      });
+      setData(orderedRows);
+      setStatutoryOrderBaseline(buildStatutoryOrderBaseline(orderedRows));
+      setDraggedStatutoryId(null);
+      setSortConfig({ key: null, direction: "asc" });
     } else {
       setData(lovtypesData);
+      setStatutoryOrderBaseline({});
+      setDraggedStatutoryId(null);
     }
 
     setIsLoading(false);
@@ -175,6 +231,70 @@ const AdminDropdowns = ({ loggedInUserData }) => {
     setData(uAllData);
   };
 
+  const moveStatutoryCategoryToPosition = (rowId, targetPosition) => {
+    if (!canReorderStatutoryCategory || !rowId) return;
+
+    const orderedRows = [...data]
+      .filter((row) => row?.id)
+      .sort((a, b) => Number(a.attribite3) - Number(b.attribite3));
+    const sourceIndex = orderedRows.findIndex(
+      (row) => String(row.id) === String(rowId)
+    );
+    const position = Number(targetPosition);
+    if (
+      sourceIndex < 0 ||
+      !Number.isInteger(position) ||
+      position < 1 ||
+      position > orderedRows.length
+    ) {
+      return;
+    }
+
+    const [movedRow] = orderedRows.splice(sourceIndex, 1);
+    orderedRows.splice(position - 1, 0, movedRow);
+    const normalizedRows = orderedRows.map((row, index) => ({
+      ...row,
+      attribite3: String(index + 1),
+    }));
+    const unsavedNewRows = data.filter((row) => !row?.id);
+    setData([...normalizedRows, ...unsavedNewRows]);
+    setDraggedStatutoryId(null);
+  };
+
+  const handleStatutoryDrop = (targetRowId) => {
+    if (!draggedStatutoryId || !targetRowId) {
+      setDraggedStatutoryId(null);
+      return;
+    }
+    const orderedRows = [...data]
+      .filter((row) => row?.id)
+      .sort((a, b) => Number(a.attribite3) - Number(b.attribite3));
+    const targetPosition =
+      orderedRows.findIndex((row) => String(row.id) === String(targetRowId)) + 1;
+    moveStatutoryCategoryToPosition(draggedStatutoryId, targetPosition);
+  };
+
+  const saveStatutoryCategoryOrder = async () => {
+    if (!hasUnsavedStatutoryOrder) return;
+    const orderedRows = [...data]
+      .filter((row) => row?.id)
+      .sort((a, b) => Number(a.attribite3) - Number(b.attribite3));
+
+    try {
+      setIsSavingStatutoryOrder(true);
+      await put("/api/lov/statutory-category/sort-order-batch", {
+        orders: orderedRows.map((row, index) => ({
+          id: Number(row.id),
+          sortOrder: index + 1,
+        })),
+      });
+      toast.success("Statutory category order saved.");
+      await getLovType("STATUARY_CATEGORY");
+    } finally {
+      setIsSavingStatutoryOrder(false);
+    }
+  };
+
   const handleInputChange2 = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -185,6 +305,7 @@ const AdminDropdowns = ({ loggedInUserData }) => {
   const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
 
   const sortData = (key) => {
+    if (isStatutoryCategory) return;
     let direction = "asc";
     if (sortConfig.key === key && sortConfig.direction === "asc") {
       direction = "desc";
@@ -193,6 +314,14 @@ const AdminDropdowns = ({ loggedInUserData }) => {
   };
 
   const sortedData = [...data].sort((a, b) => {
+    if (isStatutoryCategory) {
+      const aOrder = Number(a.attribite3);
+      const bOrder = Number(b.attribite3);
+      if (!Number.isFinite(aOrder) && !Number.isFinite(bOrder)) return 0;
+      if (!Number.isFinite(aOrder)) return 1;
+      if (!Number.isFinite(bOrder)) return -1;
+      return aOrder - bOrder;
+    }
     if (!sortConfig.key) return 0;
 
     if (a[sortConfig.key] < b[sortConfig.key]) {
@@ -205,6 +334,7 @@ const AdminDropdowns = ({ loggedInUserData }) => {
   });
 
   const getSortIcon = (key) => {
+    if (isStatutoryCategory) return "";
     if (sortConfig.key !== key) return "⬆️";
     return sortConfig.direction === "asc" ? "⬆️" : "⬇️";
   };
@@ -311,8 +441,17 @@ const AdminDropdowns = ({ loggedInUserData }) => {
                 className="form-control form-select"
                 name="score"
                 onChange={(e) => {
-                  setSortConfig({ key: sortConfig?.key, direction: "asc" });
-                  setselectedLovType(e.target.value);
+                  const nextType = e.target.value;
+                  if (
+                    hasUnsavedStatutoryOrder &&
+                    !window.confirm(
+                      "You have unsaved STATUARY_CATEGORY order changes. Change dropdown type without saving?"
+                    )
+                  ) {
+                    return;
+                  }
+                  setSortConfig({ key: null, direction: "asc" });
+                  setselectedLovType(nextType);
                 }}
                 value={selectedLovType}
               >
@@ -327,13 +466,25 @@ const AdminDropdowns = ({ loggedInUserData }) => {
             </Grid>
             <Grid sm={4}>
               {sortedData.length > 0 && (
-                <button
-                  style={{ width: "250px", margin: "20px" }}
-                  className="btn btn-primary"
-                  onClick={addNew}
-                >
-                  <i className="fas fa-plus" /> Add new value
-                </button>
+                <>
+                  <button
+                    style={{ width: "250px", margin: "20px" }}
+                    className="btn btn-primary"
+                    onClick={addNew}
+                  >
+                    <i className="fas fa-plus" /> Add new value
+                  </button>
+                  {canReorderStatutoryCategory && (
+                    <button
+                      style={{ width: "250px", margin: "0 20px 20px" }}
+                      className="btn btn-success"
+                      disabled={!hasUnsavedStatutoryOrder || isSavingStatutoryOrder}
+                      onClick={saveStatutoryCategoryOrder}
+                    >
+                      <i className="fas fa-save" /> {isSavingStatutoryOrder ? " Saving..." : " Save Order"}
+                    </button>
+                  )}
+                </>
               )}
             </Grid>
             <Grid sm={4}>
@@ -349,12 +500,23 @@ const AdminDropdowns = ({ loggedInUserData }) => {
 
           {selectedLovType && (
             <div className="col-md-12 table-responsive">
+              {canReorderStatutoryCategory && (
+                <div className="alert alert-info py-2 mb-2">
+                  <i className="fas fa-grip-vertical me-2" />
+                  For STATUARY_CATEGORY, drag a row or type its position in Sort Order. The list is automatically renumbered 1..N.
+                </div>
+              )}
+              {hasUnsavedStatutoryOrder && (
+                <div className="alert alert-warning py-2 mb-2">
+                  <strong>Unsaved order changes:</strong> highlighted Sort Order cells have not been saved yet.
+                </div>
+              )}
               <table className="table" style={{ border: "1px solid" }}>
                 <thead className="table-dark">
                   <tr>
                     <th
                       scope="col"
-                      style={{ border: "2px groove", cursor: "pointer" }}
+                      style={{ border: "2px groove", cursor: isStatutoryCategory ? "default" : "pointer" }}
                       onClick={() => sortData("lovValue")}
                     >
                       Value {getSortIcon("lovValue")}
@@ -364,7 +526,7 @@ const AdminDropdowns = ({ loggedInUserData }) => {
                     </th>
                     <th
                       scope="col"
-                      style={{ border: "2px groove", cursor: "pointer" }}
+                      style={{ border: "2px groove", cursor: isStatutoryCategory ? "default" : "pointer" }}
                       onClick={() => sortData("attribite1")}
                     >
                       Depends On {getSortIcon("attribite1")}
@@ -400,11 +562,25 @@ const AdminDropdowns = ({ loggedInUserData }) => {
                   {!isLoading &&
                     sortedData?.map((d, rowIndex) => (
                       <tr
-                        key={rowIndex}
+                        key={d?.id ?? `new-${rowIndex}`}
+                        onDragOver={(e) => {
+                          if (canReorderStatutoryCategory && d?.id && draggedStatutoryId) {
+                            e.preventDefault();
+                          }
+                        }}
+                        onDrop={(e) => {
+                          if (!canReorderStatutoryCategory || !d?.id) return;
+                          e.preventDefault();
+                          handleStatutoryDrop(d.id);
+                        }}
                         style={{
                           border: "2px groove",
                           fontWeight: "500",
                           fontSize: "14px",
+                          backgroundColor:
+                            d?.id && Number(d.attribite3) !== Number(statutoryOrderBaseline[String(d.id)])
+                              ? "#fff8e1"
+                              : undefined,
                         }}
                       >
                         {!d.add && !d.edit && (
@@ -552,12 +728,41 @@ const AdminDropdowns = ({ loggedInUserData }) => {
 
                         {!d.add && !d.edit && (
                           <td
+                            className={
+                              canReorderStatutoryCategory &&
+                              d?.id &&
+                              Number(d.attribite3) !== Number(statutoryOrderBaseline[String(d.id)])
+                                ? "table-warning"
+                                : ""
+                            }
                             style={{
                               border: "2px groove",
                               verticalAlign: "middle",
                             }}
                           >
-                            {d.attribite3}
+                            {isStatutoryCategory ? (
+                              <SortableOrderControl
+                                value={Number(d.attribite3)}
+                                max={sortedData.filter((row) => row?.id).length}
+                                canEdit={canReorderStatutoryCategory}
+                                dirty={
+                                  d?.id &&
+                                  Number(d.attribite3) !== Number(statutoryOrderBaseline[String(d.id)])
+                                }
+                                onMove={(position) =>
+                                  moveStatutoryCategoryToPosition(d.id, position)
+                                }
+                                onDragStart={(e) => {
+                                  setDraggedStatutoryId(d.id);
+                                  e.dataTransfer.effectAllowed = "move";
+                                  e.dataTransfer.setData("text/plain", String(d.id));
+                                }}
+                                onDragEnd={() => setDraggedStatutoryId(null)}
+                                title="Drag the handle or type an order number, then Save Order"
+                              />
+                            ) : (
+                              d.attribite3
+                            )}
                           </td>
                         )}
                         {(d.add || d.edit) && (

@@ -21,6 +21,7 @@ import {
 import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
 import { ROLE } from "../../../../Constant/Role";
+import SortableOrderControl from "../../../common/SortableOrderControl";
 
 const ADMIN_EDITABLE_FIELDS = [
   "outletType",
@@ -324,6 +325,44 @@ const SurveyWaterTemperatureMonitoring = ({
     //getSurvey();
   };
 
+  const movePersistedOutletToPosition = (sourceRowId, targetPosition) => {
+    if (!isAdmin || !sourceRowId) return;
+
+    const persistedRows = formData.filter((item) => item?.id && item?.assetId);
+    const sourceIndex = persistedRows.findIndex(
+        (item) => String(item.id) === String(sourceRowId)
+    );
+    const requestedPosition = Number(targetPosition);
+
+    if (
+        sourceIndex < 0 ||
+        !Number.isInteger(requestedPosition) ||
+        requestedPosition < 1 ||
+        requestedPosition > persistedRows.length
+    ) {
+      return;
+    }
+
+    const reorderedPersistedRows = [...persistedRows];
+    const [movedRow] = reorderedPersistedRows.splice(sourceIndex, 1);
+    reorderedPersistedRows.splice(requestedPosition - 1, 0, movedRow);
+
+    const normalizedPersistedRows = reorderedPersistedRows.map((item, index) => ({
+      ...item,
+      sortOrder: index + 1,
+    }));
+    const newRows = formData.filter((item) => !item?.id || !item?.assetId);
+    const normalized = [...normalizedPersistedRows, ...newRows];
+
+    setFormData(normalized);
+    setSortOrderDirty(
+        normalizedPersistedRows.some((row) =>
+            getChangedFields(row).includes("sortOrder")
+        )
+    );
+    setDraggedRowIndex(null);
+  };
+
   const handleCompletedOutletDrop = (fromIndex, toIndex) => {
     if (!isAdmin || fromIndex === null || fromIndex === toIndex) {
       setDraggedRowIndex(null);
@@ -332,33 +371,16 @@ const SurveyWaterTemperatureMonitoring = ({
 
     const sourceRow = formData?.[fromIndex];
     const targetRow = formData?.[toIndex];
-    if (!sourceRow?.completed || !targetRow?.completed) {
+    if (!sourceRow?.id || !sourceRow?.assetId || !targetRow?.id || !targetRow?.assetId) {
       setDraggedRowIndex(null);
       return;
     }
 
-    const reordered = [...formData];
-    const [movedRow] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, movedRow);
+    const persistedRows = formData.filter((item) => item?.id && item?.assetId);
+    const targetPosition =
+        persistedRows.findIndex((item) => String(item.id) === String(targetRow.id)) + 1;
 
-    let nextSortOrder = 1;
-    const normalized = reordered.map((item) => {
-      // Existing rows have an id. Keep every persisted outlet in the automatic
-      // 1..N sequence, even if an older/incomplete row is not draggable.
-      if (!item?.id || !item?.assetId) return item;
-      return {
-        ...item,
-        sortOrder: nextSortOrder++,
-      };
-    });
-
-    setFormData(normalized);
-    setSortOrderDirty(
-        normalized.some((row) =>
-            getChangedFields(row).includes("sortOrder")
-        )
-    );
-    setDraggedRowIndex(null);
+    movePersistedOutletToPosition(sourceRow.id, targetPosition);
   };
 
   const addSiteCheckSurvey2 = async (event) => {
@@ -1081,7 +1103,7 @@ const SurveyWaterTemperatureMonitoring = ({
               {isAdmin && formData.some((item) => item?.completed) && (
                   <div className="alert alert-info py-2 mb-2">
                     <i className="fas fa-grip-vertical me-2"></i>
-                    Admin: drag saved outlets to change Order, and edit the saved dropdown fields directly.
+                    Admin: drag saved outlets or type an Order number to move them, and edit the saved dropdown fields directly.
                     Click Save to persist the highlighted changes.
                   </div>
               )}
@@ -1167,27 +1189,25 @@ const SurveyWaterTemperatureMonitoring = ({
                             >
                               <td className={changedCellClass("sortOrder")}>
                                 {formData?.[idx]?.completed ? (
-                                    isAdmin ? (
-                                        <div className="d-flex align-items-center gap-2">
-                                          <span
-                                              draggable
-                                              title="Drag to change outlet order"
-                                              onDragStart={(e) => {
-                                                setDraggedRowIndex(idx);
-                                                e.dataTransfer.effectAllowed = "move";
-                                                e.dataTransfer.setData("text/plain", String(formData?.[idx]?.assetId ?? idx));
-                                              }}
-                                              onDragEnd={() => setDraggedRowIndex(null)}
-                                              style={{ cursor: "grab", padding: "4px 6px" }}
-                                              aria-label="Drag to change outlet order"
-                                          >
-                                            <i className="fas fa-grip-vertical"></i>
-                                          </span>
-                                          <strong>{formData?.[idx]?.sortOrder}</strong>
-                                        </div>
-                                    ) : (
-                                        <p>{formData?.[idx]?.sortOrder}</p>
-                                    )
+                                    <SortableOrderControl
+                                        value={formData?.[idx]?.sortOrder}
+                                        max={formData.filter((item) => item?.id && item?.assetId).length}
+                                        canEdit={isAdmin && isPersistedRow}
+                                        dirty={changedFieldSet.has("sortOrder")}
+                                        onMove={(position) =>
+                                            movePersistedOutletToPosition(formData?.[idx]?.id, position)
+                                        }
+                                        onDragStart={(e) => {
+                                          setDraggedRowIndex(idx);
+                                          e.dataTransfer.effectAllowed = "move";
+                                          e.dataTransfer.setData(
+                                              "text/plain",
+                                              String(formData?.[idx]?.assetId ?? idx)
+                                          );
+                                        }}
+                                        onDragEnd={() => setDraggedRowIndex(null)}
+                                        title="Drag the handle or type an order number, then Save"
+                                    />
                                 ) : (
                                     <input
                                         value={formData?.[idx]?.sortOrder}
