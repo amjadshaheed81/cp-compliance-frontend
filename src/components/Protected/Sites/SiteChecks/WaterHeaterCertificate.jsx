@@ -531,12 +531,14 @@ const WaterHeaterCertificate = ({
   ]);
 
   useEffect(() => {
-    const shouldShowRiskAssessment = (formData.param4 === "Fail" && formData.param5 === "Pass" && formData.param2 === "Pass");
+    // Parts Required = Yes must immediately expose the action/risk-assessment
+    // workflow. Do not depend on Unit Operational or Limescale Evident.
+    const shouldShowRiskAssessment = formData.param2 === "Pass";
     setShowRiskAssessment(shouldShowRiskAssessment);
 
     const isActionValid = existingAction && existingAction.checkId === currentCheckId;
     setActionRaised(isActionValid);
-  }, [formData.param4, currentCheckId, existingAction, formData.param5, formData.param2]);
+  }, [formData.param2, currentCheckId, existingAction]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
@@ -1186,10 +1188,10 @@ const WaterHeaterCertificate = ({
       return;
     }
 
-    const hasFailures = formData.param2 === "Pass" && formData.param4 === "Fail" && formData.param5 === "Pass";
+    const partsRequired = formData.param2 === "Pass";
 
-    if (hasFailures && !actionRaised) {
-      toast.error("Please complete the risk assessment before submitting");
+    if (partsRequired && !actionRaised) {
+      toast.error("Parts are required - please complete the action before submitting");
       return;
     }
 
