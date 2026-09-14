@@ -27,7 +27,6 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
-import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -36,6 +35,18 @@ if (typeof window !== 'undefined') {
         PDFLib = pdfLib;
     });
 }
+
+
+const getBasePhotoUrl = (url) => {
+    if (!url || typeof url !== "string") return "";
+    return url.split("?")[0];
+};
+
+const getPhotoDisplayUrl = (url, token) => {
+    const baseUrl = getBasePhotoUrl(url);
+    if (!baseUrl) return "";
+    return token ? `${baseUrl}?${token}` : baseUrl;
+};
 
 const fetchPdfTemplate = async () => {
     try {
@@ -117,8 +128,6 @@ const FireDamper = ({
     const [isUploading, setIsUploading] = useState(false);
     const [inspectionDetails, setInspectionDetails] = useState(null);
     const [validationErrors, setValidationErrors] = useState({});
-    const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
-    const [isRetryingHistory, setIsRetryingHistory] = useState(false);
     const [folderIds, setFolderIds] = useState({
         logBooks: null,
         plantAndEquipment: null,
@@ -284,13 +293,15 @@ const FireDamper = ({
                 const newPrePhotos = [];
                 if (mostRecentItem.param2Remark) {
                     newPrePhotos.push({
-                        url: `${mostRecentItem.param2Remark}${mostRecentItem.param2Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        url: getPhotoDisplayUrl(mostRecentItem.param2Remark, sasToken),
+                        baseUrl: getBasePhotoUrl(mostRecentItem.param2Remark),
                         paramKey: 'param2Remark'
                     });
                 }
                 if (mostRecentItem.param3Remark) {
                     newPrePhotos.push({
-                        url: `${mostRecentItem.param3Remark}${mostRecentItem.param3Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        url: getPhotoDisplayUrl(mostRecentItem.param3Remark, sasToken),
+                        baseUrl: getBasePhotoUrl(mostRecentItem.param3Remark),
                         paramKey: 'param3Remark'
                     });
                 }
@@ -299,13 +310,15 @@ const FireDamper = ({
                 const newPostPhotos = [];
                 if (mostRecentItem.param4Remark) {
                     newPostPhotos.push({
-                        url: `${mostRecentItem.param4Remark}${mostRecentItem.param4Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        url: getPhotoDisplayUrl(mostRecentItem.param4Remark, sasToken),
+                        baseUrl: getBasePhotoUrl(mostRecentItem.param4Remark),
                         paramKey: 'param4Remark'
                     });
                 }
                 if (mostRecentItem.param5Remark) {
                     newPostPhotos.push({
-                        url: `${mostRecentItem.param5Remark}${mostRecentItem.param5Remark.includes('?') ? '&' : '?'}${sasToken}`,
+                        url: getPhotoDisplayUrl(mostRecentItem.param5Remark, sasToken),
+                        baseUrl: getBasePhotoUrl(mostRecentItem.param5Remark),
                         paramKey: 'param5Remark'
                     });
                 }
@@ -517,7 +530,6 @@ const FireDamper = ({
                             subType: ventilationCheck.subType,
                             category: ventilationCheck.category,
                             dueDate: ventilationCheck.dueDate,
-                            repeatFrequency: ventilationCheck.repeatFrequency,
                             status: ventilationCheck.status
                         };
                         setInspectionDetails(inspectionDetails);
@@ -710,22 +722,23 @@ const FireDamper = ({
 
             const uploadResults = await Promise.all(
                 filesToUpload.map(async (file, index) => {
-                    const response = await uploadSiteCheckDoc({
+                    const uploadedUrl = await uploadSiteCheckDoc({
                         siteId: authoritativeSiteId || 0,
                         file: file
                     });
 
-                    const baseUrl = response?.url ||
-                        `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+                    if (typeof uploadedUrl !== "string" || !uploadedUrl.trim()) {
+                        throw new Error(`Photo upload did not return a valid URL for ${file.name}`);
+                    }
 
-                    const imageUrl = `${baseUrl}?${token}`;
+                    const baseUrl = getBasePhotoUrl(uploadedUrl.trim());
 
                     return {
-                        url: imageUrl,
-                        baseUrl: baseUrl,
+                        url: getPhotoDisplayUrl(baseUrl, token),
+                        baseUrl,
                         paramKey: availableParams[index],
                         fileName: file.name,
-                        documentId: response?.documentId || uuidv4()
+                        documentId: uuidv4()
                     };
                 })
             );
@@ -733,8 +746,8 @@ const FireDamper = ({
             // Update form data with new pre-inspection photo URLs
             const newFormData = {
                 ...formData,
-                param2Remark: uploadResults[0]?.url || formData.param2Remark,
-                param3Remark: uploadResults[1]?.url || formData.param3Remark
+                param2Remark: uploadResults[0]?.baseUrl || formData.param2Remark,
+                param3Remark: uploadResults[1]?.baseUrl || formData.param3Remark
             };
 
             setFormData(newFormData);
@@ -745,23 +758,14 @@ const FireDamper = ({
                 ...uploadResults
             ].slice(0, 2));
 
-            // Save to API - only update the pre-inspection fields
+            // Persist only the photo fields. The full Generic Inspection PUT replaces every
+            // field and must not be used for a photo-only update.
             if (currentCheckId) {
-                const payload = {
-                    checkId: currentCheckId,
-                    siteId: authoritativeSiteId,
-                    type: 'Inspection',
-                    subType: 'Fire Damper',
-                    category: 'Fire Damper Inspection',
-                    param2Remark: newFormData.param2Remark,
-                    param3Remark: newFormData.param3Remark
-                };
-
-                const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-                if (existingInspections?.length > 0) {
-                    await put(`/api/site-check/generic-inspection/${currentCheckId}`, payload);
-                } else {
-                    await post(`/api/site-check/generic-inspection`, payload);
+                for (const photo of uploadResults) {
+                    await put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+                        paramKey: photo.paramKey,
+                        photoUrl: photo.baseUrl
+                    });
                 }
             }
 
@@ -775,15 +779,9 @@ const FireDamper = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride, checkIdOverride) => {
-        let sourceReference = null;
+    const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride) => {
         try {
             setIsUploading(true);
-            const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
-            if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
-                throw new Error('Could not determine Site Check ID for PDF upload');
-            }
-            sourceReference = `FD-${resolvedCheckId}-${Date.now()}`;
             await savePdfToLocal(pdfBlob, fileName);
 
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
@@ -810,7 +808,7 @@ const FireDamper = ({
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: sourceReference
+                        referenceNumber: `FD-${new Date().getTime()}`
                     }]
                 };
 
@@ -826,9 +824,9 @@ const FireDamper = ({
                     }
                 });
 
-                if (response?.status >= 200 && response?.status < 300) {
-                    toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-                    return { stored: true, sourceReference };
+                if (response.data) {
+                    toast.success(`PDF uploaded successfully as version ${documentRequestString.fileVersion}!`);
+                    return true;
                 }
             } else {
                 uploadFormData.append('files', pdfFile);
@@ -846,7 +844,7 @@ const FireDamper = ({
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
-                        referenceNumber: sourceReference
+                        referenceNumber: `FD-${new Date().getTime()}`
                     }]
                 };
 
@@ -861,23 +859,23 @@ const FireDamper = ({
                     }
                 });
 
-                if (response?.status >= 200 && response?.status < 300) {
+                if (response.data) {
                     toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-                    return { stored: true, sourceReference };
+                    return true;
                 }
             }
 
-            throw new Error('Upload failed: the Site Document API did not confirm success');
+            throw new Error('Upload failed: No response data');
         } catch (error) {
             console.error('Error uploading PDF:', error);
             toast.error(`PDF upload failed: ${error.response?.data?.message || error.message}`);
-            return { stored: false, sourceReference: null };
+            return false;
         } finally {
             setIsUploading(false);
         }
     };
 
-    const generatePDF = async (uploadToServer = true, inspectionDateOverride, checkIdOverride) => {
+    const generatePDF = async (uploadToServer = true, inspectionDateOverride) => {
         try {
             setIsGeneratingPDF(true);
 
@@ -967,7 +965,7 @@ const FireDamper = ({
             setTextField('Damper Location', equipmentDetails || '', smallFont);
             setTextField('Floor', selectedAsset?.floor || '', smallFont);
             setTextField('Damper Type', selectedAsset?.subCategory3 || '', smallFont);
-            setTextField('Damper Size', String(selectedAsset?.damperSize ?? ''), smallFont);
+            setTextField('Damper Size', selectedAsset?.damperSize.toString() || '', smallFont);
 
             setTextField('Operational', formData.param1 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
             setTextField('Condition', formData.param2 === 'Pass' ? 'Pass' : 'Fail', mediumFont);
@@ -976,6 +974,58 @@ const FireDamper = ({
             setTextField('DuctworkContamination', formData.param5 === 'Pass' ? 'Yes' : 'No', mediumFont);
 
             setTextField('report', formData.report || '', mediumFont);
+
+            const loadImageBytesForPdf = async (imageUrl, formField) => {
+                const cleanUrl = getBasePhotoUrl(imageUrl);
+                if (!cleanUrl) {
+                    throw new Error(`No valid image URL found for ${formField}`);
+                }
+
+                let token = sasToken;
+                if (!token) {
+                    try {
+                        token = await getSasToken();
+                        if (token) setSasToken(token);
+                    } catch (tokenError) {
+                        console.warn(`Could not refresh SAS token for ${formField}; trying image proxy`, tokenError);
+                    }
+                }
+
+                if (token) {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    try {
+                        const imageResponse = await fetch(`${cleanUrl}?${token}`, {
+                            signal: controller.signal,
+                            mode: 'cors',
+                            credentials: 'omit',
+                            cache: 'no-store'
+                        });
+                        if (imageResponse.ok) {
+                            const imageBytes = await imageResponse.arrayBuffer();
+                            if (imageBytes.byteLength >= 100) return imageBytes;
+                        } else {
+                            console.warn(`Direct image fetch failed for ${formField}: HTTP ${imageResponse.status}`);
+                        }
+                    } catch (directError) {
+                        console.warn(`Direct image fetch failed for ${formField}; trying image proxy`, directError);
+                    } finally {
+                        clearTimeout(timeout);
+                    }
+                }
+
+                const dataUrl = await get(`/api/site-check/file/image-proxy?url=${encodeURIComponent(cleanUrl)}`);
+                if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:') || !dataUrl.includes(',')) {
+                    throw new Error(`Image proxy did not return valid image data for ${formField}`);
+                }
+
+                const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+                const binary = window.atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+                if (bytes.byteLength < 100) throw new Error(`Image data is empty or invalid for ${formField}`);
+                return bytes.buffer;
+            };
 
             const imageFields = [
                 { pdfField: 'param2Remark_af_image', formField: 'param2Remark' },
@@ -986,50 +1036,17 @@ const FireDamper = ({
 
             for (const { pdfField, formField } of imageFields) {
                 const imageUrl = formData[formField];
-                if (!imageUrl) {
-                    console.log(`No image URL found for ${formField}`);
-                    continue;
-                }
+                if (!imageUrl) continue;
 
                 try {
-                    const cleanUrl = imageUrl.split('?')[0];
-                    const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
-                    console.log(`Processing image from: ${imageUrlWithToken}`);
-
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 10000);
-
-                    const imageResponse = await fetch(imageUrlWithToken, {
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeout);
-
-                    if (!imageResponse.ok) {
-                        console.error(`HTTP error for ${formField}: ${imageResponse.status}`);
-                        continue;
-                    }
-
-                    const imageBytes = await imageResponse.arrayBuffer();
-
-                    if (imageBytes.byteLength < 100) {
-                        console.error(`Image too small or corrupted for ${formField}`);
-                        continue;
-                    }
-
+                    const imageBytes = await loadImageBytesForPdf(imageUrl, formField);
                     const image = await embedUniversalImage(imageBytes);
-                    console.log(`Successfully embedded image for ${formField}`);
-
                     const imageField = form.getButton(pdfField);
-                    if (!imageField) {
-                        console.error(`PDF field ${pdfField} not found`);
-                        continue;
-                    }
-
+                    if (!imageField) throw new Error(`PDF image field ${pdfField} was not found`);
                     imageField.setImage(image);
-                    console.log(`Image set in field ${pdfField}`);
-
                 } catch (error) {
-                    console.error(`Error processing ${formField} image:`, error);
+                    console.error(`Error embedding ${formField} in Fire Damper PDF:`, error);
+                    throw new Error(`Fire Damper photo could not be added to the PDF (${formField})`);
                 }
             }
 
@@ -1041,18 +1058,12 @@ const FireDamper = ({
             setGeneratedPdfBlob(blob);
             setShowPdfButton(true);
 
-            let uploadResult = { stored: false, sourceReference: null };
             if (uploadToServer) {
-                uploadResult = await uploadPdfToServer(
-                    blob, fileName, inspectionDateOverride || formData.inspectionDate, checkIdOverride
-                );
-                if (!uploadResult?.stored) {
-                    throw new Error('PDF was generated but could not be stored in Site Documents');
-                }
+                await uploadPdfToServer(blob, fileName, inspectionDateOverride);
             }
 
             toast.success('PDF generated successfully!');
-            return { success: true, fileName, uploadResult };
+            return { success: true, fileName };
 
         } catch (error) {
             console.error('Error generating PDF:', error);
@@ -1088,22 +1099,23 @@ const FireDamper = ({
 
             const uploadResults = await Promise.all(
                 filesToUpload.map(async (file, index) => {
-                    const response = await uploadSiteCheckDoc({
+                    const uploadedUrl = await uploadSiteCheckDoc({
                         siteId: authoritativeSiteId || 0,
                         file: file
                     });
 
-                    const baseUrl = response?.url ||
-                        `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+                    if (typeof uploadedUrl !== "string" || !uploadedUrl.trim()) {
+                        throw new Error(`Photo upload did not return a valid URL for ${file.name}`);
+                    }
 
-                    const imageUrl = `${baseUrl}?${token}`;
+                    const baseUrl = getBasePhotoUrl(uploadedUrl.trim());
 
                     return {
-                        url: imageUrl,
-                        baseUrl: baseUrl,
+                        url: getPhotoDisplayUrl(baseUrl, token),
+                        baseUrl,
                         paramKey: availableParams[index],
                         fileName: file.name,
-                        documentId: response?.documentId || uuidv4()
+                        documentId: uuidv4()
                     };
                 })
             );
@@ -1111,8 +1123,8 @@ const FireDamper = ({
             // Update form data with new post-inspection photo URLs
             const newFormData = {
                 ...formData,
-                param4Remark: uploadResults[0]?.url || formData.param4Remark,
-                param5Remark: uploadResults[1]?.url || formData.param5Remark
+                param4Remark: uploadResults[0]?.baseUrl || formData.param4Remark,
+                param5Remark: uploadResults[1]?.baseUrl || formData.param5Remark
             };
 
             setFormData(newFormData);
@@ -1123,23 +1135,14 @@ const FireDamper = ({
                 ...uploadResults
             ].slice(0, 2));
 
-            // Save to API - only update the post-inspection fields
+            // Persist only the photo fields. The full Generic Inspection PUT replaces every
+            // field and must not be used for a photo-only update.
             if (currentCheckId) {
-                const payload = {
-                    checkId: currentCheckId,
-                    siteId: authoritativeSiteId,
-                    type: 'Inspection',
-                    subType: 'Fire Damper',
-                    category: 'Fire Damper Inspection',
-                    param4Remark: newFormData.param4Remark,
-                    param5Remark: newFormData.param5Remark
-                };
-
-                const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-                if (existingInspections?.length > 0) {
-                    await put(`/api/site-check/generic-inspection/${currentCheckId}`, payload);
-                } else {
-                    await post(`/api/site-check/generic-inspection`, payload);
+                for (const photo of uploadResults) {
+                    await put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+                        paramKey: photo.paramKey,
+                        photoUrl: photo.baseUrl
+                    });
                 }
             }
 
@@ -1166,16 +1169,10 @@ const FireDamper = ({
         }
 
         if (currentCheckId && photoToRemove.paramKey) {
-            const payload = {
-                checkId: currentCheckId,
-                siteId: authoritativeSiteId,
-                type: 'Inspection',
-                subType: 'Fire Damper',
-                category: 'Fire Damper Inspection',
-                [photoToRemove.paramKey]: ""
-            };
-
-            put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
+            put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+                paramKey: photoToRemove.paramKey,
+                photoUrl: ""
+            })
                 .catch(error => {
                     console.error("Error removing pre-photo from API:", error);
                     toast.error("Failed to update photo in database");
@@ -1196,16 +1193,10 @@ const FireDamper = ({
         }
 
         if (currentCheckId && photoToRemove.paramKey) {
-            const payload = {
-                checkId: currentCheckId,
-                siteId: authoritativeSiteId,
-                type: 'Inspection',
-                subType: 'Fire Damper',
-                category: 'Fire Damper Inspection',
-                [photoToRemove.paramKey]: ""
-            };
-
-            put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
+            put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+                paramKey: photoToRemove.paramKey,
+                photoUrl: ""
+            })
                 .catch(error => {
                     console.error("Error removing post-photo from API:", error);
                     toast.error("Failed to update photo in database");
@@ -1242,23 +1233,6 @@ const FireDamper = ({
             user: newValue || {},
         }));
         setValidationErrors((prev) => ({ ...prev, engineer: "" }));
-    };
-
-    const retryPendingHistory = async () => {
-            if (!pendingHistoryRetry || isRetryingHistory) return;
-
-            setIsRetryingHistory(true);
-            try {
-              const history = await recordGenericInspectionHistory(pendingHistoryRetry);
-              setPendingHistoryRetry(null);
-              toast.success(`History recorded successfully (History #${history.historyId}).`);
-            } catch (error) {
-              const message = getSiteCheckErrorMessage(error, "History record could not be created.");
-              console.error("Retry Generic Inspection history:", { ...pendingHistoryRetry, status: error?.response?.status, message, error });
-              toast.error(`History retry failed: ${message}`);
-            } finally {
-              setIsRetryingHistory(false);
-            }
     };
 
     const handleSubmit = async (e) => {
@@ -1391,45 +1365,12 @@ const FireDamper = ({
 
             console.log('Inspection data saved successfully:', saveResponse.data);
 
-            const resolvedCheckIdForHistory = Number(
-              currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
-            );
-            const savedInspectionRecordId = Number(saveResponse?.data?.id);
-
-            const pdfResult = await generatePDF(true, submissionInspectionDate, resolvedCheckIdForHistory);
+            const pdfResult = await generatePDF(true, submissionInspectionDate);
             if (!pdfResult.success) {
-              throw new Error(pdfResult.error || "Failed to generate PDF");
+                throw new Error(pdfResult.error || "Failed to generate PDF");
             }
 
-            const sourceReference = String(pdfResult?.uploadResult?.sourceReference || "").trim();
-            if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
-              throw new Error("Fire Damper was saved, but History cannot be recorded because the Site Check ID is invalid.");
-            }
-            if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
-              throw new Error("Fire Damper was saved, but History cannot be recorded because the saved inspection record ID was not returned.");
-            }
-            if (!pdfResult?.uploadResult?.stored) {
-              throw new Error("Fire Damper was saved, but History cannot be recorded because the PDF was not stored in Site Documents.");
-            }
-            if (!sourceReference) {
-              throw new Error("Fire Damper was saved, but History cannot be recorded because the PDF reference was not returned.");
-            }
-
-            const historyPayload = { checkId: resolvedCheckIdForHistory, inspectionRecordId: savedInspectionRecordId, sourceReference };
-            try {
-              await recordGenericInspectionHistory(historyPayload);
-              setPendingHistoryRetry(null);
-            } catch (historyError) {
-              const historyMessage = getSiteCheckErrorMessage(historyError, "History record could not be created.");
-              console.error("Record Fire Damper history:", { ...historyPayload, status: historyError?.response?.status, message: historyMessage, error: historyError });
-              setPendingHistoryRetry(historyPayload);
-              setShowPdfButton(true);
-              setIsSubmitted(true);
-              toast.error(`Report and PDF were saved, but History was not recorded: ${historyMessage}`);
-              return;
-            }
-
-            toast.success("Fire Damper report saved, PDF generated, and History recorded successfully!");
+            toast.success("Fire Damper report saved and PDF generated successfully!");
             setShowPdfButton(true);
             setIsSubmitted(true);
 
@@ -1588,7 +1529,7 @@ const FireDamper = ({
                                             type="text"
                                             className="form-control"
                                             name="damperSize"
-                                            value={selectedAsset?.damperSize ?? ""}
+                                            value={selectedAsset?.damperSize}
                                             onChange={handleInputChange}
                                             required
                                             disabled
@@ -2116,19 +2057,9 @@ const FireDamper = ({
                     </div>
                 ) : (
                     <div className="text-center print-hide">
-                        {pendingHistoryRetry ? (
-                            <div className="alert alert-warning mb-4">
-                                <div className="fw-bold mb-2">Report and PDF saved, but History has not been recorded.</div>
-                                <div className="mb-3">Do not submit the inspection again. Retry only the History record below.</div>
-                                <button type="button" className="btn btn-warning" disabled={isRetryingHistory} onClick={retryPendingHistory}>
-                                    {isRetryingHistory ? "Retrying History..." : "Retry History"}
-                                </button>
-                            </div>
-                        ) : (
-                            <div className="alert alert-success mb-4">
-                                Report submitted successfully on {getUkLocalDate()}
-                            </div>
-                        )}
+                        <div className="alert alert-success mb-4">
+                            Report submitted successfully on {getUkLocalDate()}
+                        </div>
                         {showPdfButton && generatedPdfBlob && (
                             <button
                                 className="btn btn-success"

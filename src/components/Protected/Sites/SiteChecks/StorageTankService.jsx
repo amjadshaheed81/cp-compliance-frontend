@@ -27,7 +27,6 @@ import SiteCheckDueSummary from "./shared/SiteCheckDueSummary";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import { getSiteCheckErrorMessage } from "./shared/siteCheckErrorMessage";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
-import { recordGenericInspectionHistory } from "./shared/genericInspectionHistory";
 
 let PDFLib;
 
@@ -36,6 +35,18 @@ if (typeof window !== 'undefined') {
     PDFLib = pdfLib;
   });
 }
+
+
+const getBasePhotoUrl = (url) => {
+    if (!url || typeof url !== "string") return "";
+    return url.split("?")[0];
+};
+
+const getPhotoDisplayUrl = (url, token) => {
+    const baseUrl = getBasePhotoUrl(url);
+    if (!baseUrl) return "";
+    return token ? `${baseUrl}?${token}` : baseUrl;
+};
 
 const fetchPdfTemplate = async () => {
   try {
@@ -108,8 +119,6 @@ const StorageTankService = ({
   const [generatedPdfBlob, setGeneratedPdfBlob] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
-  const [pendingHistoryRetry, setPendingHistoryRetry] = useState(null);
-  const [isRetryingHistory, setIsRetryingHistory] = useState(false);
   const [uploadedPhotos, setUploadedPhotos] = useState([]);
   const [inspectionDetails, setInspectionDetails] = useState(null);
 
@@ -224,7 +233,8 @@ const StorageTankService = ({
           const photoUrl = mostRecentItem[paramKey];
           if (photoUrl && typeof photoUrl === 'string' && photoUrl.startsWith('http')) {
             photosFromApi.push({
-              url: `${photoUrl}${photoUrl.includes('?') ? '&' : '?'}${sasToken}`,
+              url: getPhotoDisplayUrl(photoUrl, sasToken),
+              baseUrl: getBasePhotoUrl(photoUrl),
               paramKey
             });
           }
@@ -432,7 +442,6 @@ const StorageTankService = ({
               subType: storageTankCheck.subType,
               category: storageTankCheck.category,
               dueDate: storageTankCheck.dueDate,
-              repeatFrequency: storageTankCheck.repeatFrequency,
               status: storageTankCheck.status
             };
             console.log('Setting inspection details:', inspectionDetails);
@@ -620,23 +629,9 @@ const StorageTankService = ({
     return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
   }
 
-  const uploadPdfToServer = async (
-    pdfBlob,
-    fileName,
-    inspectionDateOverride = null,
-    checkIdOverride = null
-  ) => {
-    let sourceReference = null;
+  const uploadPdfToServer = async (pdfBlob, fileName, inspectionDateOverride = null) => {
     try {
       setIsUploading(true);
-      const inspectionDateForUpload =
-        inspectionDateOverride || formData.inspectionDate;
-      const resolvedCheckId = Number(checkIdOverride ?? currentCheckId);
-      if (!Number.isInteger(resolvedCheckId) || resolvedCheckId <= 0) {
-        throw new Error('Could not determine Site Check ID for PDF upload');
-      }
-      sourceReference = `SAR-${resolvedCheckId}-${Date.now()}`;
-
       const savedLocally = await savePdfToLocal(pdfBlob, fileName);
       if (!savedLocally) {
         throw new Error('Failed to save PDF locally');
@@ -649,6 +644,7 @@ const StorageTankService = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
 
+      // First check if file exists
       const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
       const uploadFormData = new FormData();
 
@@ -660,18 +656,13 @@ const StorageTankService = ({
             id: existingFile.id,
             name: fileName,
             originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
+            fileVersion: existingFile.fileVersion + 1, // Increment version
             siteId: authoritativeSiteId || 0,
-            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
-            expiryDate: toJavaLocalDateTime(
-              calculateExpiryDate(
-                inspectionDateForUpload,
-                inspectionDetails?.repeatFrequency
-              )
-            ),
-            uploaderUserId: loggedInUserData?.id || 0,
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+              uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: sourceReference
+            referenceNumber: `SAR-${new Date().getTime()}`
           }]
         };
 
@@ -687,9 +678,9 @@ const StorageTankService = ({
           }
         });
 
-        if (response?.status >= 200 && response?.status < 300) {
+        if (response.data) {
           toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
-          return { stored: true, sourceReference };
+          return true;
         }
       } else {
         uploadFormData.append('files', pdfFile);
@@ -699,20 +690,15 @@ const StorageTankService = ({
           folderId: targetFolderId,
           files: [{
             name: fileName.split('.')[0],
-            issueDate: toJavaLocalDateTime(inspectionDateForUpload),
-            expiryDate: toJavaLocalDateTime(
-              calculateExpiryDate(
-                inspectionDateForUpload,
-                inspectionDetails?.repeatFrequency
-              )
-            ),
-            note: 'Storage Tank Service Report',
-            fileVersion,
+            issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
+            expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
+              note: 'Storage Tank Service Report',
+            fileVersion: fileVersion,
             siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
             reviewerUserId: loggedInUserData?.id || 0,
-            referenceNumber: sourceReference
+            referenceNumber: `SAR-${new Date().getTime()}`
           }]
         };
 
@@ -727,16 +713,16 @@ const StorageTankService = ({
           }
         });
 
-        if (response?.status >= 200 && response?.status < 300) {
+        if (response.data) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
-          return { stored: true, sourceReference };
+          return true;
         }
       }
 
-      throw new Error('Upload failed: the Site Document API did not confirm success');
+      throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      return { stored: false, sourceReference: null };
+      return false;
     } finally {
       setIsUploading(false);
     }
@@ -796,7 +782,7 @@ const StorageTankService = ({
     }
   };
 
-  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null, checkIdOverride = null) => {
+  const generatePDF = async (uploadToServer = true, inspectionDateOverride = null) => {
     try {
       setIsGeneratingPDF(true);
 
@@ -904,7 +890,59 @@ const StorageTankService = ({
       setTextField('on', dateFormat(formData.signedDate), smallFont);
       setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
-      // Handle image embedding for PDF fields
+      // Handle image embedding for PDF fields. Try Azure directly first and then
+      // use the authenticated backend image proxy. A saved photo must not silently
+      // disappear from the final inspection PDF.
+      const loadImageBytesForPdf = async (imageUrl, formField) => {
+        const cleanUrl = getBasePhotoUrl(imageUrl);
+        if (!cleanUrl) throw new Error(`No valid image URL found for ${formField}`);
+
+        let token = sasToken;
+        if (!token) {
+          try {
+            token = await getSasToken();
+            if (token) setSasToken(token);
+          } catch (tokenError) {
+            console.warn(`Could not refresh SAS token for ${formField}; trying image proxy`, tokenError);
+          }
+        }
+
+        if (token) {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 10000);
+          try {
+            const imageResponse = await fetch(`${cleanUrl}?${token}`, {
+              signal: controller.signal,
+              mode: 'cors',
+              credentials: 'omit',
+              cache: 'no-store'
+            });
+            if (imageResponse.ok) {
+              const imageBytes = await imageResponse.arrayBuffer();
+              if (imageBytes.byteLength >= 100) return imageBytes;
+            } else {
+              console.warn(`Direct image fetch failed for ${formField}: HTTP ${imageResponse.status}`);
+            }
+          } catch (directError) {
+            console.warn(`Direct image fetch failed for ${formField}; trying image proxy`, directError);
+          } finally {
+            clearTimeout(timeout);
+          }
+        }
+
+        const dataUrl = await get(`/api/site-check/file/image-proxy?url=${encodeURIComponent(cleanUrl)}`);
+        if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:') || !dataUrl.includes(',')) {
+          throw new Error(`Image proxy did not return valid image data for ${formField}`);
+        }
+
+        const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+        const binary = window.atob(base64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        if (bytes.byteLength < 100) throw new Error(`Image data is empty or invalid for ${formField}`);
+        return bytes.buffer;
+      };
+
       const imageFields = [
         { pdfField: 'param2Remark_af_image', formField: 'param2Remark' },
         { pdfField: 'param3Remark_af_image', formField: 'param3Remark' },
@@ -914,56 +952,17 @@ const StorageTankService = ({
 
       for (const { pdfField, formField } of imageFields) {
         const imageUrl = formData[formField];
-        if (!imageUrl) {
-          console.log(`No image URL found for ${formField}`);
-          continue;
-        }
+        if (!imageUrl) continue;
 
         try {
-          // Clean URL and add SAS token
-          const cleanUrl = imageUrl.split('?')[0];
-          const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
-          console.log(`Processing image from: ${imageUrlWithToken}`);
-
-          // Fetch image with timeout
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
-          const imageResponse = await fetch(imageUrlWithToken, {
-            signal: controller.signal
-          });
-          clearTimeout(timeout);
-
-          if (!imageResponse.ok) {
-            console.error(`HTTP error for ${formField}: ${imageResponse.status}`);
-            continue;
-          }
-
-          const imageBytes = await imageResponse.arrayBuffer();
-
-          // Verify we have actual image data
-          if (imageBytes.byteLength < 100) {
-            console.error(`Image too small or corrupted for ${formField}`);
-            continue;
-          }
-
-          // Universal embedding
+          const imageBytes = await loadImageBytesForPdf(imageUrl, formField);
           const image = await embedUniversalImage(imageBytes);
-          console.log(`Successfully embedded image for ${formField}`);
-
-          // Set image in PDF field
           const imageField = form.getButton(pdfField);
-          if (!imageField) {
-            console.error(`PDF field ${pdfField} not found`);
-            continue;
-          }
-
+          if (!imageField) throw new Error(`PDF image field ${pdfField} was not found`);
           imageField.setImage(image);
-          console.log(`Image set in field ${pdfField}`);
-
         } catch (error) {
-          console.error(`Error processing ${formField} image:`, error);
-          // Continue with next image even if one fails
+          console.error(`Error embedding ${formField} in Storage Tank PDF:`, error);
+          throw new Error(`Storage Tank photo could not be added to the PDF (${formField})`);
         }
       }
 
@@ -976,21 +975,12 @@ const StorageTankService = ({
       setGeneratedPdfBlob(blob);
       setShowPdfButton(true);
 
-      let uploadResult = { stored: false, sourceReference: null };
       if (uploadToServer) {
-        uploadResult = await uploadPdfToServer(
-          blob,
-          fileName,
-          effectiveInspectionDate,
-          checkIdOverride
-        );
-        if (!uploadResult?.stored) {
-          throw new Error('PDF was generated but could not be stored in Site Documents');
-        }
+        await uploadPdfToServer(blob, fileName, effectiveInspectionDate);
       }
 
       toast.success('PDF generated successfully!');
-      return { success: true, fileName, uploadResult };
+      return { success: true, fileName };
 
     } catch (error) {
       console.error('Error generating PDF:', error);
@@ -1022,30 +1012,30 @@ const StorageTankService = ({
 
       const uploadResults = await Promise.all(
         filesToUpload.map(async (file, index) => {
-          const response = await uploadSiteCheckDoc({
+          const uploadedUrl = await uploadSiteCheckDoc({
             siteId: authoritativeSiteId || 0,
             file: file
           });
 
-          const baseUrl = response?.url ||
-            `https://stccpman.blob.core.windows.net/site-images/${encodeURIComponent(file.name)}`;
+          if (typeof uploadedUrl !== "string" || !uploadedUrl.trim()) {
+            throw new Error(`Photo upload did not return a valid URL for ${file.name}`);
+          }
 
-          // Always include SAS token in the stored URL
-          const imageUrl = `${baseUrl}?${token}`;
+          const baseUrl = getBasePhotoUrl(uploadedUrl.trim());
 
           return {
-            url: imageUrl,
-            baseUrl: baseUrl, // Store without token for API if needed
+            url: getPhotoDisplayUrl(baseUrl, token),
+            baseUrl,
             paramKey: availableParams[index],
             fileName: file.name,
-            documentId: response?.documentId || uuidv4()
+            documentId: uuidv4()
           };
         })
       );
 
       // Update form data with URLs that include SAS tokens
       const formUpdates = uploadResults.reduce((acc, photo) => {
-        acc[photo.paramKey] = photo.url; // Store WITH SAS token
+        acc[photo.paramKey] = photo.baseUrl; // Persist stable URL without an expiring SAS token
         return acc;
       }, {});
 
@@ -1060,22 +1050,14 @@ const StorageTankService = ({
         ...uploadResults
       ].slice(0, 4));
 
-      // Save to API
+      // Persist only the photo fields. Using the full Generic Inspection PUT here
+      // would replace unrelated inspection values with null/blank fields.
       if (currentCheckId) {
-        const payload = {
-          checkId: currentCheckId,
-          siteId: authoritativeSiteId,
-          type: 'Inspection',
-          subType: 'Storage Tank',
-          category: 'Storage Tank Service',
-          ...formUpdates
-        };
-
-        const existingInspections = await get(`/api/site-check/generic-inspection/${currentCheckId}`);
-        if (existingInspections?.length > 0) {
-          await put(`/api/site-check/generic-inspection/${currentCheckId}`, payload);
-        } else {
-          await post(`/api/site-check/generic-inspection`, payload);
+        for (const photo of uploadResults) {
+          await put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+            paramKey: photo.paramKey,
+            photoUrl: photo.baseUrl
+          });
         }
       }
 
@@ -1104,16 +1086,10 @@ const StorageTankService = ({
 
     // Update API if needed
     if (currentCheckId && photoToRemove.paramKey) {
-      const payload = {
-        checkId: currentCheckId,
-        siteId: authoritativeSiteId,
-        type: 'Inspection',
-        subType: 'Storage Tank',
-        category: 'Storage Tank Service',
-        [photoToRemove.paramKey]: ""
-      };
-
-      put(`/api/site-check/generic-inspection/${currentCheckId}`, payload)
+      put(`/api/site-check/generic-inspection/${currentCheckId}/photo`, {
+        paramKey: photoToRemove.paramKey,
+        photoUrl: ""
+      })
         .catch(error => {
           console.error("Error removing photo from API:", error);
           toast.error("Failed to update photo in database");
@@ -1141,33 +1117,6 @@ const StorageTankService = ({
       });
   };
 
-
-  const retryPendingHistory = async () => {
-    if (!pendingHistoryRetry || isRetryingHistory) {
-      return;
-    }
-
-    setIsRetryingHistory(true);
-    try {
-      const history = await recordGenericInspectionHistory(pendingHistoryRetry);
-      setPendingHistoryRetry(null);
-      toast.success(`History recorded successfully (History #${history.historyId}).`);
-    } catch (error) {
-      const message = getSiteCheckErrorMessage(
-        error,
-        "History record could not be created."
-      );
-      console.error("Retry Generic Inspection history:", {
-        ...pendingHistoryRetry,
-        status: error?.response?.status,
-        message,
-        error,
-      });
-      toast.error(`History retry failed: ${message}`);
-    } finally {
-      setIsRetryingHistory(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1305,75 +1254,13 @@ const StorageTankService = ({
 
       console.log('Inspection data saved successfully:', saveResponse.data);
 
-      const resolvedCheckIdForHistory = Number(
-        currentCheckId || statusResponse?.data?.checkId || statusResponse?.checkId
-      );
-      const savedInspectionRecordId = Number(saveResponse?.data?.id);
-
-      const pdfResult = await generatePDF(
-        true,
-        submissionInspectionDate,
-        resolvedCheckIdForHistory
-      );
+      // Generate PDF
+      const pdfResult = await generatePDF(true, submissionInspectionDate);
       if (!pdfResult.success) {
         throw new Error(pdfResult.error || "Failed to generate PDF");
       }
 
-      const sourceReference = String(
-        pdfResult?.uploadResult?.sourceReference || ""
-      ).trim();
-
-      if (!Number.isInteger(resolvedCheckIdForHistory) || resolvedCheckIdForHistory <= 0) {
-        throw new Error(
-          "Storage Tank Service was saved, but History cannot be recorded because the Site Check ID is invalid."
-        );
-      }
-      if (!Number.isInteger(savedInspectionRecordId) || savedInspectionRecordId <= 0) {
-        throw new Error(
-          "Storage Tank Service was saved, but History cannot be recorded because the saved inspection record ID was not returned."
-        );
-      }
-      if (!pdfResult?.uploadResult?.stored) {
-        throw new Error(
-          "Storage Tank Service was saved, but History cannot be recorded because the PDF was not stored in Site Documents."
-        );
-      }
-      if (!sourceReference) {
-        throw new Error(
-          "Storage Tank Service was saved, but History cannot be recorded because the PDF reference was not returned."
-        );
-      }
-
-      const historyPayload = {
-        checkId: resolvedCheckIdForHistory,
-        inspectionRecordId: savedInspectionRecordId,
-        sourceReference,
-      };
-
-      try {
-        await recordGenericInspectionHistory(historyPayload);
-        setPendingHistoryRetry(null);
-      } catch (historyError) {
-        const historyMessage = getSiteCheckErrorMessage(
-          historyError,
-          "History record could not be created."
-        );
-        console.error("Record Storage Tank Service history:", {
-          ...historyPayload,
-          status: historyError?.response?.status,
-          message: historyMessage,
-          error: historyError,
-        });
-        setPendingHistoryRetry(historyPayload);
-        setShowPdfButton(true);
-        setIsSubmitted(true);
-        toast.error(
-          `Report and PDF were saved, but History was not recorded: ${historyMessage}`
-        );
-        return;
-      }
-
-      toast.success("Storage Tank Service report saved, PDF generated, and History recorded successfully!");
+      toast.success("Storage Tank Service report saved and PDF generated successfully!");
       setShowPdfButton(true);
       setIsSubmitted(true);
 
@@ -2157,28 +2044,9 @@ const StorageTankService = ({
           </div>
         ) : (
           <div className="text-center print-hide">
-            {pendingHistoryRetry ? (
-              <div className="alert alert-warning mb-4">
-                <div className="fw-bold mb-2">
-                  Report and PDF saved, but History has not been recorded.
-                </div>
-                <div className="mb-3">
-                  Do not submit the inspection again. Retry only the History record below.
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-warning"
-                  disabled={isRetryingHistory}
-                  onClick={retryPendingHistory}
-                >
-                  {isRetryingHistory ? "Retrying History..." : "Retry History"}
-                </button>
-              </div>
-            ) : (
-              <div className="alert alert-success mb-4">
-                Report submitted successfully on {formatDate(formData.inspectionDate)}
-              </div>
-            )}
+            <div className="alert alert-success mb-4">
+              Report submitted successfully on {formatDate(formData.inspectionDate)}
+            </div>
             {showPdfButton && generatedPdfBlob && (
               <button
                 className="btn btn-success"

@@ -1206,8 +1206,76 @@ const GasSafetyRecord = ({
                 }
             }
 
-            // Handle images on second page
-            // Handle image embedding for PDF fields
+            // Handle uploaded inspection photos on the second page.
+            // Direct Azure blob fetches can be blocked by browser CORS/service-worker state,
+            // so fall back to the authenticated backend image proxy. If a saved photo cannot
+            // be embedded, fail the PDF instead of silently producing an incomplete report.
+            const loadImageBytesForPdf = async (imageUrl, formField) => {
+                const cleanUrl = getBasePhotoUrl(imageUrl);
+                if (!cleanUrl) {
+                    throw new Error(`No valid image URL found for ${formField}`);
+                }
+
+                let token = sasToken;
+                if (!token) {
+                    try {
+                        token = await getSasToken();
+                        if (token) {
+                            setSasToken(token);
+                        }
+                    } catch (tokenError) {
+                        console.warn(`Could not refresh SAS token for ${formField}; trying image proxy`, tokenError);
+                    }
+                }
+
+                if (token) {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    try {
+                        const imageResponse = await fetch(`${cleanUrl}?${token}`, {
+                            signal: controller.signal,
+                            mode: 'cors',
+                            credentials: 'omit',
+                            cache: 'no-store'
+                        });
+
+                        if (imageResponse.ok) {
+                            const imageBytes = await imageResponse.arrayBuffer();
+                            if (imageBytes.byteLength >= 100) {
+                                return imageBytes;
+                            }
+                        } else {
+                            console.warn(`Direct image fetch failed for ${formField}: HTTP ${imageResponse.status}`);
+                        }
+                    } catch (directError) {
+                        console.warn(`Direct image fetch failed for ${formField}; trying image proxy`, directError);
+                    } finally {
+                        clearTimeout(timeout);
+                    }
+                }
+
+                const dataUrl = await get(
+                    `/api/site-check/file/image-proxy?url=${encodeURIComponent(cleanUrl)}`
+                );
+
+                if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:') || !dataUrl.includes(',')) {
+                    throw new Error(`Image proxy did not return valid image data for ${formField}`);
+                }
+
+                const base64 = dataUrl.substring(dataUrl.indexOf(',') + 1);
+                const binary = window.atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+
+                if (bytes.byteLength < 100) {
+                    throw new Error(`Image data is empty or invalid for ${formField}`);
+                }
+
+                return bytes.buffer;
+            };
+
             const imageFields = [
                 { pdfField: 'param2_af_image', formField: 'param2' },
                 { pdfField: 'param3_af_image', formField: 'param3' },
@@ -1218,53 +1286,27 @@ const GasSafetyRecord = ({
             for (const { pdfField, formField } of imageFields) {
                 const imageUrl = formData[formField];
                 if (!imageUrl) {
-                    console.log(`No image URL found for ${formField}`);
                     continue;
                 }
 
                 try {
-                    const cleanUrl = imageUrl.split('?')[0];
-                    const imageUrlWithToken = `${cleanUrl}?${sasToken}`;
-                    console.log(`Processing image from: ${imageUrlWithToken}`);
-
-                    const controller = new AbortController();
-                    const timeout = setTimeout(() => controller.abort(), 10000);
-
-                    const imageResponse = await fetch(imageUrlWithToken, {
-                        signal: controller.signal
-                    });
-                    clearTimeout(timeout);
-
-                    if (!imageResponse.ok) {
-                        console.error(`HTTP error for ${formField}: ${imageResponse.status}`);
-                        continue;
-                    }
-
-                    const imageBytes = await imageResponse.arrayBuffer();
-
-                    if (imageBytes.byteLength < 100) {
-                        console.error(`Image too small or corrupted for ${formField}`);
-                        continue;
-                    }
-
+                    const imageBytes = await loadImageBytesForPdf(imageUrl, formField);
                     const image = await embedUniversalImage(imageBytes);
-                    console.log(`Successfully embedded image for ${formField}`);
-
                     const imageField = form.getButton(pdfField);
+
                     if (!imageField) {
-                        console.error(`PDF field ${pdfField} not found`);
-                        continue;
+                        throw new Error(`PDF image field ${pdfField} was not found`);
                     }
 
                     imageField.setImage(image);
-                    console.log(`Image set in field ${pdfField}`);
-
                 } catch (error) {
-                    console.error(`Error processing ${formField} image:`, error);
+                    console.error(`Error embedding ${formField} in Gas Safety PDF:`, error);
+                    throw new Error(`Gas Safety photo could not be added to the PDF (${formField})`);
                 }
             }
 
             form.flatten();
+
             const pdfBytesModified = await pdfDoc.save();
             const blob = new Blob([pdfBytesModified], { type: 'application/pdf' });
             const fileName = `GasSafetyRecord_${selectedAsset?.assetName || 'report'}.pdf`;
