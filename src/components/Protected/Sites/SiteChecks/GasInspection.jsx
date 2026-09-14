@@ -238,7 +238,8 @@ const GasSafetyRecord = ({
     const calculateExpiryDate = (visitDate, repeatFrequency) =>
       calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
-    const isGasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
+    const isSelectedGasEngineer = (user) =>
+        user?.userType === "External" && user?.trade === "Gas Engineer";
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -1370,6 +1371,10 @@ const GasSafetyRecord = ({
         // NEW: The same engineer validation used by the Air Conditioning flow.
         if (!formData.engineer || !selectedEngineer) {
             toast.error("Please select an active engineer for this Site Check.");
+            return;
+        }
+        if (!isSelectedGasEngineer(selectedEngineer)) {
+            toast.error("Please select an active External user with the Gas Engineer trade before submitting.");
             return;
         }
         if (!formData.assetId || !selectedAsset) {
@@ -2643,8 +2648,7 @@ const GasSafetyRecord = ({
                                     className="btn btn-primary"
                                     disabled={
                                         isLoading ||
-                                        isGeneratingPDF ||
-                                        !isGasEngineer
+                                        isGeneratingPDF
                                     }
                                 >
                                     {isLoading ? 'Submitting...' : 'Submit Record'}
