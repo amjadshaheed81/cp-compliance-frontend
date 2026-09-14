@@ -359,9 +359,13 @@ const WaterHeaterCertificate = ({
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         // Find the Log Books folder
-        const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === 'Log Books'
-        );
+        const logBooksFolder =
+            parentFoldersResponse.parentFolders.find(
+                folder => folder.name.trim() === '6 - Log Books'
+            ) ||
+            parentFoldersResponse.parentFolders.find(
+                folder => folder.name.trim() === 'Log Books'
+            );
 
         if (logBooksFolder) {
           // Get the contents of Log Books folder
@@ -381,9 +385,13 @@ const WaterHeaterCertificate = ({
 
               if (electricalResponse?.document?.childFolders) {
                 // Find the External Lighting folder
-                const externalLightingFolder = electricalResponse.document.childFolders.find(
-                    folder => folder.name.trim() === 'Water Heater Inspection'
-                );
+                const externalLightingFolder =
+                    electricalResponse.document.childFolders.find(
+                        folder => folder.name.trim() === 'Unvented Water Heater - G3 Statutory Inspection'
+                    ) ||
+                    electricalResponse.document.childFolders.find(
+                        folder => folder.name.trim() === 'Water Heater Inspection'
+                    );
 
                 // Update state with all found folder IDs
                 setFolderIds({
@@ -588,9 +596,6 @@ const WaterHeaterCertificate = ({
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
-      // Standard Site Check behaviour: both sign-off dates follow
-      // the actual Inspection Date and are not independently editable.
-      ...(name === "inspectionDate" ? { signedDate: value } : {}),
     }));
   };
 
@@ -698,7 +703,7 @@ const WaterHeaterCertificate = ({
           }
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(`PDF uploaded successfully as version ${documentRequestString.files[0].fileVersion}!`);
           return true;
         }
@@ -733,7 +738,7 @@ const WaterHeaterCertificate = ({
           }
         });
 
-        if (response.data) {
+        if (response?.status >= 200 && response?.status < 300) {
           toast.success(`PDF uploaded successfully as version ${fileVersion}!`);
           return true;
         }
@@ -742,7 +747,7 @@ const WaterHeaterCertificate = ({
       throw new Error('Upload failed: No response data');
     } catch (error) {
       console.error('Error uploading PDF:', error);
-      return false;
+      throw error;
     } finally {
       setIsUploading(false);
     }
@@ -912,9 +917,8 @@ const WaterHeaterCertificate = ({
 
       setTextField('Clients Name', clientName, smallFont);
       setTextField('Engineers Name', engineerName, smallFont);
-      const effectiveSignedDate = inspectionDateOverride || formData.inspectionDate || formData.signedDate;
-      setTextField('on', dateFormat(effectiveSignedDate), smallFont);
-      setTextField('on_2', dateFormat(effectiveSignedDate), smallFont);
+      setTextField('on', dateFormat(formData.signedDate), smallFont);
+      setTextField('on_2', dateFormat(formData.signedDate), smallFont);
 
       // Handle image embedding for PDF fields
       const imageFields = [
@@ -983,15 +987,22 @@ const WaterHeaterCertificate = ({
       setShowPdfButton(true);
 
       if (uploadToServer) {
-        await uploadPdfToServer(blob, fileName, inspectionDateOverride || formData.inspectionDate);
+        const pdfStored = await uploadPdfToServer(
+            blob,
+            fileName,
+            inspectionDateOverride || formData.inspectionDate
+        );
+        if (!pdfStored) {
+          throw new Error('PDF was generated but could not be stored in Site Documents');
+        }
       }
 
-      toast.success('PDF generated successfully!');
+      toast.success('PDF generated and stored successfully!');
       return { success: true, fileName };
 
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      toast.error('Failed to generate PDF');
+      console.error('Error generating/storing PDF:', error);
+      toast.error(error?.message || 'Failed to generate/store PDF');
       return { success: false, error: error.message };
     } finally {
       setIsGeneratingPDF(false);
@@ -1163,9 +1174,9 @@ const WaterHeaterCertificate = ({
     setIsLoading(true);
 
     try {
-      // Open checks complete using the selected Inspection Date, matching the Site Check standard.
+      // NEW: Open checks complete using today's UK date, matching Air Conditioning.
       const submissionInspectionDate = formData.inspectionDate;
-      const submissionSignedDate = submissionInspectionDate;
+      const submissionSignedDate = formData.signedDate;
 
       let existingInspection = null;
       if (currentCheckId) {
@@ -2001,20 +2012,20 @@ const WaterHeaterCertificate = ({
               </div>
 
               <div className="mb-3">
-                <label className="form-label">Signed Date</label>
+                <label className="form-label">Date</label>
                 <input
                     type="date"
                     className="form-control"
                     name="signedDate"
-                    value={formatDate(formData.inspectionDate || formData.signedDate)}
-                    readOnly
+                    value={formatDate(formData.signedDate)}
+                    onChange={handleInputChange}
                     required
                     style={{
                       height: "40px",
                       padding: "0 10px",
                       width: "100%",
-                      backgroundColor: "#f8f9fa",
                     }}
+                    disabled={isSubmitted}
                 />
               </div>
             </div>
@@ -2048,19 +2059,19 @@ const WaterHeaterCertificate = ({
                   error={validationErrors.engineer || engineerLoadError}
               />
               <div className="mb-3">
-                <label className="form-label">Signed Date</label>
+                <label className="form-label">Date</label>
                 <input
                     type="date"
                     className="form-control"
                     name="signedDate"
-                    value={formatDate(formData.inspectionDate || formData.signedDate)}
-                    readOnly
+                    value={formatDate(formData.signedDate)}
+                    onChange={handleInputChange}
                     required
+                    disabled={isSubmitted}
                     style={{
                       height: "40px",
                       padding: "0 10px",
                       width: "100%",
-                      backgroundColor: "#f8f9fa",
                     }}
                 />
               </div>
