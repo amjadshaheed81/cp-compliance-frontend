@@ -1071,7 +1071,7 @@ const WaterHeaterCertificate = ({
       }
 
       toast.success('PDF generated and stored successfully!');
-      return { success: true, fileName };
+      return { success: true, fileName, uploadResult };
 
     } catch (error) {
       console.error('Error generating/storing PDF:', error);
