@@ -247,7 +247,7 @@ export const getRoutes = () => {
     {
       path: "/edit-profile",
       element: <EditProfile />,
-      allowedRoles: [ROLE.ADMIN], // only admin can access this route
+      allowedRoles: Object.values(ROLE),
     },
     {
       path: "/notifications",

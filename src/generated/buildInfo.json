@@ -6,6 +6,6 @@
   "frameworkMajor": 18,
   "applicationMajor": 1,
   "build": 9,
-  "environment": "production",
-  "generatedAtUtc": "2026-09-12T17:00:38.476Z"
+  "environment": "development",
+  "generatedAtUtc": "2026-09-15T16:59:41.471Z"
 }

@@ -1,5 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
-import { Box, Autocomplete, TextField } from "@mui/material";
+import { Autocomplete, TextField } from "@mui/material";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -13,11 +13,12 @@ import { toast } from "react-toastify";
 import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
-import { get,getSasToken,uploadSiteCheckDoc } from "../../../api";
+import { get, getSasToken, put, uploadProfileSignature } from "../../../api";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
 import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { isAdminLogin } from "../../../utils/isManagerAdminLogin";
+import "./EditProfile.css";
 
 const EditProfile = ({
   sites,
@@ -29,20 +30,18 @@ const EditProfile = ({
   siteSelectedForGlobal
 }) => {
 
-    const [sasToken, setSasToken] = useState();
+  const [sasToken, setSasToken] = useState();
+  const isAdmin = isAdminLogin(loggedInUserData);
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState();
   const [tagSite, setTagSite] = useState([]);
-  const [showSiteTagModal, setShowSiteTagModal] = useState(false);
-  const [taggedSites, setTaggedSites] = useState([]);
   const {
     register,
     reset,
     watch,
     formState: { errors },
     handleSubmit,
-    getValues,
     setValue,
   } = useForm({});
   const values = watch();
@@ -55,14 +54,16 @@ const EditProfile = ({
       lastName: name?.[1] || "",
       isCompany: loggedInUserData?.companyId ? true : false,
     });
-    setTagSite(
-      loggedInUserData?.taggedSites
-        ? loggedInUserData?.taggedSites?.map((itm) => itm?.id)
-        : []
-    );
-    setSelectedCompany(loggedInUserData?.companyId);
-    getSites(loggedInUserData);
-    getCompanies();
+    if (isAdmin) {
+      setTagSite(
+        loggedInUserData?.taggedSites
+          ? loggedInUserData?.taggedSites?.map((itm) => itm?.id)
+          : []
+      );
+      setSelectedCompany(loggedInUserData?.companyId);
+      getSites(loggedInUserData);
+      getCompanies();
+    }
   }, []);
   const getCompanies = async () => {
     const license = JSON.parse(localStorage.getItem("license"));
@@ -74,10 +75,10 @@ const EditProfile = ({
 
   
 
-   const getToken = async () => {
-      const token = await getSasToken();
-      setSasToken(token);
-    }
+  const getToken = async () => {
+    const token = await getSasToken();
+    setSasToken(token);
+  };
 
   const getSelectedTagValue = () => {
     const selectedSites = tagSite;
@@ -85,7 +86,7 @@ const EditProfile = ({
     if (selectedSites) {
       for (const iterator of selectedSites) {
         const selectedValue =
-          sites.find((itm) => itm.siteId == iterator) || null;
+          (sites || []).find((itm) => String(itm.siteId) === String(iterator)) || null;
         if (selectedValue) {
           arr.push({
             key: selectedValue?.siteId,
@@ -97,63 +98,84 @@ const EditProfile = ({
     return arr;
   };
   const submitUser = async (formJson) => {
-    formJson.company = selectedCompany;
-   
-    const data = {
-      userId: loggedInUserData?.id,
-      firstName: formJson?.firstName || null,
-      lastName: formJson?.lastName || null,
-      email: formJson?.email || null,
-      phone: Number(formJson?.phone) || null,
-      role: formJson?.role || null,
-      userType: formJson?.userType || null,
-      defaultSiteId:
-        formJson?.userType === "Internal"
-          ? loggedInUserData?.defaultSiteId
-          : null,
-      companyId: formJson?.company || null,
-      trade: formJson?.userType === "External" ? formJson?.trade : null,
-      gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
-      status: formJson?.status || null,
-
-      licenseId: loggedInUserData?.licenseId,
-      siteId: siteSelectedForGlobal?.siteId
-    };
-    
     setIsLoading(true);
-    const temp = { ...data }
-    temp.file = formJson.file[0]
-    const url = await uploadSiteCheckDoc(temp);
-    data.signature = url
-             
+
     try {
+      let signature = loggedInUserData?.signature || null;
+      const selectedSignatureFile = formJson?.file?.[0];
+      if (selectedSignatureFile) {
+        const uploadedSignature = await uploadProfileSignature(selectedSignatureFile);
+        if (typeof uploadedSignature !== "string" || !uploadedSignature.trim()) {
+          throw new Error("Signature upload failed");
+        }
+        signature = uploadedSignature.split("?")[0];
+      }
+
+      if (!isAdmin) {
+        const response = await put("/api/user/profile", {
+          firstName: formJson?.firstName?.trim(),
+          lastName: formJson?.lastName?.trim(),
+          phone: formJson?.phone?.trim() || null,
+          signature: selectedSignatureFile ? signature : null,
+        });
+        const updatedUser = response?.data;
+        if (!updatedUser?.id) {
+          throw new Error("Profile update failed");
+        }
+        setLoggedInUser(updatedUser);
+        toast.success("Your profile has been updated successfully.");
+        return;
+      }
+
+      const data = {
+        userId: loggedInUserData?.id,
+        firstName: formJson?.firstName || null,
+        lastName: formJson?.lastName || null,
+        // Login email is not changed from the self-profile page.
+        email: loggedInUserData?.email || null,
+        phone: formJson?.phone?.trim() || null,
+        role: formJson?.role || null,
+        userType: formJson?.userType || null,
+        defaultSiteId:
+          formJson?.userType === "Internal"
+            ? loggedInUserData?.defaultSiteId
+            : null,
+        companyId: selectedCompany || null,
+        trade: formJson?.userType === "External" ? formJson?.trade : null,
+        gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
+        status: formJson?.status || null,
+        licenseId: loggedInUserData?.licenseId,
+        siteId: siteSelectedForGlobal?.siteId,
+        signature,
+      };
+
       const res = await addUser(data);
-      if (res.id) {
-        const tagSiteValue = {
-          addedSites: tagSite,
-          removedSites: [],
-        };
-        if (loggedInUserData?.taggedSites) {
-          for (const iterator of loggedInUserData?.taggedSites) {
-            if (!tagSite?.includes(iterator?.id)) {
-              tagSiteValue.removedSites.push(iterator?.id);
-            }
+      if (!res?.id) {
+        throw new Error(typeof res === "string" ? res : "Profile update failed");
+      }
+
+      const tagSiteValue = {
+        addedSites: tagSite,
+        removedSites: [],
+      };
+      if (loggedInUserData?.taggedSites) {
+        for (const iterator of loggedInUserData?.taggedSites) {
+          if (!tagSite?.includes(iterator?.id)) {
+            tagSiteValue.removedSites.push(iterator?.id);
           }
         }
-        const tagRes = await addUserTagSite(data?.userId, tagSiteValue);
-        toast.success(
-          `${formJson?.firstName} user has been updated successfully.`
-        );
-        const res = await get(`/api/user/${data?.userId}/details`);
-        
-        setLoggedInUser(res);
-      } else {
-        toast.error(
-          `Something went wrong while updating ${formJson?.firstName}.`
-        );
       }
-      setIsLoading(false);
+      await addUserTagSite(data?.userId, tagSiteValue);
+      const refreshedUser = await get(`/api/user/${data?.userId}/details`);
+      setLoggedInUser(refreshedUser);
+      toast.success(`${formJson?.firstName} user has been updated successfully.`);
     } catch (e) {
+      toast.error(
+        e?.response?.data?.message ||
+          e?.message ||
+          "Something went wrong while updating your profile."
+      );
+    } finally {
       setIsLoading(false);
     }
   };
@@ -168,23 +190,43 @@ const EditProfile = ({
     }
     return null;
   };
+  const selectedTagSites = getSelectedTagValue();
+
+  const removeTaggedSite = (siteId) => {
+    setTagSite((currentSites) =>
+      currentSites.filter((id) => String(id) !== String(siteId))
+    );
+  };
+
   return (
     <React.Fragment>
       <SidebarNew />
       <div className="content">
         <Header />
         <form onSubmit={handleSubmit(submitUser)}>
-          <div className="container-fluid">
+          <div className="container-fluid profile-page">
             <BreadCrumHeader
               header={`Edit ${loggedInUserData?.name} Profile`}
               page={"Edit Profile"}
             />
-            {!isLoading && (
+
+            {isLoading ? (
+              <div className="profile-loading">
+                <CircularProgress />
+              </div>
+            ) : (
               <Fragment>
-                <div className="row">
-                  <div className="col-md-4 mt-4">
+                <section className="profile-section">
+                  <div className="profile-section-heading">
+                    <h5 className="profile-section-title">Personal Details</h5>
+                    <p className="profile-section-description">
+                      Update your contact details. Your login email cannot be changed here.
+                    </p>
+                  </div>
+
+                  <div className="profile-grid">
                     <div className="form-group">
-                      <label for="firstName">First Name</label>
+                      <label htmlFor="firstName">First Name</label>
                       <input
                         type="text"
                         autoComplete="off"
@@ -206,10 +248,9 @@ const EditProfile = ({
                         />
                       )}
                     </div>
-                  </div>
-                  <div className="col-md-4 mt-4">
+
                     <div className="form-group">
-                      <label for="lastName">Last Name</label>
+                      <label htmlFor="lastName">Last Name</label>
                       <input
                         type="text"
                         autoComplete="off"
@@ -220,14 +261,14 @@ const EditProfile = ({
                         {...register("lastName")}
                       />
                     </div>
-                  </div>
-                  <div className="col-md-4 mt-4">
+
                     <div className="form-group">
-                      <label for="email">Email ID</label>
+                      <label htmlFor="email">Email ID</label>
                       <input
                         type="email"
-                        className="form-control"
+                        className="form-control profile-readonly"
                         id="email"
+                        readOnly
                         {...register("email", {
                           required: {
                             value: true,
@@ -242,10 +283,9 @@ const EditProfile = ({
                         />
                       )}
                     </div>
-                  </div>
-                  <div className="col-md-4 mt-4">
+
                     <div className="form-group">
-                      <label for="phone">Phone Number</label>
+                      <label htmlFor="phone">Phone Number</label>
                       <input
                         type="tel"
                         maxLength={11}
@@ -270,337 +310,349 @@ const EditProfile = ({
                       )}
                     </div>
                   </div>
-                  <div className="col-md-4 mt-4">
-                    <div className="form-group">
-                      <label for="role">Role</label>
-                      <select
-                        {...register("role", {
-                          required: {
-                            value: true,
-                            message: `Please select role.`,
-                          },
-                        })}
-                        className="form-control form-select"
-                      >
-                        <option value={""} disabled selected>
-                          Select Action Manager
-                        </option>
-                        <option value={ROLE.ADMIN}>Admin</option>
-                        <option value={ROLE.MANAGER}>Property Manager</option>
-                        <option value={ROLE.SITE_ACTION_MANAGER}>
-                          Site Action Manager
-                        </option>
-                        <option value={ROLE.SITE_USERS}>Site Users</option>
-                        <option value={ROLE.CARE_TAKER}>Caretaker</option>
-                        <option value={ROLE.CONTRACTOR}>Contractor</option>
-                        <option value={ROLE.SURVEYOR}>Surveyor</option>
-                        <option value={ROLE.TRADESMAN}>Tradesman</option>
-                        <option value={ROLE.TESTER}>Tester</option>
-                      </select>
-                      {errors?.role && (
-                        <InputError
-                          message={errors?.role?.message}
-                          key={errors?.role?.message}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-4">
-                    <div className="form-group">
-                      <label for="userType">Internal/External</label>
-                      <select
-                        id="userType"
-                        name="userType"
-                        {...register("userType", {
-                          required: {
-                            value: true,
-                            message: `Please select user type.`,
-                          },
-                        })}
-                        className="form-control form-select"
-                      >
-                        <option value={"Internal"}>Internal</option>
-                        <option value={"External"}>External</option>
-                      </select>
-                      {errors?.userType && (
-                        <InputError
-                          message={errors?.userType?.message}
-                          key={errors?.userType?.message}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-4">
-                    <div className="form-group">
-                      <label for="tagSite">Tag Site</label>
-                      <Autocomplete
-                        multiple
-                        value={getSelectedTagValue()}
-                        onChange={(event, newValue) => {
-                          const keys = newValue?.map((itm) => itm?.key);
-                          setTagSite(keys);
-                        }}
-                        options={sites?.map((option) => {
-                          return {
-                            key: option.siteId,
-                            label: option.siteName,
-                          };
-                        })}
-                        getOptionLabel={(option) => option.label || ""}
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                            label="Tag Site"
-                            placeholder="Tag Site"
-                          />
-                        )}
-                      />
-                    </div>
-                  </div>
-                  <div className="col-md-4 mt-4">
-                    <div className="form-check form-switch">
-                      <label
-                        className="form-check-label pt-4"
-                        htmlFor="flexSwitchCheckChecked"
-                      >
-                        Is Company?
-                      </label>
-                      <input
-                        className="mt-4 form-check-input"
-                        type="checkbox"
-                        id="isCompany"
-                        name="isCompany"
-                        {...register("isCompany")}
-                        onChange={(e) => {
-                          const isChecked = e.target.checked;
+                </section>
 
-                          // Update form state immediately
-                          setValue("isCompany", isChecked);
+                {isAdmin && (
+                  <Fragment>
+                    <section className="profile-section">
+                      <div className="profile-section-heading">
+                        <h5 className="profile-section-title">Administration</h5>
+                        <p className="profile-section-description">
+                          Role, access and organisation settings are Admin only.
+                        </p>
+                      </div>
 
-                          // Clear selected company if unchecked
-                          if (!isChecked) {
-                            setSelectedCompany(null);
-                          }
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Conditionally render the Autocomplete only if the checkbox is checked */}
-                  {watch("isCompany") && (
-                    <div className="col-md-4 mt-4">
-                      <div className="form-group">
-                        <label htmlFor="company">Company Name</label>
-                        <Autocomplete
-                          id="leadUserID"
-                          onChange={(event, item) => {
-                            setSelectedCompany(item?.key); // Set selected company
-                          }}
-                          value={getSelectedValue()}
-                          options={companies?.map((option) => {
-                            return {
-                              key: option.companyId,
-                              label: option.companyName,
-                            };
-                          })}
-                          getOptionLabel={(option) => option.label}
-                          renderInput={(params) => (
-                            <div ref={params.InputProps.ref}>
-                              <input
-                                type="text"
-                                autoComplete="off"
-                                readOnly
-                                onFocus={(e) =>
-                                  e.target.removeAttribute("readonly")
-                                }
-                                {...params.inputProps}
-                                className="form-control"
-                                placeholder="Select Company"
-                              />
-                            </div>
-                          )}
-                        />
-                      </div>
-                    </div>
-                  )}
-                  {values?.userType === "External" && (
-                    <div className="col-md-4 mt-4">
-                      <div className="form-group">
-                        <label for="trade">Trade (if external)</label>
-                        <select
-                          id="trade"
-                          name="trade"
-                          {...register("trade")}
-                          className="form-control form-select"
-                        >
-                          <option value={""} selected>
-                            NA
-                          </option>
-                          <option value={"Electrician"}>Electrician</option>
-                          <option value={"Gas Engineer"}>Gas Engineer</option>
-                          <option value={"Asbestos Surveyor"}>
-                            Asbestos Surveyor
-                          </option>
-                          <option value={"AC Engineer"}>AC Engineer</option>
-                          <option value={"Fire Door Install"}>
-                            Fire Door Install
-                          </option>
-                          <option value={"General Company"}>
-                            General Company
-                          </option>
-                          <option value={"Life Maintenance"}>
-                            Life Maintenance
-                          </option>
-                          <option value={"Plumber"}>Plumber</option>
-                          <option value={"Auto Door Maintanance"}>
-                            Auto Door Maintanance
-                          </option>
-                          <option value={"Refuse Collector"}>
-                            Refuse Collector
-                          </option>
-                          <option value={"Fire Alarm"}>Fire Alarm</option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                  {tagSite && (
-                    <div className="col-md-4 mt-4">
-                      <div className="form-group">
-                        <div>
-                          {tagSite?.length > 3 && (
-                            <>
-                              <button
-                                type="button"
-                                className="btn btn-sm btn-light text-primary"
-                                onClick={() => {
-                                  setTaggedSites(
-                                    tagSite?.map(
-                                      (itm) =>
-                                        sites?.filter(
-                                          (site) => site?.siteId == itm
-                                        )?.[0]?.siteName
-                                    )
-                                  );
-                                  setShowSiteTagModal(true);
-                                }}
-                              >
-                                {tagSite?.length} Site Tagged
-                              </button>
-                            </>
-                          )}
-                          {tagSite?.length < 4 &&
-                            tagSite?.map((itm) => {
-                              return (
-                                <button className="btn btn-sm btn-light text-primary">
-                                  {
-                                    sites?.filter(
-                                      (site) => site?.siteId == itm
-                                    )?.[0]?.siteName
-                                  }
-                                </button>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div className="col-md-4 mt-4">
-                    <div className="form-group">
-                      <label for="status">Status</label>
-                      <select
-                        id="status"
-                        name="status"
-                        {...register("status", {
-                          required: {
-                            value: true,
-                            message: `Please select user status.`,
-                          },
-                        })}
-                        className="form-control form-select"
-                      >
-                        <option value={""} disabled selected>
-                          Select Status
-                        </option>
-                        <option value={"Active"}>Active</option>
-                        <option value={"Inactive"}>Inactive</option>
-                      </select>
-                      {errors?.status && (
-                        <InputError
-                          message={errors?.status?.message}
-                          key={errors?.status?.message}
-                        />
-                      )}
-                    </div>
-                  </div>
-                  <div className="col-md-4 text-center mt-2">
-                      <div className="form-group">
-                        
-                        {loggedInUserData?.signature && (
-                          <img
-                          onClick={()=> {window.open(loggedInUserData?.signature + "?" + sasToken, '_blank');}}
-                          style={{ cursor: 'pointer' }}
-                            src={loggedInUserData?.signature+ "?" + sasToken}
-                            className="img img-responsive border p-2 m-2 w-100"
-                          />)}
-                          
-                        <input
-                          type="file"
-                          {...register("file")}
-                          className="form-control"
-                          style={{ marginTop: '30px' }}
-                          name="file"
-                          accept="image/*"
-                          id="file"
-                        />
-                        
-                      </div>
-                      </div>
-                  {values?.userType === "External" &&
-                    values?.trade === "Gas Engineer" && (
-                      <div className="col-md-4 mt-2">
+                      <div className="profile-grid">
                         <div className="form-group">
-                          <label htmlFor="gasSafetyRegNo">
-                            Gas Safety Reg No.*
-                          </label>
-                          <input
-                             type="text"
-                            min={0}
-                            className="form-control"
-                            id="gasSafetyRegNo"
-                            {...register("gasSafetyRegNo", {
+                          <label htmlFor="role">Role</label>
+                          <select
+                            id="role"
+                            {...register("role", {
                               required: {
-                                value:
-                                  values?.userType === "External" &&
-                                  values?.trade === "Gas Engineer",
-                                message:
-                                  "Gas Safety Registration Number is required",
+                                value: true,
+                                message: "Please select role.",
                               },
                             })}
-                          />
-                          {errors?.gasSafetyRegNo && (
+                            className="form-control form-select"
+                          >
+                            <option value="" disabled>
+                              Select Role
+                            </option>
+                            <option value={ROLE.ADMIN}>Admin</option>
+                            <option value={ROLE.MANAGER}>Property Manager</option>
+                            <option value={ROLE.SITE_ACTION_MANAGER}>
+                              Site Action Manager
+                            </option>
+                            <option value={ROLE.SITE_USERS}>Site Users</option>
+                            <option value={ROLE.CARE_TAKER}>Caretaker</option>
+                            <option value={ROLE.CONTRACTOR}>Contractor</option>
+                            <option value={ROLE.SURVEYOR}>Surveyor</option>
+                            <option value={ROLE.TRADESMAN}>Tradesman</option>
+                            <option value={ROLE.TESTER}>Tester</option>
+                          </select>
+                          {errors?.role && (
                             <InputError
-                              message={errors?.gasSafetyRegNo?.message}
-                              key={errors?.gasSafetyRegNo?.message}
+                              message={errors?.role?.message}
+                              key={errors?.role?.message}
                             />
                           )}
                         </div>
+
+                        <div className="form-group">
+                          <label htmlFor="userType">Internal/External</label>
+                          <select
+                            id="userType"
+                            name="userType"
+                            {...register("userType", {
+                              required: {
+                                value: true,
+                                message: "Please select user type.",
+                              },
+                            })}
+                            className="form-control form-select"
+                          >
+                            <option value="Internal">Internal</option>
+                            <option value="External">External</option>
+                          </select>
+                          {errors?.userType && (
+                            <InputError
+                              message={errors?.userType?.message}
+                              key={errors?.userType?.message}
+                            />
+                          )}
+                        </div>
+
+                        <div className="form-group">
+                          <label htmlFor="status">Status</label>
+                          <select
+                            id="status"
+                            name="status"
+                            {...register("status", {
+                              required: {
+                                value: true,
+                                message: "Please select user status.",
+                              },
+                            })}
+                            className="form-control form-select"
+                          >
+                            <option value="" disabled>
+                              Select Status
+                            </option>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                          </select>
+                          {errors?.status && (
+                            <InputError
+                              message={errors?.status?.message}
+                              key={errors?.status?.message}
+                            />
+                          )}
+                        </div>
+
+                        <div className="profile-switch-field">
+                          <label className="profile-switch-label" htmlFor="isCompany">
+                            Is Company?
+                          </label>
+                          <div className="form-check form-switch profile-switch">
+                            <input
+                              className="form-check-input"
+                              type="checkbox"
+                              id="isCompany"
+                              name="isCompany"
+                              {...register("isCompany")}
+                              onChange={(e) => {
+                                const isChecked = e.target.checked;
+                                setValue("isCompany", isChecked);
+                                if (!isChecked) {
+                                  setSelectedCompany(null);
+                                }
+                              }}
+                            />
+                            <label className="form-check-label" htmlFor="isCompany">
+                              {values?.isCompany ? "Yes" : "No"}
+                            </label>
+                          </div>
+                        </div>
+
+                        {watch("isCompany") && (
+                          <div className="form-group">
+                            <label htmlFor="company">Company Name</label>
+                            <Autocomplete
+                              id="company"
+                              onChange={(event, item) => {
+                                setSelectedCompany(item?.key);
+                              }}
+                              value={getSelectedValue()}
+                              options={companies?.map((option) => ({
+                                key: option.companyId,
+                                label: option.companyName,
+                              }))}
+                              getOptionLabel={(option) => option?.label || ""}
+                              isOptionEqualToValue={(option, value) =>
+                                String(option?.key) === String(value?.key)
+                              }
+                              renderInput={(params) => (
+                                <div ref={params.InputProps.ref}>
+                                  <input
+                                    type="text"
+                                    autoComplete="off"
+                                    readOnly
+                                    onFocus={(e) =>
+                                      e.target.removeAttribute("readonly")
+                                    }
+                                    {...params.inputProps}
+                                    className="form-control"
+                                    placeholder="Select Company"
+                                  />
+                                </div>
+                              )}
+                            />
+                          </div>
+                        )}
+
+                        {values?.userType === "External" && (
+                          <div className="form-group">
+                            <label htmlFor="trade">Trade (if external)</label>
+                            <select
+                              id="trade"
+                              name="trade"
+                              {...register("trade")}
+                              className="form-control form-select"
+                            >
+                              <option value="">NA</option>
+                              <option value="Electrician">Electrician</option>
+                              <option value="Gas Engineer">Gas Engineer</option>
+                              <option value="Asbestos Surveyor">
+                                Asbestos Surveyor
+                              </option>
+                              <option value="AC Engineer">AC Engineer</option>
+                              <option value="Fire Door Install">
+                                Fire Door Install
+                              </option>
+                              <option value="General Company">General Company</option>
+                              <option value="Life Maintenance">Life Maintenance</option>
+                              <option value="Plumber">Plumber</option>
+                              <option value="Auto Door Maintanance">
+                                Auto Door Maintanance
+                              </option>
+                              <option value="Refuse Collector">Refuse Collector</option>
+                              <option value="Fire Alarm">Fire Alarm</option>
+                            </select>
+                          </div>
+                        )}
+
+                        {values?.userType === "External" &&
+                          values?.trade === "Gas Engineer" && (
+                            <div className="form-group">
+                              <label htmlFor="gasSafetyRegNo">
+                                Gas Safety Reg No.*
+                              </label>
+                              <input
+                                type="text"
+                                min={0}
+                                className="form-control"
+                                id="gasSafetyRegNo"
+                                {...register("gasSafetyRegNo", {
+                                  required: {
+                                    value:
+                                      values?.userType === "External" &&
+                                      values?.trade === "Gas Engineer",
+                                    message:
+                                      "Gas Safety Registration Number is required",
+                                  },
+                                })}
+                              />
+                              {errors?.gasSafetyRegNo && (
+                                <InputError
+                                  message={errors?.gasSafetyRegNo?.message}
+                                  key={errors?.gasSafetyRegNo?.message}
+                                />
+                              )}
+                            </div>
+                          )}
                       </div>
-                    )}
+                    </section>
+
+                    <section className="profile-section">
+                      <div className="profile-section-heading profile-section-heading-inline">
+                        <div>
+                          <h5 className="profile-section-title">Tagged Sites</h5>
+                          <p className="profile-section-description">
+                            Search for a site to add it. Tagged sites are shown below in one list.
+                          </p>
+                        </div>
+                        <span className="profile-site-count">
+                          {selectedTagSites.length} tagged
+                        </span>
+                      </div>
+
+                      <div className="profile-tagged-sites">
+                        <Autocomplete
+                          multiple
+                          disableCloseOnSelect
+                          disableClearable
+                          filterSelectedOptions
+                          value={selectedTagSites}
+                          onChange={(event, newValue) => {
+                            setTagSite(newValue?.map((item) => item?.key) || []);
+                          }}
+                          options={(sites || []).map((option) => ({
+                            key: option.siteId,
+                            label: option.siteName,
+                          }))}
+                          getOptionLabel={(option) => option?.label || ""}
+                          isOptionEqualToValue={(option, value) =>
+                            String(option?.key) === String(value?.key)
+                          }
+                          renderTags={() => null}
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              size="small"
+                              placeholder="Search and add a site"
+                            />
+                          )}
+                        />
+
+                        <div className="profile-tag-list">
+                          {selectedTagSites.length > 0 ? (
+                            selectedTagSites.map((site) => (
+                              <div className="profile-tag-row" key={site.key}>
+                                <span>{site.label}</span>
+                                <button
+                                  type="button"
+                                  className="profile-tag-remove"
+                                  aria-label={`Remove ${site.label}`}
+                                  title={`Remove ${site.label}`}
+                                  onClick={() => removeTaggedSite(site.key)}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="profile-tag-empty">No sites tagged.</div>
+                          )}
+                        </div>
+                      </div>
+                    </section>
+                  </Fragment>
+                )}
+
+                <section className="profile-section">
+                  <div className="profile-section-heading">
+                    <h5 className="profile-section-title">Engineer Signature</h5>
+                    <p className="profile-section-description">
+                      This signature is used on Site Check forms and supported PDF certificates.
+                    </p>
+                  </div>
+
+                  <div className="profile-signature-layout">
+                    <div className="profile-signature-preview">
+                      {loggedInUserData?.signature ? (
+                        <img
+                          onClick={() => {
+                            window.open(
+                              loggedInUserData?.signature + "?" + sasToken,
+                              "_blank"
+                            );
+                          }}
+                          src={loggedInUserData?.signature + "?" + sasToken}
+                          alt="Current signature"
+                        />
+                      ) : (
+                        <span>No signature uploaded yet</span>
+                      )}
+                    </div>
+
+                    <div className="profile-signature-upload">
+                      <label htmlFor="file" className="profile-upload-label">
+                        {loggedInUserData?.signature
+                          ? "Replace signature"
+                          : "Upload signature"}
+                      </label>
+                      <input
+                        type="file"
+                        {...register("file")}
+                        className="form-control"
+                        name="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        id="file"
+                      />
+                      <small className="text-muted">
+                        PNG or JPG image, maximum 5 MB.
+                      </small>
+                    </div>
+                  </div>
+                </section>
+
+                <div className="profile-actions">
+                  <button type="submit" className="btn btn-primary">
+                    Save Profile
+                  </button>
                 </div>
               </Fragment>
             )}
-            <div className="mt-4 mb-2">
-              {isLoading && (
-                <Box sx={{ display: "flex" }}>
-                  <CircularProgress />
-                </Box>
-              )}
-              {!isLoading && isAdminLogin(loggedInUserData) && (
-                <button type="submit" className="btn btn-sm btn-primary mt-4">
-                  Save
-                </button>
-              )}
-            </div>
           </div>
         </form>
       </div>

@@ -47,9 +47,17 @@ export const combinedMenu = [
 export const filterMenuItems = (loggedInRole) => {
   const license = JSON.parse(localStorage.getItem('license'));
   const allowedMenus = license?.modules?.length > 0 ? license?.modules?.split(",") : [];
-  const generalMenu = combinedMenu.filter(m=>m.type === "General" && allowedMenus.includes(String(m.key))).map(k=> k.label);
+  // Edit Profile is self-service and must be available to every logged-in user,
+  // even when the licence module list does not explicitly contain menu key 2.
+  const generalMenu = combinedMenu
+    .filter(m =>
+      m.type === "General" &&
+      (m.label === "Edit Profile" || allowedMenus.includes(String(m.key)))
+    )
+    .map(k => k.label);
+
   if (loggedInRole !== ROLE.ADMIN) {
-    return generalMenu.filter((item) => item !== "Users" && item !== "Edit Profile");
+    return generalMenu.filter((item) => item !== "Users");
   }
   return generalMenu;
 };
