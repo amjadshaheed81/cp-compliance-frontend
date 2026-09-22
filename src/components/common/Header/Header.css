@@ -17,3 +17,125 @@
 .icon{
     margin: 10px;
 }
+
+.app-header-toolbar {
+    min-height: 72px;
+    gap: 10px;
+}
+
+.app-header-spacer {
+    flex: 1 1 auto;
+}
+
+.app-header-page-context {
+    min-width: 0;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding-right: 18px;
+}
+
+.app-header-page-context__breadcrumb {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #607789;
+    font-size: 0.92rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.app-header-page-context__link {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #176c9e;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.app-header-page-context__link:hover,
+.app-header-page-context__link:focus-visible {
+    color: #0f4f76;
+    text-decoration: underline;
+}
+
+.app-header-page-context__separator {
+    color: #9aabb8;
+}
+
+.app-header-page-context__current {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #667b8c;
+}
+
+.app-header-record-pill {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 7px;
+    padding: 7px 12px;
+    border: 1px solid #cbddea;
+    border-radius: 999px;
+    background: #f7fbfe;
+    color: #536b7d;
+    text-transform: uppercase;
+    letter-spacing: 0.035em;
+    font-size: 0.68rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.app-header-record-pill strong {
+    color: #153d58;
+    font-size: 1rem;
+    letter-spacing: 0;
+}
+
+@media (max-width: 991.98px) {
+    .app-header-page-context {
+        gap: 10px;
+        padding-right: 8px;
+    }
+
+    .app-header-page-context__breadcrumb {
+        font-size: 0.84rem;
+    }
+
+    .app-header-record-pill {
+        padding: 6px 9px;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .app-header-toolbar {
+        min-height: 64px;
+        padding-left: 10px !important;
+        padding-right: 10px !important;
+    }
+
+    .app-header-page-context__breadcrumb {
+        gap: 5px;
+        font-size: 0.8rem;
+    }
+
+    .app-header-record-pill span {
+        display: none;
+    }
+
+    .app-header-record-pill strong {
+        font-size: 0.92rem;
+    }
+
+    .nav-icon .icon {
+        margin-left: 6px;
+        margin-right: 6px;
+    }
+}

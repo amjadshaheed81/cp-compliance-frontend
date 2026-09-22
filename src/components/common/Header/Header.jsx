@@ -19,7 +19,8 @@ const Header = ({
   setSideBarView,
   isSideBarOpen,
   loggedInUserData,
-  getSiteAssets
+  getSiteAssets,
+  pageContext,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notification, setNotification] = useState([]);
@@ -68,9 +69,38 @@ const Header = ({
       }}
     >
       <BackDrop isLoading={isLoading} />
-      <Toolbar>
-        <div style={{ flexGrow: 1 }}></div>
-        {/* Empty div to push user icon to right */}
+      <Toolbar className="app-header-toolbar">
+        {pageContext ? (
+          <div className="app-header-page-context dont-print">
+            <div className="app-header-page-context__breadcrumb">
+              <button
+                type="button"
+                className="app-header-page-context__link"
+                onClick={() => navigate(pageContext.parentPath || "/dashboard")}
+              >
+                {pageContext.parentLabel || "Dashboard"}
+              </button>
+              <span className="app-header-page-context__separator" aria-hidden="true">
+                /
+              </span>
+              <span className="app-header-page-context__current">
+                {pageContext.label}
+              </span>
+            </div>
+
+            {Number.isFinite(Number(pageContext.recordCount)) && (
+              <div
+                className="app-header-record-pill"
+                aria-label={`${pageContext.recordCount} records`}
+              >
+                <span>Records</span>
+                <strong>{pageContext.recordCount}</strong>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="app-header-spacer" />
+        )}
         <div className="nav-icon">
           {isSideBarOpen && (
             <div

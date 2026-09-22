@@ -112,6 +112,7 @@ const SiteCheckTestLauncher = ({
   siteSelectedForGlobal,
   siteUsers = [],
   onCreated,
+  triggerVariant = "default",
 }) => {
   const [open, setOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -157,7 +158,9 @@ const SiteCheckTestLauncher = ({
     setAssistantUserId(defaultAssistant);
   };
 
-  const handleOpen = () => {
+  const handleOpen = (event) => {
+    const menu = event?.currentTarget?.closest?.("details");
+    if (menu) menu.open = false;
     resetDefaults();
     setCreatedHistoryTests([]);
     setOpen(true);
@@ -542,17 +545,29 @@ const SiteCheckTestLauncher = ({
 
   return (
     <>
-      <div className="col-md-2 col-sm-4 mt-2">
+      {triggerVariant === "menu" ? (
         <button
           type="button"
-          style={{ width: "150px" }}
-          className="btn btn-warning"
+          className="site-check-more-menu__item site-check-more-menu__item--test"
           onClick={handleOpen}
           title="Create a real Open Site Check for developer testing"
         >
-          Site Check Test
+          <i className="fas fa-vial" aria-hidden="true" />
+          <span>Site Check Test</span>
         </button>
-      </div>
+      ) : (
+        <div className="col-md-2 col-sm-4 mt-2">
+          <button
+            type="button"
+            style={{ width: "150px" }}
+            className="btn btn-warning"
+            onClick={handleOpen}
+            title="Create a real Open Site Check for developer testing"
+          >
+            Site Check Test
+          </button>
+        </div>
+      )}
 
       <Dialog open={open} onClose={handleClose} fullWidth maxWidth="md">
         <DialogTitle>Site Check Test</DialogTitle>

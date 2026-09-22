@@ -36,6 +36,7 @@ import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 import { calculateSiteCheckDueDateTime, calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 import SiteCheckTestLauncher from "./SiteCheckTestLauncher";
 import SiteCheckWorkspace from "./SiteCheckWorkspace";
+import "./SiteChecks.css";
 import {
   SITE_CHECK_DEFAULT_PAGE_SIZE,
   SITE_CHECK_PAGE_SIZE_OPTIONS,
@@ -171,6 +172,7 @@ const SiteChecks = ({
   const [pageSize, setPageSize] = useState(readStoredPageSize);
   const [currentPage, setCurrentPage] = useState(1);
   const [lastSelectedCheckId, setLastSelectedCheckId] = useState(null);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: "asc" });
   const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState("full");
   const [gridStateReadySiteId, setGridStateReadySiteId] = useState(null);
   const lastKnownScrollYRef = useRef(0);
@@ -183,20 +185,92 @@ const SiteChecks = ({
   const filteredOutNotifiedCheckIdRef = useRef(null);
   const workspaceDirtyCheckIdRef = useRef(null);
 
+  const getLeadDisplayName = (check) => {
+    const lead = managerListRef.current.find((u) => u.id == check?.leadUserID);
+    if (!lead) return "";
+    return `${lead.role} - ${lead.name} (${lead.email})${
+      lead.companyName ? ` - ${lead.companyName}` : ""
+    }`;
+  };
+
+  const getVisibleSiteCheckDate = (check) => {
+    if (check?.status === "Open") {
+      return check?.startDate || null;
+    }
+    return check?.dueDate || getSiteCheckDueDate(check);
+  };
+
+  const getRiskTotal = (check) =>
+    Number(check?.riskScoreRed || 0) +
+    Number(check?.riskScoreAmber || 0) +
+    Number(check?.riskScoreYellow || 0) +
+    Number(check?.riskScoreGreen || 0);
+
+  const getSortValue = (check, key) => {
+    switch (key) {
+      case "type":
+      case "subType":
+      case "category":
+      case "status":
+        return String(check?.[key] || "").toLowerCase();
+      case "assetId": {
+        const assetId = assetIdMap[check?.checkId];
+        return assetId ? Number(assetId) : null;
+      }
+      case "lead":
+        return getLeadDisplayName(check).toLowerCase();
+      case "risk":
+        return getRiskTotal(check);
+      case "date": {
+        const rawDate = getVisibleSiteCheckDate(check);
+        if (!rawDate || rawDate === "--") return null;
+        const parsed = moment(rawDate, [moment.ISO_8601, "DD-MM-YYYY"], true);
+        return parsed.isValid() ? parsed.valueOf() : null;
+      }
+      default:
+        return "";
+    }
+  };
+
+  const sortedSiteChecks = !sortConfig?.key
+    ? filteredSiteChecks
+    : [...filteredSiteChecks].sort((a, b) => {
+        const direction = sortConfig.direction === "desc" ? -1 : 1;
+        const aValue = getSortValue(a, sortConfig.key);
+        const bValue = getSortValue(b, sortConfig.key);
+
+        // Keep missing values at the bottom in both sort directions.
+        if (aValue == null && bValue == null) return 0;
+        if (aValue == null) return 1;
+        if (bValue == null) return -1;
+
+        if (typeof aValue === "number" && typeof bValue === "number") {
+          if (aValue === bValue) return 0;
+          return (aValue - bValue) * direction;
+        }
+
+        return (
+          String(aValue).localeCompare(String(bValue), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          }) * direction
+        );
+      });
+
   const showAllRows = pageSize === "all";
   const numericPageSize = showAllRows
-    ? Math.max(filteredSiteChecks.length, 1)
+    ? Math.max(sortedSiteChecks.length, 1)
     : Number(pageSize) || SITE_CHECK_DEFAULT_PAGE_SIZE;
   const indexOfLastPreAction = currentPage * numericPageSize;
   const indexOfFirstPreAction = indexOfLastPreAction - numericPageSize;
   const currentSiteChecks = showAllRows
-    ? filteredSiteChecks
-    : filteredSiteChecks?.slice(indexOfFirstPreAction, indexOfLastPreAction);
+    ? sortedSiteChecks
+    : sortedSiteChecks?.slice(indexOfFirstPreAction, indexOfLastPreAction);
   const totalPages = showAllRows
-    ? filteredSiteChecks.length > 0
+    ? sortedSiteChecks.length > 0
       ? 1
       : 0
-    : Math.ceil(filteredSiteChecks.length / numericPageSize);
+    : Math.ceil(sortedSiteChecks.length / numericPageSize);
 
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -209,7 +283,7 @@ const SiteChecks = ({
       ? lastSelectedCheckId || currentSiteChecks?.[0]?.checkId || null
       : currentSiteChecks?.[0]?.checkId || lastSelectedCheckId || null;
     const anchorIndex = anchorCheckId
-      ? filteredSiteChecks.findIndex(
+      ? sortedSiteChecks.findIndex(
           (check) => String(check.checkId) === String(anchorCheckId)
         )
       : -1;
@@ -343,6 +417,12 @@ const SiteChecks = ({
 
     setCurrentPage(Math.max(1, Number(storedState?.currentPage) || 1));
     setLastSelectedCheckId(storedState?.lastSelectedCheckId || null);
+    const storedSort = storedState?.sortConfig;
+    setSortConfig(
+      storedSort?.key && ["asc", "desc"].includes(storedSort?.direction)
+        ? storedSort
+        : { key: null, direction: "asc" }
+    );
     const restoredFilters = {
       ...formData2Ref.current,
       ...(storedState?.filters || {}),
@@ -381,6 +461,7 @@ const SiteChecks = ({
       siteId: selectedSiteId,
       currentPage,
       pageSize,
+      sortConfig,
       filters: formData2,
       lastSelectedCheckId,
       scrollY: lastKnownScrollYRef.current,
@@ -393,6 +474,7 @@ const SiteChecks = ({
     gridStateReadySiteId,
     currentPage,
     pageSize,
+    sortConfig,
     formData2,
     lastSelectedCheckId,
   ]);
@@ -508,7 +590,11 @@ const SiteChecks = ({
     }
   }, [formData.subType]);
 
-  const filterSiteChecks = (source = [], filters = formData2) => {
+  const filterSiteChecks = (
+    source = [],
+    filters = formData2,
+    assetMap = assetIdMap
+  ) => {
     let result = [...source];
 
     if (filters?.type?.length > 0) {
@@ -524,21 +610,38 @@ const SiteChecks = ({
       result = result.filter((sc) => sc.status === filters.status);
     }
 
-    if (filters?.searchField?.length > 0 && result.length > 0) {
-      const searchValue = String(filters.searchField).toLowerCase();
+    if (filters?.searchField?.trim()?.length > 0 && result.length > 0) {
+      const searchValue = String(filters.searchField).trim().toLowerCase();
       result = result.filter((sc) => {
-        const lead = managerListRef.current.find((u) => u.id == sc.leadUserID);
-        const leadName = lead
-          ? `${lead.role} - ${lead.name} (${lead.email})${
-              lead.companyName ? ` - ${lead.companyName}` : ""
-            }`
+        const leadName = getLeadDisplayName(sc);
+        const assetId = assetMap?.[sc?.checkId] || "";
+        const visibleDate = getVisibleSiteCheckDate(sc);
+        const formattedDate = visibleDate
+          ? moment(visibleDate, [moment.ISO_8601, "DD-MM-YYYY"], true).isValid()
+            ? moment(visibleDate, [moment.ISO_8601, "DD-MM-YYYY"], true).format(
+                "DD-MM-YYYY"
+              )
+            : String(visibleDate)
           : "";
 
-        return (
-          sc?.type?.toLowerCase().includes(searchValue) ||
-          sc?.subType?.toLowerCase().includes(searchValue) ||
-          sc?.category?.toLowerCase().includes(searchValue) ||
-          leadName.toLowerCase().includes(searchValue)
+        const searchableValues = [
+          sc?.checkId,
+          sc?.type,
+          sc?.subType,
+          sc?.category,
+          sc?.status,
+          sc?.repeatFrequency,
+          assetId,
+          leadName,
+          formattedDate,
+          sc?.riskScoreRed,
+          sc?.riskScoreAmber,
+          sc?.riskScoreYellow,
+          sc?.riskScoreGreen,
+        ];
+
+        return searchableValues.some((value) =>
+          String(value ?? "").toLowerCase().includes(searchValue)
         );
       });
     }
@@ -548,6 +651,44 @@ const SiteChecks = ({
 
   const searchSiteCheck = () => {
     setFilteredSiteChecks(filterSiteChecks(siteChecks, formData2));
+  };
+
+  const handleSort = (key) => {
+    setCurrentPage(1);
+    setSortConfig((current) => ({
+      key,
+      direction:
+        current?.key === key && current?.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const renderSortableHeader = (label, key, title = `Sort by ${label}`) => {
+    const isActive = sortConfig?.key === key;
+    const iconClass = !isActive
+      ? "fas fa-sort"
+      : sortConfig.direction === "asc"
+      ? "fas fa-sort-up"
+      : "fas fa-sort-down";
+
+    return (
+      <button
+        type="button"
+        className={`site-check-sort-button${isActive ? " is-active" : ""}`}
+        onClick={() => handleSort(key)}
+        title={title}
+        aria-label={`${title}${
+          isActive ? `, ${sortConfig.direction === "asc" ? "ascending" : "descending"}` : ""
+        }`}
+      >
+        <span>{label}</span>
+        <i className={iconClass} aria-hidden="true" />
+      </button>
+    );
+  };
+
+  const clearLocalSearch = () => {
+    setCurrentPage(1);
+    setFormData2((current) => ({ ...current, searchField: "" }));
   };
 
   const copyData = (action) => {
@@ -815,7 +956,8 @@ const SiteChecks = ({
 
       const filteredResults = filterSiteChecks(
         sortedSiteChecks,
-        formData2Ref.current
+        formData2Ref.current,
+        newAssetIdMap
       );
       setFilteredSiteChecks(filteredResults);
       setSiteChecks(sortedSiteChecks);
@@ -1119,41 +1261,24 @@ const SiteChecks = ({
       <SidebarNew />
 
       <div className="content">
-        <Header />
+        <Header
+          pageContext={
+            !create
+              ? {
+                  parentLabel: "Dashboard",
+                  parentPath: "/dashboard",
+                  label: "Site Inspection",
+                  recordCount: filteredSiteChecks.length,
+                }
+              : null
+          }
+        />
         <div className="container-fluid">
           {!create && (
             <>
-              <BreadCrumHeader header={"Site Check"} page={"Site Inspection"} />
-
-              <div className="">
-                <div className="">
-                  <div className="row" style={{ height: "auto" }}>
-                    <div className="col-md-3 col-sm-4 mt-2">
-                      <div>
-                        <i
-                          style={{
-                            position: "absolute",
-                            padding: "10px",
-                            color: "lightgrey",
-                            paddingLeft: "1.5rem",
-                          }}
-                          className="fas fa-search"
-                        ></i>
-                        <input
-                          type="text"
-                          autoComplete="off"
-                          readOnly
-                          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          placeholder="Search"
-                          name="searchField"
-                          value={formData2?.searchField || ""}
-                          style={{ paddingLeft: "20%" }}
-                          className="form-control"
-                          onChange={handleInputChange2}
-                        />
-                      </div>
-                    </div>
-                    <div className="col-md-2 col-sm-4 mt-2">
+              <div className="site-check-filter-panel">
+                <div className="site-check-filter-row">
+                    <div className="site-check-filter-field">
                       <select
                         name="type"
                         className="form-control form-select"
@@ -1167,7 +1292,7 @@ const SiteChecks = ({
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-2 col-sm-4 mt-2">
+                    <div className="site-check-filter-field">
                       <select
                         name="subType"
                         className="form-control form-select"
@@ -1182,7 +1307,7 @@ const SiteChecks = ({
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-2 col-sm-4 mt-2">
+                    <div className="site-check-filter-field">
                       <select
                         name="category"
                         className="form-control form-select"
@@ -1197,7 +1322,7 @@ const SiteChecks = ({
                         ))}
                       </select>
                     </div>
-                    <div className="col-md-2 col-sm-4 mt-2">
+                    <div className="site-check-filter-field">
                       <select
                         name="status"
                         className="form-control form-select"
@@ -1210,12 +1335,12 @@ const SiteChecks = ({
                         <option value="Done">Done</option>
                       </select>
                     </div>
-                    <div className="col-md-2 col-sm-4 mt-2">
+                    <div className="site-check-filter-actions dont-print">
                       {(loggedInUserData?.role === ROLE.MANAGER ||
                         loggedInUserData?.role === ROLE.ADMIN) && (
                         <button
-                          style={{ width: "150px" }}
-                          className="btn btn-primary text-white pr-2"
+                          type="button"
+                          className="btn btn-primary text-white site-check-primary-action"
                           onClick={() => {
                             setCopyMode(false);
                             setCopyQuantity(1);
@@ -1229,63 +1354,119 @@ const SiteChecks = ({
                             });
                           }}
                         >
-                          Start New
+                          <i className="fas fa-plus" aria-hidden="true" />
+                          <span>Start New</span>
                         </button>
                       )}
-                    </div>
-                    {loggedInUserData?.role === ROLE.ADMIN && (
-                      <div className="col-md-2 col-sm-4 mt-2">
-                        <button
-                          style={{ width: "150px" }}
-                          className="btn btn-outline-info"
-                          onClick={() => goTo("/site-check-scheduler-logs")}
-                          title="View Site Check scheduler execution and change logs"
-                        >
-                          Scheduler Logs
-                        </button>
-                      </div>
-                    )}
-                    {canUseSiteCheckTestLauncher && (
-                      <SiteCheckTestLauncher
-                        siteSelectedForGlobal={siteSelectedForGlobal}
-                        siteUsers={managerList}
-                        onCreated={(checkId) =>
-                          goTo(`/site-checks/${checkId}/update`)
-                        }
-                      />
-                    )}
-                    <div className="col-md-1 col-sm-4 mt-2">
-                      <CSVLink
-                        filename={
-                          "site-checks-list_" +
-                          moment(new Date()).format("DD-MM-YYYY") +
-                          ".csv"
-                        }
-                        className="btn btn-light bg-white text-primary"
-                        data={filteredSiteChecks}
-                      >
-                        <Tooltip title={`Export`} arrow>
-                          <i className="fas fa-download"></i>
-                        </Tooltip>
-                      </CSVLink>
+
+                      <Tooltip title="Export" arrow>
+                        <span>
+                          <CSVLink
+                            filename={
+                              "site-checks-list_" +
+                              moment(new Date()).format("DD-MM-YYYY") +
+                              ".csv"
+                            }
+                            className="site-check-icon-action"
+                            data={sortedSiteChecks}
+                            aria-label="Download site inspection list"
+                          >
+                            <i className="fas fa-download" aria-hidden="true" />
+                          </CSVLink>
+                        </span>
+                      </Tooltip>
+
+                      {(loggedInUserData?.role === ROLE.ADMIN ||
+                        canUseSiteCheckTestLauncher) && (
+                        <details className="site-check-more-menu">
+                          <summary
+                            className="site-check-icon-action"
+                            title="More actions"
+                            aria-label="More Site Inspection actions"
+                          >
+                            <i className="fas fa-bars" aria-hidden="true" />
+                          </summary>
+                          <div className="site-check-more-menu__popover">
+                            {loggedInUserData?.role === ROLE.ADMIN && (
+                              <button
+                                type="button"
+                                className="site-check-more-menu__item"
+                                onClick={(event) => {
+                                  const menu = event.currentTarget.closest("details");
+                                  if (menu) menu.open = false;
+                                  goTo("/site-check-scheduler-logs");
+                                }}
+                              >
+                                <i className="fas fa-history" aria-hidden="true" />
+                                <span>Scheduler Logs</span>
+                              </button>
+                            )}
+                            {canUseSiteCheckTestLauncher && (
+                              <SiteCheckTestLauncher
+                                siteSelectedForGlobal={siteSelectedForGlobal}
+                                siteUsers={managerList}
+                                onCreated={(checkId) =>
+                                  goTo(`/site-checks/${checkId}/update`)
+                                }
+                                triggerVariant="menu"
+                              />
+                            )}
+                          </div>
+                        </details>
+                      )}
                     </div>
                   </div>
-                </div>
               </div>
 
-              <div className="row p-2"></div>
-              <div className="col-md-12 table-responsive">
-                <table className="table">
+              <div className="site-check-grid-shell">
+                <div className="site-check-grid-toolbar dont-print">
+                  <div className="site-check-local-search">
+                    <i className="fas fa-search" aria-hidden="true" />
+                    <input
+                      type="search"
+                      autoComplete="off"
+                      placeholder="Search loaded inspections by type, sub-type, asset, lead, date or status"
+                      name="searchField"
+                      value={formData2?.searchField || ""}
+                      onChange={handleInputChange2}
+                      aria-label="Search loaded site inspections"
+                    />
+                    {formData2?.searchField && (
+                      <button
+                        type="button"
+                        className="site-check-local-search__clear"
+                        onClick={clearLocalSearch}
+                        title="Clear search"
+                        aria-label="Clear search"
+                      >
+                        <i className="fas fa-times" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="site-check-grid-toolbar__hint">
+                    <i className="fas fa-filter" aria-hidden="true" />
+                    Local filter
+                  </div>
+                </div>
+
+                <div className="site-check-grid-table-wrap table-responsive">
+                  <table className="table">
                   <thead className="table-dark">
                     <tr>
-                      <th scope="col">Type</th>
-                      <th scope="col">Sub-Type</th>
-                      <th scope="col">Assets Id</th>
-                      <th scope="col">Summary</th>
-                      <th scope="col">Lead</th>
-                      <th scope="col">Risk Score</th>
-                      <th scope="col">Date</th>
-                      <th scope="col">Status</th>
+                      <th scope="col">{renderSortableHeader("Type", "type")}</th>
+                      <th scope="col">{renderSortableHeader("Sub-Type", "subType")}</th>
+                      <th scope="col">{renderSortableHeader("Asset ID", "assetId")}</th>
+                      <th scope="col">{renderSortableHeader("Summary", "category")}</th>
+                      <th scope="col">{renderSortableHeader("Lead", "lead")}</th>
+                      <th scope="col">
+                        {renderSortableHeader(
+                          "Risk Score",
+                          "risk",
+                          "Sort by total risk item count"
+                        )}
+                      </th>
+                      <th scope="col">{renderSortableHeader("Date", "date")}</th>
+                      <th scope="col">{renderSortableHeader("Status", "status")}</th>
                       <th scope="col">Actions</th>
                     </tr>
                   </thead>
@@ -1463,7 +1644,8 @@ const SiteChecks = ({
                         );
                       })}
                   </tbody>
-                </table>
+                  </table>
+                </div>
                 {/* <nav aria-label="pagination">
                 <ul className="pagination justify-content-center">
                   <li className={`page-item`} style={{ marginRight: '20px' }}>
