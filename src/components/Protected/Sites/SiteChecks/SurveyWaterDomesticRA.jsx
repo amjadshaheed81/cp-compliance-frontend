@@ -8,9 +8,9 @@ import {
   Grid, TextField, Typography, Box, Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete,
 } from '@mui/material';
 import { ExpandMore } from '@mui/icons-material';
-import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
+import { getSiteCheckAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout }) => {
+const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteCheckAssets, siteSelectedForGlobal, getSiteLayout }) => {
   const navigate = useNavigate();
 
   const [risks, setrisks] = useState([0, 0, 0, 0])
@@ -24,8 +24,7 @@ const SurveyWaterDomesticRA = ({ checkId, siteAssets, getSiteAssets, siteSelecte
     
     getRiskFactor();
     if (siteSelectedForGlobal?.siteId) {
-      getSiteAssets(siteSelectedForGlobal?.siteId);
-      getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteCheckAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId)
     }
   }, []);
@@ -752,7 +751,7 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { getSiteAssets, getSiteLayout })(
+export default connect(mapStateToProps, { getSiteCheckAssets, getSiteLayout })(
   SurveyWaterDomesticRA
 );
 

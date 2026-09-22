@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { connect, useSelector } from "react-redux";
+import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { get, post, put } from "../../../../api";
-import {
-  getSiteAssets,
-  getSiteById,
-  getSiteDetailsById,
-  getSites,
-  getUsers,
-} from "../../../../store/thunk/site";
+import { getUsers } from "../../../../store/thunk/site";
 import {
   Autocomplete,
   TextField,
@@ -37,9 +31,6 @@ const WaterChlorinationCertificate = ({
   checkId,
   subType,
   category,
-  getSiteDetailsById,
-  siteAssets,
-  getSiteAssets,
   users,
   getUsers,
   siteSelectedForGlobal,
@@ -103,7 +94,6 @@ The capacity of the tank is ${capacity} litres`;
     generatedPdfBlob: null,
   });
 
-  const sites = useSelector((state) => state.site.sites);
   const navigate = useNavigate();
   const isInternalUserTaggedWithSite = true;
   const [inspectionDetails, setInspectionDetails] = useState(null);
@@ -285,22 +275,23 @@ The capacity of the tank is ${capacity} litres`;
     state.currentCheckId,
   ]);
 
-  const fetchInspectionData = useCallback(async () => {
+  const fetchInspectionData = useCallback(async (inspectionUsers = [], inspectionCheckId = checkId) => {
     try {
-      if (!state.currentCheckId) return;
+      if (!inspectionCheckId) return;
 
-      // Fetch inspection data for this checkId
-      const apiData = await get(`/api/site-check/generic-inspection/${state.currentCheckId}`);
+      // Fetch inspection data for the requested check without depending on a
+      // Redux/user re-render to hydrate this initial load.
+      const apiData = await get(`/api/site-check/generic-inspection/${inspectionCheckId}`);
 
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
 
         // Find related users
-        const clientUser = users.find(user => String(user.id) === String(mostRecentItem.client));
-        const siteContactUser = users.find(user => String(user.id) === String(mostRecentItem.siteContact));
+        const clientUser = inspectionUsers.find(user => String(user.id) === String(mostRecentItem.client));
+        const siteContactUser = inspectionUsers.find(user => String(user.id) === String(mostRecentItem.siteContact));
         const savedEngineerId = mostRecentItem.engineer || null;
         setLastEngineerId(savedEngineerId);
-        const engineerUser = users.find(user => String(user.id) === String(savedEngineerId));
+        const engineerUser = inspectionUsers.find(user => String(user.id) === String(savedEngineerId));
         const isCurrentOpenInspection =
           effectiveCheckStatus === "Open" &&
           isCurrentUkInspectionDate(mostRecentItem.date);
@@ -358,7 +349,7 @@ The capacity of the tank is ${capacity} litres`;
       console.error("Error fetching inspection data:", error);
       toast.error("Failed to load inspection data");
     }
-  }, [state.currentCheckId, users, fetchActionById, loggedInUserData, tankCapacity, effectiveCheckStatus]);
+  }, [checkId, fetchActionById, loggedInUserData, tankCapacity, effectiveCheckStatus]);
 
   const fetchSiteCheckData = useCallback(async () => {
     try {
@@ -924,28 +915,34 @@ The capacity of the tank is ${capacity} litres`;
     }
   };
 
-  // Initial data loading
+  // Initial data loading. Water Chlorination does not use site assets, so do
+  // not load the heavy asset graph at all. Load users once up front and pass
+  // the returned list into the inspection hydrator so the effect does not need
+  // to rerun when Redux users are populated.
   useEffect(() => {
+    let cancelled = false;
+
     const fetchData = async () => {
       setState((prev) => ({ ...prev, isLoading: true }));
       try {
         if (authoritativeSiteId) {
-          await Promise.all([
-            getSiteAssets(authoritativeSiteId),
-            getSiteDetailsById(authoritativeSiteId),
-            fetchFolderStructure(authoritativeSiteId),
-            fetchSiteCheckData(),
-            fetchInspectionData(),
-          ]);
-
-          if (isInternalUserTaggedWithSite && users.length === 0) {
-            await getUsers();
+          let usersForInspection = Array.isArray(users) ? users : [];
+          if (isInternalUserTaggedWithSite && usersForInspection.length === 0) {
+            usersForInspection = await getUsers();
+            if (cancelled) return;
           }
 
-          const currentSite = sites.find(
-            (site) => Number(site.siteId ?? site.id) === Number(authoritativeSiteId)
-          );
-          const siteData = currentSite || siteSelectedForGlobal;
+          const [loadedSiteDetails] = await Promise.all([
+            get(`/api/site/site/${authoritativeSiteId}`),
+            fetchFolderStructure(authoritativeSiteId),
+            fetchSiteCheckData(),
+          ]);
+          if (cancelled) return;
+
+          await fetchInspectionData(usersForInspection, checkId);
+          if (cancelled) return;
+
+          const siteData = loadedSiteDetails || siteSelectedForGlobal;
 
           if (siteData) {
             const addressParts = [
@@ -969,44 +966,28 @@ The capacity of the tank is ${capacity} litres`;
             }));
           }
 
-          if (formData.actionId) {
-            const action = await fetchActionById(formData.actionId);
-            if (action) {
-              setState((prev) => ({
-                ...prev,
-                existingAction: action,
-                actionRaised: true,
-              }));
-            } else {
-              await fetchExistingActions();
-            }
-          } else {
-            await fetchExistingActions();
-          }
+          await fetchExistingActions();
         }
       } catch (error) {
         console.error("Error fetching site data:", error);
-        toast.error("Failed to load site details");
+        if (!cancelled) {
+          toast.error("Failed to load site details");
+        }
       } finally {
-        setState((prev) => ({ ...prev, isLoading: false }));
+        if (!cancelled) {
+          setState((prev) => ({ ...prev, isLoading: false }));
+        }
       }
     };
 
     fetchData();
-  }, [
-    fetchActionById,
-    fetchExistingActions,
-    fetchFolderStructure,
-    fetchSiteCheckData,
-    getSiteAssets,
-    getSiteDetailsById,
-    getUsers,
-    isInternalUserTaggedWithSite,
-    siteSelectedForGlobal,
-    authoritativeSiteId,
-    sites,
-    users.length,
-  ]);
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally keyed only to the selected check/site. Redux user updates
+    // and form-state changes must not restart the complete initial load.
+  }, [authoritativeSiteId, checkId, getUsers]);
 
   const handleRiskAssessmentComplete = async (actionResponse) => {
     try {
@@ -1501,17 +1482,11 @@ The capacity of the tank is ${capacity} litres`;
 };
 
 const mapStateToProps = (state) => ({
-  sites: state.site.sites,
   users: state.site.users,
-  siteAssets: state.site.siteAssets,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
-  getSiteDetailsById,
-  getSiteById,
-  getSiteAssets,
-  getSites,
   getUsers,
 })(WaterChlorinationCertificate);

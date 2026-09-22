@@ -1543,6 +1543,47 @@ export const getSiteAssets = (id) => {
   };
 };
 
+// Site Check forms only need scalar asset identity/location fields. Use the
+// lightweight backend projection and share an identical request while it is
+// already in flight so React StrictMode/remounts do not duplicate the expensive
+// site asset read. Completed responses are not cached.
+const siteCheckAssetRequestsInFlight = new Map();
+
+export const getSiteCheckAssets = (id) => {
+  return async (dispatch) => {
+    if (!id) {
+      return [];
+    }
+
+    const requestKey = String(id);
+    let request = siteCheckAssetRequestsInFlight.get(requestKey);
+
+    if (!request) {
+      request = get(`/api/site/${id}/assets?siteCheckSummary=true`).finally(() => {
+        if (siteCheckAssetRequestsInFlight.get(requestKey) === request) {
+          siteCheckAssetRequestsInFlight.delete(requestKey);
+        }
+      });
+      siteCheckAssetRequestsInFlight.set(requestKey, request);
+    }
+
+    try {
+      const { assets } = await request;
+      const siteCheckAssets = assets || [];
+      dispatch({
+        type: GET_SITES_ASSET,
+        payload: siteCheckAssets,
+      });
+      return siteCheckAssets;
+    } catch (error) {
+      toast.error(
+        "Something went wrong while fetching site assets. Please try again."
+      );
+      return [];
+    }
+  };
+};
+
 export const setSiteAssets = (data) => {
   return async (dispatch) => {
     try {

@@ -1,12 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { connect, useSelector } from "react-redux";
+import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { post, put, get, uploadSiteCheckDoc, getSasToken } from "../../../../api";
 import {
-    getSiteAssets,
-    getSiteById,
-    getSiteDetailsById,
-    getSites,
+    getSiteCheckAssets,
     getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, FormControlLabel, MenuItem, Radio, Select, TextField } from "@mui/material";
@@ -158,10 +155,8 @@ const GasBoilerService = ({
                               checkId,
                               subType,
                               category,
-                              getSiteDetailsById,
-                              siteDetailsById,
                               siteAssets,
-                              getSiteAssets,
+                              getSiteCheckAssets,
                               users,
                               getUsers,
                               siteSelectedForGlobal,
@@ -312,21 +307,24 @@ const GasBoilerService = ({
     }, []);
 
     useEffect(() => {
+        let cancelled = false;
+
         const fetchInspectionData = async () => {
             try {
                 if (!checkId) return;
 
                 setIsLoading(true);
 
-                // First ensure we have all necessary data loaded
-                if (isInternalUserTaggedWithSite && users.length === 0) {
-                    await getUsers();
+                let usersForInspection = Array.isArray(users) ? users : [];
+                if (isInternalUserTaggedWithSite && usersForInspection.length === 0) {
+                    usersForInspection = await getUsers();
+                    if (cancelled) return;
                 }
 
-                // Load site assets if not already loaded
-                if (siteAssets.length === 0 && authoritativeSiteId) {
-                    await getSiteAssets(authoritativeSiteId);
-                }
+                const assetsForInspection = authoritativeSiteId
+                    ? await getSiteCheckAssets(authoritativeSiteId)
+                    : [];
+                if (cancelled) return;
 
                 let inspectionData;
                 try {
@@ -334,9 +332,10 @@ const GasBoilerService = ({
                 } catch (error) {
                     if (error.response?.status !== 404) throw error;
                 }
+                if (cancelled) return;
 
-                // Check inspection status
                 const statusResponse = await get(`/api/site-check/check-id/${checkId}`);
+                if (cancelled) return;
 
                 const inspectionDetails = {
                     checkId: statusResponse.checkId,
@@ -354,25 +353,19 @@ const GasBoilerService = ({
                 setIsFormEditable(!isSubmitted);
 
                 if (inspectionData) {
-                    // Find the matching asset
-                    const selectedAsset = siteAssets.find(
+                    const selectedAsset = assetsForInspection.find(
                         asset => asset.assetId === inspectionData.assetId
                     );
 
-                    // Find site contact user - first check if it's already an object
                     let siteContactUser;
                     if (inspectionData.siteContact && typeof inspectionData.siteContact === 'object') {
                         siteContactUser = inspectionData.siteContact;
                     } else if (inspectionData.siteContact) {
-                        // If it's just an ID, find in users array
-                        siteContactUser = users.find(
+                        siteContactUser = usersForInspection.find(
                             user => user.id === inspectionData.siteContact
                         );
                     }
 
-                    //console.log('Found site contact user:', siteContactUser); // Debug log
-
-                    // Transform safety checks to include gas tightness test result
                     const transformedSafetyChecks = inspectionData.safetyChecks?.length
                         ? inspectionData.safetyChecks.map(check => ({
                             ...check,
@@ -388,7 +381,7 @@ const GasBoilerService = ({
                     const savedEngineerId = inspectionData.engineer || inspectionData.inspectionByUser?.id || null;
                     setLastEngineerId(savedEngineerId);
                     const savedEngineerUser = inspectionData.inspectionByUser ||
-                        users.find((user) => String(user.id) === String(savedEngineerId)) ||
+                        usersForInspection.find((user) => String(user.id) === String(savedEngineerId)) ||
                         (savedEngineerId ? {
                             id: savedEngineerId,
                             name: inspectionData.engineerName || `Engineer ${savedEngineerId}`,
@@ -398,7 +391,6 @@ const GasBoilerService = ({
                         statusResponse?.status === "Open" &&
                         isCurrentUkInspectionDate(inspectionData.dateTimeOfIssue);
 
-                    // Transform the data to match our form structure
                     const transformedData = {
                         ...inspectionData,
                         id: inspectionData.id || null,
@@ -415,7 +407,6 @@ const GasBoilerService = ({
                             : (inspectionData.engineerSignatureDate || formData.engineerSignatureDate),
                         selectedAsset: selectedAsset || null,
                         assetId: inspectionData.assetId || (selectedAsset?.assetId || ""),
-                        // Engineer mapping is completed just below after resolving the saved user.
                         engineer: statusResponse?.status === "Open"
                             ? (isCurrentOpenInspection
                                 ? (savedEngineerId || loggedInUserData?.id || "")
@@ -443,17 +434,17 @@ const GasBoilerService = ({
                         safetyChecks: transformedSafetyChecks
                     };
 
+                    if (cancelled) return;
                     setFormData(transformedData);
                     setCurrentCheckId(checkId);
 
-                    // Check for existing action
                     if (inspectionData.actionId) {
                         const action = await fetchActionById(inspectionData.actionId);
+                        if (cancelled) return;
                         setExistingAction(action);
-                        setActionRaised(true);
+                        setActionRaised(Boolean(action));
                     }
                 } else {
-                    // Initialize with checkId if no existing data
                     setFormData(prev => ({
                         ...prev,
                         checkId: checkId,
@@ -470,13 +461,24 @@ const GasBoilerService = ({
                 }
             } catch (error) {
                 console.error("Error fetching inspection data:", error);
-                toast.error("Failed to load inspection data");
+                if (!cancelled) {
+                    toast.error("Failed to load inspection data");
+                }
             } finally {
-                setIsLoading(false);
+                if (!cancelled) {
+                    setIsLoading(false);
+                }
             }
         };
+
         fetchInspectionData();
-    }, [checkId, siteAssets, users, sasToken, isInternalUserTaggedWithSite, authoritativeSiteId]);
+
+        return () => {
+            cancelled = true;
+        };
+        // Intentionally keyed only to the selected check/site. Redux users/assets
+        // are hydrated inside this effect and must not trigger the whole load again.
+    }, [checkId, authoritativeSiteId, getSiteCheckAssets, getUsers]);
 
 
 
@@ -2011,18 +2013,13 @@ const GasBoilerService = ({
 };
 
 const mapStateToProps = (state) => ({
-    sites: state.site.sites,
     users: state.site.users,
     siteAssets: state.site.siteAssets,
-    siteDetailsById: state.site.siteDetailsById,
     siteSelectedForGlobal: state.site.siteSelectedForGlobal,
     loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
-    getSiteDetailsById,
-    getSiteById,
-    getSiteAssets,
-    getSites,
+    getSiteCheckAssets,
     getUsers,
 })(GasBoilerService);

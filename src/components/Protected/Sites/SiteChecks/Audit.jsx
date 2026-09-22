@@ -47,7 +47,7 @@ import {
     deleteUser,
     getSites,
     getUsers,
-    getSiteAssets,
+    getSiteCheckAssets,
     getSiteLayout,
 } from "../../../../store/thunk/site";
 
@@ -56,7 +56,7 @@ const AssessmentFireRisk = ({
                                 sasToken,
                                 checkId,
                                 siteAssets,
-                                getSiteAssets,
+                                getSiteCheckAssets,
                                 siteSelectedForGlobal,
                                 getSiteLayout,
                                 siteLayout,
@@ -187,8 +187,7 @@ const AssessmentFireRisk = ({
     useEffect(() => {
         getQuestions();
         if (siteSelectedForGlobal?.siteId) {
-            getSiteAssets(siteSelectedForGlobal?.siteId);
-            getSiteAssets(siteSelectedForGlobal?.siteId);
+            getSiteCheckAssets(siteSelectedForGlobal?.siteId);
             getSiteLayout(siteSelectedForGlobal?.siteId);
             fetchFolderStructure(siteSelectedForGlobal.siteId);
         }
@@ -2098,7 +2097,7 @@ const mapStateToProps = (state) => ({
     loggedInUserData: state.site.loggedInUserData,
 });
 export default connect(mapStateToProps, {
-    getSiteAssets,
+    getSiteCheckAssets,
     deleteUser,
     getSites,
     getSiteLayout,

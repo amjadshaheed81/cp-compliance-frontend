@@ -1,13 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { connect, useSelector } from "react-redux";
+import { connect } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { get, post, put } from "../../../../api";
 import {
-  getSiteAssets,
-  getSiteById,
-  getSiteDetailsById,
-  getSites,
+  getSiteCheckAssets,
   getUsers,
 } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
@@ -61,10 +58,8 @@ const FanExtract = ({
                       checkId,
                       subType,
                       category,
-                      getSiteDetailsById,
-                      siteDetailsById,
                       siteAssets,
-                      getSiteAssets,
+                      getSiteCheckAssets,
                       users,
                       getUsers,
                       siteSelectedForGlobal,
@@ -99,7 +94,6 @@ const FanExtract = ({
     actionId: null,
   });
 
-  const sites = useSelector((state) => state.site.sites);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [submissionSuccess, setSubmissionSuccess] = useState(false);
@@ -168,28 +162,25 @@ const FanExtract = ({
       (asset) => asset.assetId === formData.assetId
   );
 
-  const fetchInspectionData = async () => {
+  const fetchInspectionData = async (assetsForInspection = [], usersForInspection = [], isCancelled = () => false) => {
     try {
-      if (!checkId) return;
-
-      if (isInternalUserTaggedWithSite && users.length === 0) {
-        await getUsers();
-      }
+      if (!checkId || isCancelled()) return;
 
       const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+      if (isCancelled()) return;
       if (apiData && apiData.length > 0) {
         const mostRecentItem = apiData[apiData.length - 1];
-        const selectedAsset = siteAssets.find(
+        const selectedAsset = assetsForInspection.find(
             (asset) => asset.assetId === mostRecentItem.assetId
         );
 
-        const clientUser = users.find(
+        const clientUser = usersForInspection.find(
             (user) => user.id === mostRecentItem.client
         );
-        const engineerUser = users.find(
+        const engineerUser = usersForInspection.find(
             (user) => user.id === mostRecentItem.engineer
         );
-        const siteContactUser = users.find(
+        const siteContactUser = usersForInspection.find(
             (user) => user.id === mostRecentItem.siteContact
         );
 
@@ -203,11 +194,14 @@ const FanExtract = ({
         let existingAction = null;
         if (mostRecentItem.actionId) {
           existingAction = await fetchActionById(mostRecentItem.actionId);
+          if (isCancelled()) return;
           if (existingAction) {
             setExistingAction(existingAction);
             setActionRaised(true);
           }
         }
+
+        if (isCancelled()) return;
 
         setFormData((prev) => ({
           ...prev,
@@ -378,23 +372,20 @@ const FanExtract = ({
       calculateSiteCheckDueDate(visitDate, repeatFrequency);
 
   useEffect(() => {
+    let cancelled = false;
+    const isCancelled = () => cancelled;
+
     const fetchSiteCheckData = async () => {
       try {
-        if (!authoritativeSiteId) return;
+        if (!authoritativeSiteId || isCancelled()) return;
 
         const response = await get(`/api/site-check/site/${authoritativeSiteId}`);
+        if (isCancelled()) return;
+
         if (response && response.length > 0) {
-          let extractFanCheck = checkId
+          const extractFanCheck = checkId
               ? response.find(check => check.checkId === parseInt(checkId, 10))
               : null;
-
-          // if (!extractFanCheck) {
-          //   extractFanCheck = response.find(check =>
-          //       check.type === 'Inspection' &&
-          //       check.subType === 'Plant and Equipment Inspection' &&
-          //       check.category === 'Extract Fan'
-          //   );
-          // }
 
           if (extractFanCheck) {
             setCurrentCheckId(extractFanCheck.checkId);
@@ -413,86 +404,88 @@ const FanExtract = ({
         }
       } catch (error) {
         console.error('Error fetching site check data:', error);
-        toast.error('Failed to load site check status');
-        setIsFormEditable(true);
+        if (!isCancelled()) {
+          toast.error('Failed to load site check status');
+          setIsFormEditable(true);
+        }
       }
     };
-
-    if (isInternalUserTaggedWithSite && users.length === 0) {
-      getUsers();
-    }
 
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        if (authoritativeSiteId) {
-          await getSiteAssets(authoritativeSiteId);
-          await getSiteDetailsById(authoritativeSiteId);
-          await fetchFolderStructure(authoritativeSiteId);
-          await fetchSiteCheckData();
-          await fetchInspectionData();
+        if (!authoritativeSiteId) return;
 
-          if (formData.actionId) {
-            const action = await fetchActionById(formData.actionId);
-            if (action) {
-              setExistingAction(action);
-              setActionRaised(true);
-            } else {
-              await fetchExistingActions();
-            }
-          } else {
-            await fetchExistingActions();
-          }
+        let usersForInspection = Array.isArray(users) ? users : [];
+        if (isInternalUserTaggedWithSite && usersForInspection.length === 0) {
+          usersForInspection = await getUsers();
+          if (isCancelled()) return;
+        }
 
-          const currentSite = sites.find(
-              (site) => Number(site.siteId) === Number(authoritativeSiteId)
-          );
-          const siteData = currentSite ||
-              (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
-                  ? siteSelectedForGlobal
-                  : siteDetailsById);
+        const [assetsForInspection, loadedSiteDetails] = await Promise.all([
+          getSiteCheckAssets(authoritativeSiteId),
+          get(`/api/site/site/${authoritativeSiteId}`),
+        ]);
+        if (isCancelled()) return;
 
-          if (siteData) {
-            const addressParts = [
-              siteData.address1,
-              siteData.address2,
-              siteData.city,
-              siteData.area,
-              siteData.postCode,
-              siteData.country,
-            ].filter((part) => part && part.trim() !== "");
+        await Promise.all([
+          fetchFolderStructure(authoritativeSiteId),
+          fetchSiteCheckData(),
+        ]);
+        if (isCancelled()) return;
 
-            const fullAddress = addressParts.join(", ");
-            setFormData((prev) => ({ ...prev, address: fullAddress }));
-          }
+        await fetchInspectionData(assetsForInspection, usersForInspection, isCancelled);
+        if (isCancelled()) return;
 
-          if (siteData?.siteContact) {
-            setFormData((prev) => ({
-              ...prev,
-              siteContact: siteData.siteContact.name || "",
-              siteContactNo: siteData.siteContact.phone || "",
-            }));
-          }
+        await fetchExistingActions();
+        if (isCancelled()) return;
+
+        const siteData = loadedSiteDetails ||
+            (Number(siteSelectedForGlobal?.siteId) === Number(authoritativeSiteId)
+                ? siteSelectedForGlobal
+                : null);
+
+        if (siteData) {
+          const addressParts = [
+            siteData.address1,
+            siteData.address2,
+            siteData.city,
+            siteData.area,
+            siteData.postCode,
+            siteData.country,
+          ].filter((part) => part && part.trim() !== "");
+
+          const fullAddress = addressParts.join(", ");
+          setFormData((prev) => ({ ...prev, address: fullAddress }));
+        }
+
+        if (siteData?.siteContact) {
+          setFormData((prev) => ({
+            ...prev,
+            siteContact: siteData.siteContact.name || "",
+            siteContactNo: siteData.siteContact.phone || "",
+          }));
         }
       } catch (error) {
         console.error("Error fetching site data:", error);
-        toast.error("Failed to load site details");
+        if (!isCancelled()) {
+          toast.error("Failed to load site details");
+        }
       } finally {
-        setIsLoading(false);
+        if (!isCancelled()) {
+          setIsLoading(false);
+        }
       }
     };
 
-
-
     fetchData();
-  }, [
-    siteSelectedForGlobal,
-    getSiteAssets,
-    users.length,
-    isInternalUserTaggedWithSite,
-    getUsers,
-    checkId,
-  ]);
+
+    return () => {
+      cancelled = true;
+    };
+    // Intentionally keyed only to the selected check/site. Redux users/assets
+    // are hydrated inside this effect and must not trigger the whole load again.
+  }, [authoritativeSiteId, checkId, getSiteCheckAssets, getUsers]);
 
   useEffect(() => {
     const shouldShowRiskAssessment = formData.param2 === "Pass";
@@ -2012,18 +2005,13 @@ const FanExtract = ({
 };
 
 const mapStateToProps = (state) => ({
-  sites: state.site.sites,
   users: state.site.users,
   siteAssets: state.site.siteAssets,
-  siteDetailsById: state.site.siteDetailsById,
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   loggedInUserData: state.site.loggedInUserData,
 });
 
 export default connect(mapStateToProps, {
-  getSiteDetailsById,
-  getSiteById,
-  getSiteAssets,
-  getSites,
+  getSiteCheckAssets,
   getUsers,
 })(FanExtract);

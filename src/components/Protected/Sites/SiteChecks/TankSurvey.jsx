@@ -9,9 +9,9 @@ import {
   Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete
 } from '@mui/material';
 import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
-import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
+import { deleteUser, getSites, getUsers, getSiteCheckAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
+const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteCheckAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([
     {question : "Lid Lining"},
@@ -28,8 +28,7 @@ const TankSurvey = ({ sasToken, checkId, siteAssets, getSiteAssets, siteSelected
   useEffect(() => {
     getTank();
     if (siteSelectedForGlobal?.siteId) {
-      getSiteAssets(siteSelectedForGlobal?.siteId);
-      getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteCheckAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId)
     }
   }, []);
@@ -375,7 +374,7 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { getSiteAssets, deleteUser, getSites, getSiteLayout })(
+export default connect(mapStateToProps, { getSiteCheckAssets, deleteUser, getSites, getSiteLayout })(
   TankSurvey
 );
 

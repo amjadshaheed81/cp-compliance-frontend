@@ -7,9 +7,9 @@ import {
   Accordion, Chip, AccordionSummary, AccordionDetails, Card, CardContent, Autocomplete
 } from '@mui/material';
 import { UploadFile, Close, ExpandMore } from '@mui/icons-material';
-import { deleteUser, getSites, getUsers, getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
+import { deleteUser, getSites, getUsers, getSiteCheckAssets, getSiteLayout } from "../../../../store/thunk/site";
 
-const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
+const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteCheckAssets, siteSelectedForGlobal, getSiteLayout, siteLayout }) => {
   const [risks, setrisks] = useState([0, 0, 0, 0])
   const [quest, setquest] = useState([]);
   const [openIndex, setOpenIndex] = useState(0);
@@ -17,8 +17,7 @@ const AssessmentFireRisk = ({ sasToken, checkId,subType, siteAssets, getSiteAsse
   useEffect(() => {
     getQuestions();
     if (siteSelectedForGlobal?.siteId) {
-      getSiteAssets(siteSelectedForGlobal?.siteId);
-      getSiteAssets(siteSelectedForGlobal?.siteId);
+      getSiteCheckAssets(siteSelectedForGlobal?.siteId);
       getSiteLayout(siteSelectedForGlobal?.siteId)
     }
   }, []);
@@ -682,7 +681,7 @@ const mapStateToProps = (state) => ({
   siteSelectedForGlobal: state.site.siteSelectedForGlobal,
   siteLayout: state.site.siteLayout,
 });
-export default connect(mapStateToProps, { getSiteAssets, deleteUser, getSites, getSiteLayout })(
+export default connect(mapStateToProps, { getSiteCheckAssets, deleteUser, getSites, getSiteLayout })(
   AssessmentFireRisk
 );
 
