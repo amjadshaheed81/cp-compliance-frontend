@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
 import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import FullscreenRoundedIcon from "@mui/icons-material/FullscreenRounded";
 import VerticalSplitRoundedIcon from "@mui/icons-material/VerticalSplitRounded";
+import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
 import UpdateSiteCheck from "./UpdateSiteCheck";
 import { toast } from "react-toastify";
 import {
@@ -19,6 +20,7 @@ const SiteCheckWorkspace = ({
   onModeChange,
   onClose,
 }) => {
+  const [headerActionTarget, setHeaderActionTarget] = useState(null);
 
   useEffect(() => {
     const interceptorId = axios.interceptors.response.use(
@@ -94,8 +96,15 @@ const SiteCheckWorkspace = ({
     >
       <header className="site-check-workspace__header print-hide">
         <div className="site-check-workspace__identity">
-          <div className="site-check-workspace__eyebrow-row">
-            <div className="site-check-workspace__eyebrow">Site Check Workspace</div>
+          <div className="site-check-workspace__brand-icon" aria-hidden="true">
+            <FactCheckRoundedIcon fontSize="small" />
+          </div>
+          <div className="site-check-workspace__heading">
+            <div className="site-check-workspace__title">
+              {titleParts.length > 0
+                ? titleParts.join(" · ")
+                : `Inspection #${checkId}`}
+            </div>
             <div className="site-check-workspace__meta">
               <span className="site-check-workspace__check-pill">Check #{checkId}</span>
               {siteCheckSummary?.status && (
@@ -109,39 +118,36 @@ const SiteCheckWorkspace = ({
               )}
             </div>
           </div>
-          <div className="site-check-workspace__title">
-            {titleParts.length > 0
-              ? titleParts.join(" · ")
-              : `Inspection #${checkId}`}
-          </div>
         </div>
 
         <div className="site-check-workspace__actions">
+          <div
+            ref={setHeaderActionTarget}
+            className="site-check-workspace__context-actions"
+          />
+
           <button
             type="button"
-            className="btn btn-light site-check-workspace__mode-button"
+            className="site-check-workspace__icon-button site-check-workspace__mode-button"
             onClick={toggleDisplayMode}
-            title={isFullScreen ? "Half screen" : "Full screen"}
-            aria-label={isFullScreen ? "Show half screen" : "Show full screen"}
+            title={isFullScreen ? "Show split view" : "Show full view"}
+            aria-label={isFullScreen ? "Show split view" : "Show full view"}
           >
             {isFullScreen ? (
               <VerticalSplitRoundedIcon fontSize="small" />
             ) : (
               <FullscreenRoundedIcon fontSize="small" />
             )}
-            <span className="site-check-workspace__mode-text">
-              {isFullScreen ? "Half Screen" : "Full Screen"}
-            </span>
           </button>
 
           <button
             type="button"
-            className="btn btn-danger site-check-workspace__close-button"
+            className="site-check-workspace__icon-button site-check-workspace__close-button"
             onClick={onClose}
             title="Close inspection"
             aria-label="Close inspection"
           >
-            <CloseRoundedIcon />
+            <CloseRoundedIcon fontSize="small" />
           </button>
         </div>
       </header>
@@ -152,6 +158,7 @@ const SiteCheckWorkspace = ({
           embedded
           checkIdOverride={checkId}
           onRequestClose={onClose}
+          workspaceHeaderActionTarget={headerActionTarget}
         />
       </div>
     </section>

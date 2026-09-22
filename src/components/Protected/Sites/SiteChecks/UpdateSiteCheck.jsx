@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { connect } from "react-redux";
 import Header from "../../../common/Header/Header";
 import { toast } from "react-toastify";
@@ -27,6 +28,7 @@ import {
     getSiteCheckUserOptions,
 } from "../../../../store/thunk/site";
 import PrintIcon from "@mui/icons-material/Print";
+import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
 import html2pdf from "html2pdf.js";
 import "./Print.css";
 import moment from "moment";
@@ -285,6 +287,7 @@ const SiteChecks = ({
     embedded = false,
     checkIdOverride,
     onRequestClose,
+    workspaceHeaderActionTarget,
 }) => {
     const printRef = useRef();
 
@@ -616,6 +619,22 @@ const SiteChecks = ({
 
     return (
         <Fragment>
+            {embedded &&
+                workspaceHeaderActionTarget &&
+                canOpenInspectionEarly &&
+                createPortal(
+                    <button
+                        type="button"
+                        className="site-check-workspace__early-button"
+                        onClick={handleOpenInspectionEarlyDialog}
+                        title="Open inspection early"
+                        aria-label="Open inspection early"
+                    >
+                        <LockOpenRoundedIcon fontSize="small" />
+                        <span>Open Early</span>
+                    </button>,
+                    workspaceHeaderActionTarget
+                )}
             {!embedded && <SidebarNew />}
 
             <div
@@ -817,7 +836,7 @@ const SiteChecks = ({
                                     )}
                                 </Grid>
                                 <Grid sm={4}>
-                                    {canOpenInspectionEarly && (
+                                    {!embedded && canOpenInspectionEarly && (
                                         <div style={{ margin: "10px", marginTop: "32px" }}>
                                             <button
                                                 type="button"
