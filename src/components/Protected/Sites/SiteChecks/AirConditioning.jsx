@@ -1,14 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { connect, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {get, post, put} from "../../../../api";
-import {
-  getSiteById,
-  getSiteDetailsById,
-  getSites,
-  getUsers,
-} from "../../../../store/thunk/site";
+import { getUsers } from "../../../../store/thunk/site";
 import { Autocomplete, TextField } from "@mui/material";
 import { formatDate } from "../../../../utils/dateFormat";
 import { toJavaLocalDateTime, toJavaLocalDate } from "./shared/siteCheckDateUtils";
@@ -74,6 +69,45 @@ const sortUsersByName = (userList) =>
     getUserLabel(a).localeCompare(getUserLabel(b), undefined, { sensitivity: "base" })
   );
 
+// Air Conditioning is used inside React 18 StrictMode and can be remounted
+// immediately in development. Reuse only identical requests that are currently
+// in flight; completed responses are not cached, so subsequent genuine reloads
+// still read fresh data.
+const airConditioningReadRequestsInFlight = new Map();
+
+const getAirConditioningRead = (url) => {
+  const existingRequest = airConditioningReadRequestsInFlight.get(url);
+  if (existingRequest) {
+    return existingRequest;
+  }
+
+  const request = get(url).finally(() => {
+    if (airConditioningReadRequestsInFlight.get(url) === request) {
+      airConditioningReadRequestsInFlight.delete(url);
+    }
+  });
+
+  airConditioningReadRequestsInFlight.set(url, request);
+  return request;
+};
+
+let airConditioningUsersRequestInFlight = null;
+
+const loadAirConditioningUsers = (loadUsers) => {
+  if (airConditioningUsersRequestInFlight) {
+    return airConditioningUsersRequestInFlight;
+  }
+
+  const request = Promise.resolve(loadUsers()).finally(() => {
+    if (airConditioningUsersRequestInFlight === request) {
+      airConditioningUsersRequestInFlight = null;
+    }
+  });
+
+  airConditioningUsersRequestInFlight = request;
+  return request;
+};
+
 const getMostRecentGenericInspection = (items = []) => {
   if (!Array.isArray(items) || items.length === 0) {
     return null;
@@ -134,7 +168,6 @@ const AirConditioning = ({
                            subType,
                            category,
                            siteCheck,
-                           getSiteDetailsById,
                            users,
                            getUsers,
                            siteSelectedForGlobal,
@@ -184,6 +217,8 @@ const AirConditioning = ({
   });
 
   const sites = useSelector((state) => state.site.sites);
+  const usersRef = useRef(users);
+  usersRef.current = users;
   const [siteCheckAssets, setSiteCheckAssets] = useState([]);
   const [siteCheckSite, setSiteCheckSite] = useState(null);
   const authoritativeSiteId = siteCheck?.siteId ? Number(siteCheck.siteId) : null;
@@ -198,6 +233,8 @@ const AirConditioning = ({
       (authoritativeSiteId ? `site ${authoritativeSiteId}` : "the Site Check site");
   const wrongSiteAssetMessage =
       `The selected asset does not belong to ${authoritativeSiteName}. Please select an asset from the correct site.`;
+  const authoritativeSiteRef = useRef(authoritativeSite);
+  authoritativeSiteRef.current = authoritativeSite;
 
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -285,7 +322,7 @@ const AirConditioning = ({
 
     const loadEngineerProfile = async () => {
       try {
-        const response = await get(`/api/user/${engineerId}/details`);
+        const response = await getAirConditioningRead(`/api/user/${engineerId}/details`);
         if (!cancelled) {
           setSelectedEngineerProfile(response?.user || response || null);
         }
@@ -398,34 +435,38 @@ const AirConditioning = ({
   const fetchInspectionData = async (
       siteCheckStatus = checkStatus,
       assetsForSite = siteCheckAssets,
-      preserveOpenFormValues = false
+      preserveOpenFormValues = false,
+      usersForInspection = users,
+      isCancelled = () => false
   ) => {
     try {
-      if (!checkId) return;
-
-      if (isInternalUserTaggedWithSite && users.length === 0) {
-        await getUsers();
+      if (!checkId || isCancelled()) {
+        return { hasLinkedAction: false, mostRecentItem: null };
       }
 
-      const apiData = await get(`/api/site-check/generic-inspection/${checkId}`);
+      const apiData = await getAirConditioningRead(`/api/site-check/generic-inspection/${checkId}`);
+      if (isCancelled()) {
+        return { hasLinkedAction: false, mostRecentItem: null };
+      }
+
       if (apiData && apiData.length > 0) {
         // The API returns all Generic Inspection rows for this checkId without
         // a guaranteed order. Select the newest record explicitly.
         const mostRecentItem = getMostRecentGenericInspection(apiData);
-        setLastEngineerId(mostRecentItem.engineer || null);
+        const inspectionUsers = Array.isArray(usersForInspection) ? usersForInspection : [];
         const restoredAsset = assetsForSite.find(
             (asset) =>
                 Number(asset.assetId) === Number(mostRecentItem.assetId) &&
                 Number(asset.siteId) === authoritativeSiteId
         );
 
-        const clientUser = users.find(
+        const clientUser = inspectionUsers.find(
             (user) => user.id === mostRecentItem.client
         );
-        const engineerUser = users.find(
+        const engineerUser = inspectionUsers.find(
             (user) => String(user.id) === String(mostRecentItem.engineer)
         );
-        const siteContactUser = users.find(
+        const siteContactUser = inspectionUsers.find(
             (user) => user.id === mostRecentItem.siteContact
         );
         const currentOpenDate = getUkLocalDate();
@@ -436,14 +477,22 @@ const AirConditioning = ({
             ? (engineerUser || loggedInUserData || {})
             : (loggedInUserData || {});
 
-        // Fetch action data if actionId exists
-        let existingAction = null;
+        let linkedAction = null;
         if (mostRecentItem.actionId) {
-          existingAction = await fetchActionById(mostRecentItem.actionId);
-          if (existingAction) {
-            setExistingAction(existingAction);
-            setActionRaised(true);
+          linkedAction = await fetchActionById(mostRecentItem.actionId);
+          if (isCancelled()) {
+            return { hasLinkedAction: false, mostRecentItem };
           }
+        }
+
+        if (isCancelled()) {
+          return { hasLinkedAction: false, mostRecentItem };
+        }
+
+        setLastEngineerId(mostRecentItem.engineer || null);
+        if (linkedAction) {
+          setExistingAction(linkedAction);
+          setActionRaised(true);
         }
 
         setFormData((prev) => ({
@@ -513,100 +562,119 @@ const AirConditioning = ({
           siteContactUser: siteContactUser || null,
           actionId: mostRecentItem.actionId || null,
         }));
-      } else {
+
+        return {
+          hasLinkedAction: Boolean(linkedAction),
+          mostRecentItem,
+        };
+      }
+
+      if (!isCancelled()) {
         setLastEngineerId(null);
       }
+      return { hasLinkedAction: false, mostRecentItem: null };
     } catch {
-      // Failed to load inspection data — form remains editable with defaults
+      // Failed to load inspection data — form remains editable with defaults.
+      return { hasLinkedAction: false, mostRecentItem: null };
     }
   };
   const fetchActionById = async (id) => {
     try {
       if (!id) return null;
-      const response = await get(`/api/site/actions/id/${id}`);
+      const response = await getAirConditioningRead(`/api/site/actions/id/${id}`);
       return response;
     } catch {
       return null;
     }
   };
 
-  const fetchExistingActions = async () => {
+  const fetchExistingActions = async (
+      checkIdOverride = currentCheckId,
+      actionIdOverride = formData.actionId,
+      isCancelled = () => false
+  ) => {
     try {
-      // First check if we have an actionId in form data
-      if (formData.actionId) {
-        const action = await fetchActionById(formData.actionId);
-        // Only consider this action if its checkId matches currentCheckId
-        if (action && action.checkId === currentCheckId) {
+      const targetCheckId = checkIdOverride;
+
+      if (actionIdOverride) {
+        const action = await fetchActionById(actionIdOverride);
+        if (isCancelled()) return;
+
+        if (action && action.checkId === targetCheckId) {
           setExistingAction(action);
           setActionRaised(true);
           return;
         }
-        // If checkId doesn't match, clear the actionId from form data
-        setFormData(prev => ({ ...prev, actionId: null }));
+
+        if (!isCancelled()) {
+          setFormData((prev) => ({ ...prev, actionId: null }));
+        }
       }
 
-      // Now look for other actions specifically for this checkId
-      if (!authoritativeSiteId || !currentCheckId) return;
+      if (!authoritativeSiteId || !targetCheckId || isCancelled()) return;
 
-      const response = await get(`/api/site/actions/${authoritativeSiteId}`);
+      const response = await getAirConditioningRead(`/api/site/actions/${authoritativeSiteId}`);
+      if (isCancelled()) return;
+
       if (response && response.length > 0) {
-        // Only consider actions with exact checkId match
-        const relevantActions = response.filter(action =>
-            action.checkId === currentCheckId
+        const relevantActions = response.filter(
+            (action) => action.checkId === targetCheckId
         );
 
         if (relevantActions.length > 0) {
-          // Get the most recent action for this checkId
-          const mostRecentAction = relevantActions.sort((a, b) =>
-              new Date(b.createdAt) - new Date(a.createdAt)
+          const mostRecentAction = relevantActions.sort(
+              (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
           )[0];
 
           setExistingAction(mostRecentAction);
           setActionRaised(true);
-
-          // Update formData with the actionId
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
-            actionId: mostRecentAction.actionId
+            actionId: mostRecentAction.actionId,
           }));
         }
       }
     } catch {
-      // Non-blocking — form can still be submitted without linked action
+      // Non-blocking — form can still be submitted without linked action.
     }
   };
 
-  const fetchFolderStructure = async (siteId) => {
+  const fetchFolderStructure = async (siteId, isCancelled = () => false) => {
     try {
-      const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
+      const parentFoldersResponse = await getAirConditioningRead(`/api/document/site/${siteId}/parent/folders`);
+      if (isCancelled()) return null;
 
       if (parentFoldersResponse?.parentFolders?.length > 0) {
         const logBooksFolder = parentFoldersResponse.parentFolders.find(
-            folder => folder.name.trim() === '6 - Log Books'
+            (folder) => folder.name.trim() === "6 - Log Books"
         );
 
         if (logBooksFolder) {
-          const logBooksResponse = await get(`/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`);
+          const logBooksResponse = await getAirConditioningRead(
+              `/api/document/parent/${logBooksFolder.id}/folders?siteId=${siteId}`
+          );
+          if (isCancelled()) return null;
 
           if (logBooksResponse?.document?.childFolders) {
             const EnvironmentalLogBookFolder = logBooksResponse.document.childFolders.find(
-                folder => folder.name.trim() === 'Environmental Log Book'
+                (folder) => folder.name.trim() === "Environmental Log Book"
             );
 
             if (EnvironmentalLogBookFolder) {
-              const environmentalResponse = await get(
+              const environmentalResponse = await getAirConditioningRead(
                   `/api/document/parent/${EnvironmentalLogBookFolder.id}/folders?siteId=${siteId}`
               );
+              if (isCancelled()) return null;
 
               if (environmentalResponse?.document?.childFolders) {
                 const airConditioningFolder = environmentalResponse.document.childFolders.find(
-                    folder => folder.name === 'Air Conditioning Service & Maintenance Records'
+                    (folder) => folder.name === "Air Conditioning Service & Maintenance Records"
                 );
 
                 setFolderIds({
                   logBooks: logBooksFolder.id,
                   EnvironmentalLogBook: EnvironmentalLogBookFolder.id,
-                  airConditioning: airConditioningFolder?.id || null
+                  airConditioning: airConditioningFolder?.id || null,
                 });
 
                 return airConditioningFolder?.id || null;
@@ -617,15 +685,21 @@ const AirConditioning = ({
       }
       return null;
     } catch {
-      toast.error('Failed to load document folders');
+      if (!isCancelled()) {
+        toast.error("Failed to load document folders");
+      }
       return null;
     }
   };
 
   useEffect(() => {
-    // This effect ensures we have the latest action data when formData.actionId changes
+    // Avoid re-reading an action that the initial inspection load has already
+    // resolved. Interactive action-id changes still fetch the authoritative row.
     const fetchActionData = async () => {
-      if (formData.actionId) {
+      if (
+        formData.actionId &&
+        String(existingAction?.actionId || "") !== String(formData.actionId)
+      ) {
         const action = await fetchActionById(formData.actionId);
         if (action) {
           setExistingAction(action);
@@ -638,9 +712,12 @@ const AirConditioning = ({
     };
 
     fetchActionData();
-  }, [formData.actionId]);
+  }, [formData.actionId, existingAction?.actionId]);
 
   useEffect(() => {
+    let cancelled = false;
+    const isCancelled = () => cancelled;
+
     const applySiteCheckState = () => {
       if (!siteCheck || Number(siteCheck.checkId) !== Number(checkId)) {
         return null;
@@ -650,16 +727,12 @@ const AirConditioning = ({
       setCurrentCheckId(siteCheck.checkId);
       setCheckStatus(siteCheck.status);
 
-      const isDone = siteCheck.status === 'Done';
+      const isDone = siteCheck.status === "Done";
       setIsFormEditable(!isDone);
       setIsSubmitted(isDone);
       setShowPdfButton(isDone);
       return siteCheck;
     };
-
-    if (isInternalUserTaggedWithSite && users.length === 0) {
-      getUsers();
-    }
 
     const fetchData = async () => {
       setIsLoading(true);
@@ -669,36 +742,47 @@ const AirConditioning = ({
           return;
         }
 
+        let usersForInspection = Array.isArray(usersRef.current)
+            ? usersRef.current
+            : [];
+
+        if (isInternalUserTaggedWithSite && usersForInspection.length === 0) {
+          usersForInspection = await loadAirConditioningUsers(getUsers);
+          if (isCancelled()) return;
+        }
+
         const [assetResponse, loadedSiteDetails] = await Promise.all([
-          get(`/api/site/${authoritativeSiteId}/assets`),
-          get(`/api/site/site/${authoritativeSiteId}`),
+          getAirConditioningRead(
+              `/api/site/${authoritativeSiteId}/assets?siteCheckSummary=true`
+          ),
+          getAirConditioningRead(`/api/site/site/${authoritativeSiteId}`),
         ]);
+        if (isCancelled()) return;
+
         const loadedAssets = (assetResponse?.assets || []).filter(
             (asset) => Number(asset.siteId) === authoritativeSiteId
         );
         setSiteCheckAssets(loadedAssets);
         setSiteCheckSite(loadedSiteDetails || null);
 
-        await getSiteDetailsById(authoritativeSiteId);
-        await fetchFolderStructure(authoritativeSiteId);
-        await fetchInspectionData(loadedSiteCheck.status, loadedAssets);
+        await fetchFolderStructure(authoritativeSiteId, isCancelled);
+        if (isCancelled()) return;
 
-        if (formData.actionId) {
-          const action = await fetchActionById(formData.actionId);
-          if (action) {
-            setExistingAction(action);
-            setActionRaised(true);
-          } else {
-            await fetchExistingActions();
-          }
-        } else {
-          await fetchExistingActions();
+        const inspectionLoad = await fetchInspectionData(
+            loadedSiteCheck.status,
+            loadedAssets,
+            false,
+            usersForInspection,
+            isCancelled
+        );
+        if (isCancelled()) return;
+
+        if (!inspectionLoad?.hasLinkedAction) {
+          await fetchExistingActions(loadedSiteCheck.checkId, null, isCancelled);
+          if (isCancelled()) return;
         }
 
-        const currentSite = sites.find(
-            (site) => Number(site.siteId ?? site.id) === authoritativeSiteId
-        );
-        const siteData = loadedSiteDetails || currentSite || authoritativeSite;
+        const siteData = loadedSiteDetails || authoritativeSiteRef.current;
 
         if (siteData) {
           const addressParts = [
@@ -722,22 +806,22 @@ const AirConditioning = ({
           }
         }
       } catch {
-        toast.error("Failed to load Site Check details and assets");
+        if (!isCancelled()) {
+          toast.error("Failed to load Site Check details and assets");
+        }
       } finally {
-        setIsLoading(false);
+        if (!isCancelled()) {
+          setIsLoading(false);
+        }
       }
     };
 
     fetchData();
-  }, [
-    siteCheck,
-    checkId,
-    authoritativeSiteId,
-    getSiteDetailsById,
-    users.length,
-    isInternalUserTaggedWithSite,
-    getUsers,
-  ]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [siteCheck, checkId, authoritativeSiteId, getUsers]);
 
 
   useEffect(() => {
@@ -899,7 +983,7 @@ const AirConditioning = ({
         return 1;
       }
 
-      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const response = await getAirConditioningRead(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
 
       if (files.length > 0) {
@@ -951,7 +1035,7 @@ const AirConditioning = ({
       const siteId = authoritativeSiteId;
       if (!siteId || !folderId) return { exists: false, file: null };
 
-      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
+      const response = await getAirConditioningRead(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
       const files = response?.document?.files || [];
       const baseName = fileName.split('.')[0];
       const existingFile = files.find(file =>
@@ -2707,8 +2791,5 @@ const mapStateToProps = (state) => ({
 });
 
 export default connect(mapStateToProps, {
-  getSiteDetailsById,
-  getSiteById,
-  getSites,
   getUsers,
 })(AirConditioning);

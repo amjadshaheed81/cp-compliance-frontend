@@ -1379,10 +1379,15 @@ export const getUsers = () => {
         type: GET_USER_ALL,
         payload: sortedData,
       });
+      // Returning the same list that was dispatched lets callers hydrate their
+      // current load without waiting for a Redux re-render. Existing callers
+      // that ignore the return value keep the same behaviour.
+      return sortedData || [];
     } catch (error) {
       toast.error(
         "Something went wrong while fetching users. Please try again."
       );
+      return [];
     }
   };
 };

@@ -10,8 +10,14 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
-import { get, post, del, put } from "../../../../api";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  get,
+  post,
+  del,
+  put,
+  SITE_CHECK_DATA_CHANGED_EVENT,
+} from "../../../../api";
 import DatePicker from "../../../common/DatePicker";
 
 import {
@@ -29,9 +35,76 @@ import { getSites, getSiteCheckUserOptions } from "../../../../store/thunk/site"
 import { getSiteCheckDueDate } from "../../../../utils/getSiteCheckDueDate";
 import { calculateSiteCheckDueDateTime, calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 import SiteCheckTestLauncher from "./SiteCheckTestLauncher";
+import SiteCheckWorkspace from "./SiteCheckWorkspace";
+import {
+  SITE_CHECK_DEFAULT_PAGE_SIZE,
+  SITE_CHECK_PAGE_SIZE_OPTIONS,
+  SITE_CHECK_WORKSPACE_ENABLED,
+} from "./siteCheckUiConfig";
 
 // Developer-only Site Check test launcher. Keep hidden for every other account.
 const SITE_CHECK_TEST_LAUNCHER_EMAIL = "amjad.shaheed81@gmail.com";
+
+const SITE_CHECK_GRID_STATE_KEY_PREFIX = "cafm.siteChecks.gridState";
+const SITE_CHECK_PAGE_SIZE_KEY = "cafm.siteChecks.pageSize";
+
+const getSiteCheckGridStateKey = (siteId) =>
+  `${SITE_CHECK_GRID_STATE_KEY_PREFIX}.${siteId}`;
+
+const readStoredPageSize = () => {
+  try {
+    const value = window.localStorage.getItem(SITE_CHECK_PAGE_SIZE_KEY);
+    if (value === "all") return "all";
+    const parsed = Number(value);
+    return SITE_CHECK_PAGE_SIZE_OPTIONS.includes(parsed)
+      ? parsed
+      : SITE_CHECK_DEFAULT_PAGE_SIZE;
+  } catch {
+    return SITE_CHECK_DEFAULT_PAGE_SIZE;
+  }
+};
+
+const readStoredGridState = (siteId) => {
+  if (!siteId) return null;
+  try {
+    const value = window.sessionStorage.getItem(getSiteCheckGridStateKey(siteId));
+    return value ? JSON.parse(value) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeStoredGridState = (siteId, state) => {
+  if (!siteId) return;
+  try {
+    window.sessionStorage.setItem(
+      getSiteCheckGridStateKey(siteId),
+      JSON.stringify(state)
+    );
+  } catch {
+    // Grid state persistence is a usability enhancement only.
+  }
+};
+
+const getSiteCheckScrollPosition = () => {
+  const root = document.getElementById("root");
+  if (root && root.scrollHeight > root.clientHeight) {
+    return root.scrollTop || 0;
+  }
+  return window.scrollY || document.documentElement?.scrollTop || 0;
+};
+
+const restoreSiteCheckScrollPosition = (top) => {
+  const safeTop = Math.max(0, Number(top) || 0);
+  const root = document.getElementById("root");
+
+  if (root && root.scrollHeight > root.clientHeight) {
+    root.scrollTo({ top: safeTop, behavior: "auto" });
+    return;
+  }
+
+  window.scrollTo({ top: safeTop, behavior: "auto" });
+};
 
 const SiteChecks = ({
   siteSelectedForGlobal,
@@ -58,6 +131,10 @@ const SiteChecks = ({
   const [assetIdMap, setAssetIdMap] = useState({});
 
   const navigate = useNavigate();
+  const location = useLocation();
+  const inspectionCheckId = SITE_CHECK_WORKSPACE_ENABLED
+    ? new URLSearchParams(location.search).get("inspection")
+    : null;
   const goTo = (link) => {
     navigate(link);
   };
@@ -84,21 +161,79 @@ const SiteChecks = ({
     Number(siteSelectedForGlobal?.siteId)
       ? siteCheckUserOptions?.siteUsers || []
       : [];
+  const managerListRef = useRef(managerList);
+  managerListRef.current = managerList;
 
   const canUseSiteCheckTestLauncher =
     String(loggedInUserData?.email || "").trim().toLowerCase() ===
     SITE_CHECK_TEST_LAUNCHER_EMAIL;
 
-  const [itemsPerPage] = useState(7);
+  const [pageSize, setPageSize] = useState(readStoredPageSize);
   const [currentPage, setCurrentPage] = useState(1);
-  const indexOfLastPreAction = currentPage * itemsPerPage;
-  const indexOfFirstPreAction = indexOfLastPreAction - itemsPerPage;
-  const currentSiteChecks = filteredSiteChecks?.slice(
-    indexOfFirstPreAction,
-    indexOfLastPreAction
-  );
+  const [lastSelectedCheckId, setLastSelectedCheckId] = useState(null);
+  const [workspaceDisplayMode, setWorkspaceDisplayMode] = useState("full");
+  const [gridStateReadySiteId, setGridStateReadySiteId] = useState(null);
+  const lastKnownScrollYRef = useRef(0);
+  const pendingRestoreScrollRef = useRef(null);
+  const pendingRowScrollRef = useRef(null);
+  const latestGridStateRef = useRef(null);
+  const previousInspectionCheckIdRef = useRef(null);
+  const previousGridSiteIdRef = useRef(null);
+  const siteCheckMutationRefreshTimerRef = useRef(null);
+  const filteredOutNotifiedCheckIdRef = useRef(null);
+  const workspaceDirtyCheckIdRef = useRef(null);
+
+  const showAllRows = pageSize === "all";
+  const numericPageSize = showAllRows
+    ? Math.max(filteredSiteChecks.length, 1)
+    : Number(pageSize) || SITE_CHECK_DEFAULT_PAGE_SIZE;
+  const indexOfLastPreAction = currentPage * numericPageSize;
+  const indexOfFirstPreAction = indexOfLastPreAction - numericPageSize;
+  const currentSiteChecks = showAllRows
+    ? filteredSiteChecks
+    : filteredSiteChecks?.slice(indexOfFirstPreAction, indexOfLastPreAction);
+  const totalPages = showAllRows
+    ? filteredSiteChecks.length > 0
+      ? 1
+      : 0
+    : Math.ceil(filteredSiteChecks.length / numericPageSize);
+
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
+  };
+
+  const handlePageSizeChange = (event) => {
+    const rawValue = event.target.value;
+    const nextPageSize = rawValue === "all" ? "all" : Number(rawValue);
+    const anchorCheckId = showAllRows
+      ? lastSelectedCheckId || currentSiteChecks?.[0]?.checkId || null
+      : currentSiteChecks?.[0]?.checkId || lastSelectedCheckId || null;
+    const anchorIndex = anchorCheckId
+      ? filteredSiteChecks.findIndex(
+          (check) => String(check.checkId) === String(anchorCheckId)
+        )
+      : -1;
+    const oldFirstRecordIndex = showAllRows
+      ? Math.max(anchorIndex, 0)
+      : (currentPage - 1) * numericPageSize;
+
+    setPageSize(nextPageSize);
+    try {
+      window.localStorage.setItem(
+        SITE_CHECK_PAGE_SIZE_KEY,
+        String(nextPageSize)
+      );
+    } catch {
+      // Page-size persistence is optional.
+    }
+
+    pendingRowScrollRef.current = anchorCheckId;
+    if (nextPageSize === "all") {
+      setCurrentPage(1);
+      return;
+    }
+
+    setCurrentPage(Math.floor(oldFirstRecordIndex / nextPageSize) + 1);
   };
 
   const sortLovValues = (lovs = []) =>
@@ -178,6 +313,100 @@ const SiteChecks = ({
     category: "",
     status: "",
   });
+  const formData2Ref = useRef(formData2);
+  formData2Ref.current = formData2;
+  const selectedSiteId = siteSelectedForGlobal?.siteId;
+
+  useEffect(() => {
+    const previousSiteId = previousGridSiteIdRef.current;
+    const previousState = latestGridStateRef.current;
+    if (
+      previousSiteId &&
+      previousState?.siteId &&
+      String(previousState.siteId) === String(previousSiteId)
+    ) {
+      writeStoredGridState(previousSiteId, {
+        ...previousState,
+        scrollY: getSiteCheckScrollPosition() || lastKnownScrollYRef.current || 0,
+      });
+    }
+
+    previousGridSiteIdRef.current = selectedSiteId || null;
+
+    if (!selectedSiteId) {
+      setGridStateReadySiteId(null);
+      return;
+    }
+
+    setGridStateReadySiteId(null);
+    const storedState = readStoredGridState(selectedSiteId);
+
+    setCurrentPage(Math.max(1, Number(storedState?.currentPage) || 1));
+    setLastSelectedCheckId(storedState?.lastSelectedCheckId || null);
+    const restoredFilters = {
+      ...formData2Ref.current,
+      ...(storedState?.filters || {}),
+    };
+    formData2Ref.current = restoredFilters;
+    setFormData2(restoredFilters);
+    pendingRestoreScrollRef.current = Number(storedState?.scrollY) || 0;
+    setGridStateReadySiteId(String(selectedSiteId));
+  }, [selectedSiteId]);
+
+  useEffect(() => {
+    const root = document.getElementById("root");
+    const handleScroll = () => {
+      lastKnownScrollYRef.current = getSiteCheckScrollPosition();
+    };
+
+    lastKnownScrollYRef.current = getSiteCheckScrollPosition();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    root?.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      root?.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (
+      !selectedSiteId ||
+      gridStateReadySiteId !== String(selectedSiteId)
+    ) {
+      return;
+    }
+
+    const state = {
+      siteId: selectedSiteId,
+      currentPage,
+      pageSize,
+      filters: formData2,
+      lastSelectedCheckId,
+      scrollY: lastKnownScrollYRef.current,
+    };
+
+    latestGridStateRef.current = state;
+    writeStoredGridState(selectedSiteId, state);
+  }, [
+    selectedSiteId,
+    gridStateReadySiteId,
+    currentPage,
+    pageSize,
+    formData2,
+    lastSelectedCheckId,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      const state = latestGridStateRef.current;
+      if (!state?.siteId) return;
+      writeStoredGridState(state.siteId, {
+        ...state,
+        scrollY: getSiteCheckScrollPosition() || lastKnownScrollYRef.current || 0,
+      });
+    };
+  }, []);
   const isDateOlderThanToday = (dateString) => {
     const dateToCheck = moment(dateString, "YYYY-MM-DD");
     const today = moment().startOf("day");
@@ -213,6 +442,7 @@ const SiteChecks = ({
 
   const handleInputChange2 = (e) => {
     const { name, value } = e.target;
+    setCurrentPage(1);
     setFormData2({
       ...formData2,
       [name]: value,
@@ -278,78 +508,48 @@ const SiteChecks = ({
     }
   }, [formData.subType]);
 
-  const searchSiteCheck = () => {
-    let filteredSiteChecks2 = siteChecks;
-    if (formData2?.type?.length > 0) {
-      filteredSiteChecks2 = filteredSiteChecks2.filter(
-        (sc) => sc.type === formData2.type
-      );
+  const filterSiteChecks = (source = [], filters = formData2) => {
+    let result = [...source];
+
+    if (filters?.type?.length > 0) {
+      result = result.filter((sc) => sc.type === filters.type);
     }
-    if (formData2?.subType?.length > 0) {
-      filteredSiteChecks2 = filteredSiteChecks2.filter(
-        (sc) => sc.subType === formData2.subType
-      );
+    if (filters?.subType?.length > 0) {
+      result = result.filter((sc) => sc.subType === filters.subType);
     }
-    if (formData2?.category?.length > 0) {
-      filteredSiteChecks2 = filteredSiteChecks2.filter(
-        (sc) => sc.category === formData2.category
-      );
+    if (filters?.category?.length > 0) {
+      result = result.filter((sc) => sc.category === filters.category);
     }
-    if (formData2?.status?.length > 0) {
-      filteredSiteChecks2 = filteredSiteChecks2.filter(
-        (sc) => sc.status === formData2.status
-      );
+    if (filters?.status?.length > 0) {
+      result = result.filter((sc) => sc.status === filters.status);
     }
-    if (formData2?.searchField?.length > 0 && filteredSiteChecks2?.length > 0) {
-      filteredSiteChecks2.forEach((s) => {
-        const lead = managerList.filter((u) => u.id == s.leadUserID);
-        if (lead.length > 0) {
-          s.leadName =
-            lead[0].role +
-            " - " +
-            lead[0].name +
-            " (" +
-            lead[0].email +
-            ")" +
-            (lead.companyName ? " - " + lead.companyName : "");
-        }
+
+    if (filters?.searchField?.length > 0 && result.length > 0) {
+      const searchValue = String(filters.searchField).toLowerCase();
+      result = result.filter((sc) => {
+        const lead = managerListRef.current.find((u) => u.id == sc.leadUserID);
+        const leadName = lead
+          ? `${lead.role} - ${lead.name} (${lead.email})${
+              lead.companyName ? ` - ${lead.companyName}` : ""
+            }`
+          : "";
+
+        return (
+          sc?.type?.toLowerCase().includes(searchValue) ||
+          sc?.subType?.toLowerCase().includes(searchValue) ||
+          sc?.category?.toLowerCase().includes(searchValue) ||
+          leadName.toLowerCase().includes(searchValue)
+        );
       });
-      filteredSiteChecks2 = filteredSiteChecks2.filter(
-        (sc) =>
-          sc?.type
-            ?.toLowerCase()
-            .includes(String(formData2?.searchField).toLowerCase()) ||
-          sc?.subType
-            ?.toLowerCase()
-            .includes(String(formData2?.searchField).toLowerCase()) ||
-          sc?.category
-            ?.toLowerCase()
-            .includes(String(formData2?.searchField).toLowerCase()) ||
-          sc?.leadName
-            ?.toLowerCase()
-            .includes(String(formData2?.searchField).toLowerCase())
-      );
     }
-    setFilteredSiteChecks(filteredSiteChecks2);
-    //const searchField = formData?.searchField;
-    //const status = formData?.status;
-    //if (searchField || status) {
-    //   const list = users?.filter(
-    //     (x) =>
-    //       String(x?.name)
-    //         .toLowerCase()
-    //         .includes(String(searchField).toLowerCase()) &&
-    //       String(x?.role).toLowerCase().includes(String(role).toLowerCase()) &&
-    //       String(x?.defaultSiteName)
-    //         .toLowerCase()
-    //         .includes(String(site).toLowerCase()) &&
-    //       String(x?.status).toLowerCase().includes(String(status).toLowerCase())
-    //   );
-    //   setFilteredUser(list);
-    //} else {
-    //   setFilteredUser(users);
-    //}
+
+    return result;
   };
+
+  const searchSiteCheck = () => {
+    setFilteredSiteChecks(filterSiteChecks(siteChecks, formData2));
+  };
+
   const copyData = (action) => {
     setFormData({
       type: action.type,
@@ -402,7 +602,7 @@ const SiteChecks = ({
         setIsLoading(true);
         action.status = "Done";
         await put("/api/site-check/" + action.checkId, action);
-        getSiteChecks();
+        getSiteChecks({ highlightCheckId: action.checkId });
         // if (res === "Success") {
         //   toast.success(`${user?.name} user has been deleted successully`);
         //   getUsers();
@@ -418,8 +618,11 @@ const SiteChecks = ({
   };
 
   useEffect(() => {
-    getSiteChecks();
-  }, [siteSelectedForGlobal]);
+    getSiteChecks({ showLoading: true });
+    // Site Check data only needs a full reload when the selected site changes.
+    // Depending on the whole Redux object can retrigger the load on unrelated store updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSiteId]);
 
   const addSiteCheck = async (event) => {
     setIsLoading(true);
@@ -558,12 +761,21 @@ const SiteChecks = ({
     return nextDate ? moment(nextDate, "YYYY-MM-DD") : moment(date);
   };
 
-  const getSiteChecks = async () => {
+  const getSiteChecks = async ({
+    highlightCheckId = null,
+    notifyWhenFilteredOut = false,
+    showLoading = true,
+  } = {}) => {
     if (!siteSelectedForGlobal?.siteId) {
-      toast.error("Please select site from site search to proceed....");
-      return;
+      if (showLoading) {
+        toast.error("Please select site from site search to proceed....");
+      }
+      return false;
     }
-    setIsLoading(true);
+
+    if (showLoading) {
+      setIsLoading(true);
+    }
 
     try {
       // The grid endpoint returns the existing Site Check row shape plus a
@@ -601,15 +813,305 @@ const SiteChecks = ({
         return safeCategory(a.category).localeCompare(safeCategory(b.category));
       });
 
-      setFilteredSiteChecks(sortedSiteChecks);
+      const filteredResults = filterSiteChecks(
+        sortedSiteChecks,
+        formData2Ref.current
+      );
+      setFilteredSiteChecks(filteredResults);
       setSiteChecks(sortedSiteChecks);
+
+      if (highlightCheckId) {
+        setLastSelectedCheckId(String(highlightCheckId));
+        const recordStillExists = sortedSiteChecks.some(
+          (check) => String(check.checkId) === String(highlightCheckId)
+        );
+        const recordStillVisible = filteredResults.some(
+          (check) => String(check.checkId) === String(highlightCheckId)
+        );
+
+        if (recordStillVisible) {
+          filteredOutNotifiedCheckIdRef.current = null;
+        } else if (
+          notifyWhenFilteredOut &&
+          recordStillExists &&
+          String(filteredOutNotifiedCheckIdRef.current) !== String(highlightCheckId)
+        ) {
+          filteredOutNotifiedCheckIdRef.current = String(highlightCheckId);
+          toast.info(
+            `Site Check ${highlightCheckId} was updated and no longer matches the current filter.`
+          );
+        }
+      }
+
+      return true;
     } catch (error) {
       console.error("Error fetching site checks:", error);
       toast.error("Failed to load site checks");
+      return false;
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
+
+
+  const openInspectionWorkspace = (action) => {
+    const checkId = action?.checkId;
+    if (!checkId) return;
+
+    if (
+      SITE_CHECK_WORKSPACE_ENABLED &&
+      inspectionCheckId &&
+      String(inspectionCheckId) === String(checkId)
+    ) {
+      return;
+    }
+
+    const scrollY = getSiteCheckScrollPosition();
+    setLastSelectedCheckId(String(checkId));
+    filteredOutNotifiedCheckIdRef.current = null;
+    lastKnownScrollYRef.current = scrollY;
+
+    if (selectedSiteId) {
+      const state = {
+        siteId: selectedSiteId,
+        currentPage,
+        pageSize,
+        filters: formData2,
+        lastSelectedCheckId: String(checkId),
+        scrollY,
+      };
+      latestGridStateRef.current = state;
+      writeStoredGridState(selectedSiteId, state);
+    }
+
+    if (!SITE_CHECK_WORKSPACE_ENABLED) {
+      navigate(`/site-checks/${checkId}/update`);
+      return;
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set("inspection", String(checkId));
+    const workspaceAlreadyOpen = Boolean(inspectionCheckId);
+
+    if (!workspaceAlreadyOpen) {
+      setWorkspaceDisplayMode("full");
+    }
+
+    navigate(
+      {
+        pathname: location.pathname,
+        search: `?${searchParams.toString()}`,
+      },
+      {
+        replace: workspaceAlreadyOpen,
+        state: {
+          ...(location.state || {}),
+          siteCheckWorkspaceFromGrid: true,
+        },
+      }
+    );
+  };
+
+  const closeInspectionWorkspace = () => {
+    if (inspectionCheckId) {
+      setLastSelectedCheckId(String(inspectionCheckId));
+    }
+
+    if (location.state?.siteCheckWorkspaceFromGrid) {
+      navigate(-1);
+      return;
+    }
+
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.delete("inspection");
+    navigate(
+      {
+        pathname: location.pathname,
+        search: searchParams.toString() ? `?${searchParams.toString()}` : "",
+      },
+      { replace: true }
+    );
+  };
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    if (showAllRows) {
+      if (currentPage !== 1) setCurrentPage(1);
+      return;
+    }
+
+    const nearestValidPage = Math.max(1, totalPages);
+    if (currentPage > nearestValidPage) {
+      setCurrentPage(nearestValidPage);
+    }
+  }, [showAllRows, totalPages, currentPage, isLoading]);
+
+  useEffect(() => {
+    const rowCheckId = pendingRowScrollRef.current;
+    if (!rowCheckId) return;
+
+    const rowIsRendered = currentSiteChecks?.some(
+      (check) => String(check.checkId) === String(rowCheckId)
+    );
+    if (!rowIsRendered) return;
+
+    pendingRowScrollRef.current = null;
+    window.requestAnimationFrame(() => {
+      document
+        .querySelector(`[data-site-check-id="${rowCheckId}"]`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }, [currentSiteChecks, pageSize]);
+
+  useEffect(() => {
+    if (
+      inspectionCheckId ||
+      isLoading ||
+      gridStateReadySiteId !== String(selectedSiteId) ||
+      pendingRestoreScrollRef.current === null
+    ) {
+      return;
+    }
+
+    const scrollY = pendingRestoreScrollRef.current;
+    pendingRestoreScrollRef.current = null;
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        restoreSiteCheckScrollPosition(scrollY);
+      });
+    });
+  }, [
+    inspectionCheckId,
+    isLoading,
+    siteChecks.length,
+    currentPage,
+    gridStateReadySiteId,
+    selectedSiteId,
+  ]);
+
+  useEffect(() => {
+    const previousInspectionCheckId = previousInspectionCheckIdRef.current;
+
+    if (inspectionCheckId) {
+      setLastSelectedCheckId(String(inspectionCheckId));
+    } else if (previousInspectionCheckId) {
+      setLastSelectedCheckId(String(previousInspectionCheckId));
+
+      // Browser Back / an inspection's existing navigate(-1) can close the
+      // workspace without calling closeInspectionWorkspace. Refresh only when
+      // that inspection really changed, and never replace the grid with a spinner.
+      if (
+        String(workspaceDirtyCheckIdRef.current) ===
+        String(previousInspectionCheckId)
+      ) {
+        getSiteChecks({
+          highlightCheckId: previousInspectionCheckId,
+          notifyWhenFilteredOut: true,
+          showLoading: false,
+        }).then((loaded) => {
+          if (
+            loaded &&
+            String(workspaceDirtyCheckIdRef.current) ===
+              String(previousInspectionCheckId)
+          ) {
+            workspaceDirtyCheckIdRef.current = null;
+          }
+        });
+      }
+    }
+
+    previousInspectionCheckIdRef.current = inspectionCheckId;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inspectionCheckId]);
+
+  useEffect(() => {
+    if (!inspectionCheckId || workspaceDisplayMode !== "half") return;
+    if (
+      String(workspaceDirtyCheckIdRef.current) !== String(inspectionCheckId)
+    ) {
+      return;
+    }
+
+    getSiteChecks({
+      highlightCheckId: inspectionCheckId,
+      notifyWhenFilteredOut: true,
+      showLoading: false,
+    }).then((loaded) => {
+      if (
+        loaded &&
+        String(workspaceDirtyCheckIdRef.current) === String(inspectionCheckId)
+      ) {
+        workspaceDirtyCheckIdRef.current = null;
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceDisplayMode, inspectionCheckId]);
+
+  useEffect(() => {
+    const handleSiteCheckMutation = () => {
+      if (!inspectionCheckId) return;
+
+      workspaceDirtyCheckIdRef.current = String(inspectionCheckId);
+
+      // In full screen the grid is hidden, so defer refresh until Half Screen
+      // or Close. In half screen refresh in the background without hiding rows.
+      if (workspaceDisplayMode !== "half") return;
+
+      if (siteCheckMutationRefreshTimerRef.current) {
+        window.clearTimeout(siteCheckMutationRefreshTimerRef.current);
+      }
+
+      siteCheckMutationRefreshTimerRef.current = window.setTimeout(() => {
+        getSiteChecks({
+          highlightCheckId: inspectionCheckId,
+          notifyWhenFilteredOut: true,
+          showLoading: false,
+        }).then((loaded) => {
+          if (
+            loaded &&
+            String(workspaceDirtyCheckIdRef.current) ===
+              String(inspectionCheckId)
+          ) {
+            workspaceDirtyCheckIdRef.current = null;
+          }
+        });
+      }, 500);
+    };
+
+    window.addEventListener(
+      SITE_CHECK_DATA_CHANGED_EVENT,
+      handleSiteCheckMutation
+    );
+
+    return () => {
+      window.removeEventListener(
+        SITE_CHECK_DATA_CHANGED_EVENT,
+        handleSiteCheckMutation
+      );
+      if (siteCheckMutationRefreshTimerRef.current) {
+        window.clearTimeout(siteCheckMutationRefreshTimerRef.current);
+        siteCheckMutationRefreshTimerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inspectionCheckId, workspaceDisplayMode]);
+
+  const activeSiteCheckSummary = siteChecks.find(
+    (check) => String(check.checkId) === String(inspectionCheckId)
+  );
+
+  const visibleRecordStart =
+    filteredSiteChecks.length === 0
+      ? 0
+      : showAllRows
+      ? 1
+      : indexOfFirstPreAction + 1;
+  const visibleRecordEnd = showAllRows
+    ? filteredSiteChecks.length
+    : Math.min(indexOfLastPreAction, filteredSiteChecks.length);
 
 
   return (
@@ -644,6 +1146,7 @@ const SiteChecks = ({
                           onFocus={(e) => e.target.removeAttribute("readonly")}
                           placeholder="Search"
                           name="searchField"
+                          value={formData2?.searchField || ""}
                           style={{ paddingLeft: "20%" }}
                           className="form-control"
                           onChange={handleInputChange2}
@@ -655,6 +1158,7 @@ const SiteChecks = ({
                         name="type"
                         className="form-control form-select"
                         id="type"
+                        value={formData2?.type || ""}
                         onChange={handleInputChange2}
                       >
                         <option value="">Type</option>
@@ -698,6 +1202,7 @@ const SiteChecks = ({
                         name="status"
                         className="form-control form-select"
                         id="status"
+                        value={formData2?.status || ""}
                         onChange={handleInputChange2}
                       >
                         <option value="">Status</option>
@@ -792,7 +1297,7 @@ const SiteChecks = ({
                     )}
                     {isLoading && (
                       <tr>
-                        <td colSpan={8} align="center">
+                        <td colSpan={9} align="center">
                           <CircularProgress />
                         </td>
                       </tr>
@@ -815,19 +1320,39 @@ const SiteChecks = ({
                             (lead.companyName ? " - " + lead.companyName : "");
                         }
                         return (
-                          <tr key={action?.id}>
-                            <th scope="col">{action?.type}</th>
-                            <th scope="col">{action?.subType}</th>
+                          <tr
+                            key={action?.checkId || action?.id}
+                            data-site-check-id={action?.checkId}
+                            className={`site-check-row--clickable ${
+                              String(action?.checkId) === String(inspectionCheckId)
+                                ? "site-check-row--active"
+                                : String(action?.checkId) === String(lastSelectedCheckId)
+                                ? "site-check-row--last"
+                                : ""
+                            }`.trim()}
+                            onClick={() => openInspectionWorkspace(action)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                openInspectionWorkspace(action);
+                              }
+                            }}
+                            tabIndex={0}
+                            role="button"
+                            aria-label={`Open ${action?.type || "site check"} inspection ${action?.checkId}`}
+                          >
+                            <th scope="col" className="site-check-row__cell--actionable">{action?.type}</th>
+                            <th scope="col" className="site-check-row__cell--actionable">{action?.subType}</th>
                             <th scope="col">
                               {assetIdMap[action.checkId]
                                 ? parseInt(assetIdMap[action.checkId]) // Display as number to show proper ordering
                                 : '-'}
                             </th>
-                            <th scope="col">{action?.category}</th>
-                            <th scope="col" style={{ width: "250px" }}>
+                            <th scope="col" className="site-check-row__cell--actionable">{action?.category}</th>
+                            <th scope="col" style={{ width: "250px" }} className="site-check-row__cell--actionable">
                               {leanName}
                             </th>
-                            <th scope="col" style={{ width: "200px" }}>
+                            <th scope="col" style={{ width: "200px" }} className="site-check-row__cell--actionable">
                               <span className="badge bg-danger p-2 m-1 risk-span">
                                 {action?.riskScoreRed ?? 0}
                               </span>
@@ -841,7 +1366,7 @@ const SiteChecks = ({
                                 {action?.riskScoreGreen ?? 0}
                               </span>
                             </th>
-                            <th scope="col" style={{ width: "170px" }}>
+                            <th scope="col" style={{ width: "170px" }} className="site-check-row__cell--actionable">
                               <Tooltip
                                 title={`Frequency: ${action?.repeatFrequency || "Not set"}`}
                                 arrow
@@ -868,7 +1393,7 @@ const SiteChecks = ({
                                 </span>
                               </Tooltip>
                             </th>
-                            <th scope="col">
+                            <th scope="col" className="site-check-row__cell--actionable">
                               <Chip
                                 color={
                                   action?.status === "Done"
@@ -878,14 +1403,18 @@ const SiteChecks = ({
                                 label={action?.status}
                               />
                             </th>
-                            <th scope="col" style={{ width: "250px" }}>
+                            <th
+                              scope="col"
+                              style={{ width: "250px" }}
+                              className="site-check-row__actions"
+                              onClick={(event) => event.stopPropagation()}
+                            >
                               <Tooltip title={`View ${action?.type}`} arrow>
                                 <button
                                   className="btn btn-sm btn-light"
-                                  onClick={() => {
-                                    navigate(
-                                      `/site-checks/${action?.checkId}/update`
-                                    );
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    openInspectionWorkspace(action);
                                   }}
                                 >
                                   <i className="fas fa-eye" />|
@@ -895,7 +1424,8 @@ const SiteChecks = ({
                               <Tooltip title={`${action?.type} Copy As`} arrow>
                                 <button
                                   className="btn btn-sm btn-light"
-                                  onClick={() => {
+                                  onClick={(event) => {
+                                    event.stopPropagation();
                                     copyData(action);
                                   }}
                                 >
@@ -908,7 +1438,10 @@ const SiteChecks = ({
                               >
                                 <button
                                   className="btn btn-sm btn-light"
-                                  onClick={() => markAsDone(action)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    markAsDone(action);
+                                  }}
                                   disabled={action.status === "Done"}
                                 >
                                   <i class="fas fa-regular fa-thumbs-up cursor"></i>{" "}
@@ -917,7 +1450,10 @@ const SiteChecks = ({
                               <Tooltip title={`Delete ${action?.type}`} arrow>
                                 <button
                                   className="btn btn-sm btn-light text-dark"
-                                  onClick={() => deleteSiteCheckCall(action)}
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    deleteSiteCheckCall(action);
+                                  }}
                                 >
                                   <i className="fas fa-trash"></i>
                                 </button>{" "}
@@ -951,13 +1487,39 @@ const SiteChecks = ({
                   </li>
                 </ul>
                 </nav> */}
-                <Pagination
-                  totalPages={Math.ceil(
-                    filteredSiteChecks.length / itemsPerPage
+                <div className="site-check-grid-footer">
+                  <div className="site-check-page-size">
+                    <label htmlFor="siteCheckPageSize" className="mb-0">
+                      Rows per page
+                    </label>
+                    <select
+                      id="siteCheckPageSize"
+                      className="form-control form-select form-select-sm"
+                      value={pageSize}
+                      onChange={handlePageSizeChange}
+                    >
+                      {SITE_CHECK_PAGE_SIZE_OPTIONS.map((option) => (
+                        <option key={String(option)} value={option}>
+                          {option === "all" ? "All" : option}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="site-check-grid-count">
+                    {showAllRows
+                      ? `Showing all ${filteredSiteChecks.length} records`
+                      : `Showing ${visibleRecordStart}-${visibleRecordEnd} of ${filteredSiteChecks.length} records`}
+                  </div>
+
+                  {!showAllRows && (
+                    <Pagination
+                      totalPages={totalPages}
+                      currentPage={currentPage}
+                      onPageChange={handlePageChange}
+                    />
                   )}
-                  currentPage={currentPage}
-                  onPageChange={handlePageChange}
-                />
+                </div>
               </div>
             </>
           )}
@@ -1355,6 +1917,17 @@ const SiteChecks = ({
           )}
         </div>
       </div>
+
+      {SITE_CHECK_WORKSPACE_ENABLED && inspectionCheckId && (
+        <SiteCheckWorkspace
+          key={`site-check-workspace-${inspectionCheckId}`}
+          checkId={inspectionCheckId}
+          siteCheckSummary={activeSiteCheckSummary}
+          displayMode={workspaceDisplayMode}
+          onModeChange={setWorkspaceDisplayMode}
+          onClose={closeInspectionWorkspace}
+        />
+      )}
     </Fragment>
   );
 };

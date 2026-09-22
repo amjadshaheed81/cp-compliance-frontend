@@ -63,6 +63,196 @@ const Item = styled(Paper)(({ theme }) => ({
     padding: theme.spacing(1),
 }));
 
+const resolveSiteCheckStep = (siteCheck) => {
+    if (!siteCheck) return null;
+
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Emergency Lighting to meet BS5266"
+    ) {
+        return "inspection-electrical-emergency";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Electrical" &&
+        siteCheck.category === "External Lighting Testing"
+    ) {
+        return "inspection-electrical-lightning";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Electrical" &&
+        siteCheck.category === "Microwave Oven Testing"
+    ) {
+        return "inspection-electrical-microwave-oven";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Electrical" &&
+        siteCheck.category === "WC Alarm Testing"
+    ) {
+        return "inspection-electrical-wc-alarm";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Fire Alarm to meet BS5839" &&
+        siteCheck.category === "Fire Alarm Sounder Audibilty"
+    ) {
+        return "inspection-sounder-audibilty";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Fire Alarm to meet BS5839" &&
+        siteCheck.category === "Refuge Intercom Testing & Inspection"
+    ) {
+        return "inspection-refuge-intercom-testing";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Fire Alarm to meet BS5839"
+    ) {
+        return "inspection-fire-alarm";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Intruder Alarm" &&
+        siteCheck.category === "CCTV Servicing & Inspection"
+    ) {
+        return "inspection-cctv-intruder-alarm";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Intruder Alarm" &&
+        siteCheck.category === "Intruder Alarm Servicing & Inspection"
+    ) {
+        return "inspection-intruder-alarm";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Gas" &&
+        siteCheck.category === "Boiler Service / Maintenance Checklist"
+    ) {
+        return "inspection-boiler-service";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Water - Visual Inspection of Storage Tank"
+    ) {
+        return "inspection-storage-tank";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Water Heater Inspection & Service"
+    ) {
+        return "inspection-water-heater";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Water - Storage System Chlorination"
+    ) {
+        return "inspection-water-chlorination";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Extract Fan Cleaning"
+    ) {
+        return "inspection-fan-extract";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Passive Fire" &&
+        siteCheck.category === "Passive Fire - Fire Damper Inspection"
+    ) {
+        return "inspection-fire-damper";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Fire Fighting Equipment" &&
+        siteCheck.category === "Fire Extinguisher Inspection & Service"
+    ) {
+        return "inspection-fire-Equipment";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Air Conditioning Service"
+    ) {
+        return "inspection-air-conditioning";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Air Conditioning F-Gas Report"
+    ) {
+        return "inspection-air-conditioning-report";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Plant and Equipment Inspection" &&
+        siteCheck.category === "Ventilation System(s) Servicing"
+    ) {
+        return "inspection-ventilation-report";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Gas" &&
+        siteCheck.category === "Gas Safety Annual Inspection"
+    ) {
+        return "inspection-gas";
+    }
+    if (
+        siteCheck.type === "Inspection" &&
+        siteCheck.subType === "Legionella" &&
+        siteCheck.category === "Periodic Shower Head Cleaning"
+    ) {
+        return "shower-head";
+    }
+    if (siteCheck.type === "Assessment") {
+        return "assessment-fire-risk";
+    }
+    if (
+        siteCheck.type === "Audit" &&
+        (siteCheck.subType === "Monthly Audit" ||
+            siteCheck.subType === "Annual Winter Audit")
+    ) {
+        return "audit-question";
+    }
+    if (siteCheck.type === "Audit") {
+        return "audit-unit-maintenance-periodic";
+    }
+    if (
+        siteCheck.type === "Survey" &&
+        siteCheck.subType === "Water" &&
+        siteCheck.category === "Water Temperature Monitoring"
+    ) {
+        return "survey-water-outlet-temperature";
+    }
+    if (
+        siteCheck.type === "Survey" &&
+        siteCheck.subType === "Water" &&
+        (siteCheck.category === "Water Risk Assessment" ||
+            siteCheck.category === "Domestic RA")
+    ) {
+        return "survey-water-domestic-ra";
+    }
+    if (siteCheck.type === "Survey" && siteCheck.subType === "Asbestos") {
+        return "survey-asbestos";
+    }
+    if (
+        siteCheck.type === "Survey" &&
+        siteCheck.subType === "Water" &&
+        siteCheck.category === "Tank"
+    ) {
+        return "survey-water-tank";
+    }
+
+    return null;
+};
+
 const INSPECTION_STEPS_WITH_INTERNAL_BACK = new Set([
     "inspection-electrical-emergency",
     "inspection-electrical-lightning",
@@ -92,6 +282,9 @@ const SiteChecks = ({
     loggedInUserData,
     siteCheckUserOptions,
     getSiteCheckUserOptions,
+    embedded = false,
+    checkIdOverride,
+    onRequestClose,
 }) => {
     const printRef = useRef();
 
@@ -99,10 +292,20 @@ const SiteChecks = ({
     const [dueDate, setDueDate] = useState("");
     const [sasToken, setSasToken] = useState();
     const [step, setStep] = useState();
-    const checkId = params.id;
+    const checkId = checkIdOverride ?? params.id;
     const [siteCheck, setSiteCheck] = useState();
     const [activeDetailTab, setActiveDetailTab] = useState("form");
+    const [detailLoading, setDetailLoading] = useState(true);
+    const [detailLoadError, setDetailLoadError] = useState("");
+    const detailRequestIdRef = useRef(0);
     const navigate = useNavigate();
+    const returnToSiteChecks = () => {
+        if (embedded && onRequestClose) {
+            onRequestClose();
+            return;
+        }
+        navigate("/site-checks");
+    };
     const authoritativeUserSiteId = siteCheck?.siteId || siteSelectedForGlobal?.siteId;
     const managerList =
         Number(siteCheckUserOptions?.siteId) === Number(authoritativeUserSiteId)
@@ -148,8 +351,15 @@ const SiteChecks = ({
 
     useEffect(() => {
         setActiveDetailTab("form");
-        getSiteChecks();
+        loadSiteCheck({ resetDetail: true });
         getToken();
+
+        return () => {
+            // Invalidate any in-flight detail request when this check is replaced
+            // or the detail page unmounts. This recreates the safety the legacy
+            // route change got automatically by destroying the old page instance.
+            detailRequestIdRef.current += 1;
+        };
     }, [checkId]);
 
     const getToken = async () => {
@@ -211,182 +421,72 @@ const SiteChecks = ({
 
 
 
-    const getSiteChecks = async () => {
-        const siteCheck = await get("/api/site-check/check-id/" + checkId);
-        const userSiteId = siteCheck?.siteId || siteSelectedForGlobal?.siteId;
+    const loadSiteCheck = async ({ resetDetail = false } = {}) => {
+        const requestId = ++detailRequestIdRef.current;
 
-        if (userSiteId) {
-            await getSiteCheckUserOptions(userSiteId);
+        if (resetDetail) {
+            // Legacy route navigation remounted this whole page for every check.
+            // The workspace keeps its shell mounted, so explicitly reproduce that
+            // clean-detail lifecycle before loading the newly selected record.
+            setSiteCheck(undefined);
+            setStep(undefined);
+            setDueDate("");
+            setDetailLoadError("");
+            setDetailLoading(true);
+            setShowManualOpenDialog(false);
+            setPlannedInspectionDate("");
         }
 
-        if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Emergency Lighting to meet BS5266"
-        ) {
-            setStep("inspection-electrical-emergency");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Electrical" &&
-            siteCheck.category === "External Lighting Testing"
-        ) {
-            setStep("inspection-electrical-lightning");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Electrical" &&
-            siteCheck.category === "Microwave Oven Testing"
-        ) {
-            setStep("inspection-electrical-microwave-oven");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Electrical" &&
-            siteCheck.category === "WC Alarm Testing"
-        ) {
-            setStep("inspection-electrical-wc-alarm");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Fire Alarm to meet BS5839" &&
-            siteCheck.category === "Fire Alarm Sounder Audibilty"
-        ) {
-            setStep("inspection-sounder-audibilty");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Fire Alarm to meet BS5839" &&
-            siteCheck.category === "Refuge Intercom Testing & Inspection"
-        ) {
-            setStep("inspection-refuge-intercom-testing");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Fire Alarm to meet BS5839"
-        ) {
-            setStep("inspection-fire-alarm");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Intruder Alarm" &&
-            siteCheck.category === "CCTV Servicing & Inspection"
-        ) {
-            setStep("inspection-cctv-intruder-alarm");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Intruder Alarm" &&
-            siteCheck.category === "Intruder Alarm Servicing & Inspection"
-        ) {
-            setStep("inspection-intruder-alarm");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Gas" &&
-            siteCheck.category === "Boiler Service / Maintenance Checklist"
-        ) {
-            setStep("inspection-boiler-service");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Legionella" &&
-            siteCheck.category === "Water - Visual Inspection of Storage Tank"
-        ) {
-            setStep("inspection-storage-tank");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Legionella" &&
-            siteCheck.category === "Water Heater Inspection & Service"
-        ) {
-            setStep("inspection-water-heater");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Legionella" &&
-            siteCheck.category === "Water - Storage System Chlorination"
-        ) {
-            setStep("inspection-water-chlorination");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Plant and Equipment Inspection" &&
-            siteCheck.category === "Extract Fan Cleaning"
-        ) {
-            setStep("inspection-fan-extract");
-        }else if(
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Passive Fire" &&
-            siteCheck.category === "Passive Fire - Fire Damper Inspection"
-        ){
-            setStep("inspection-fire-damper")
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Fire Fighting Equipment" &&
-            siteCheck.category === "Fire Extinguisher Inspection & Service"
-        ) {
-            setStep("inspection-fire-Equipment")
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Plant and Equipment Inspection" &&
-            siteCheck.category === "Air Conditioning Service"
-        ) {
-            setStep("inspection-air-conditioning");
+        try {
+            const loadedSiteCheck = await get("/api/site-check/check-id/" + checkId);
+
+            // Ignore an older response if the user has already selected another row.
+            if (requestId !== detailRequestIdRef.current) {
+                return null;
+            }
+
+            const userSiteId =
+                loadedSiteCheck?.siteId || siteSelectedForGlobal?.siteId;
+
+            // Preserve the legacy loading order: the old routed page loaded the
+            // Site Check users before it selected/rendered the inspection form.
+            if (userSiteId) {
+                await getSiteCheckUserOptions(userSiteId);
+            }
+
+            if (requestId !== detailRequestIdRef.current) {
+                return null;
+            }
+
+            const nextStep = resolveSiteCheckStep(loadedSiteCheck);
+            setSiteCheck(loadedSiteCheck);
+            setStep(nextStep);
+            setDetailLoading(false);
+
+            if (!nextStep) {
+                setDetailLoadError(
+                    `No inspection component is configured for ${loadedSiteCheck?.type || "this Site Check"} / ${loadedSiteCheck?.subType || "-"} / ${loadedSiteCheck?.category || "-"}.`
+                );
+            } else {
+                setDetailLoadError("");
+            }
+
+            return loadedSiteCheck;
+        } catch (error) {
+            if (requestId !== detailRequestIdRef.current) {
+                return null;
+            }
+
+            console.error("Error loading Site Check detail:", error);
+            setSiteCheck(undefined);
+            setStep(undefined);
+            setDetailLoading(false);
+            setDetailLoadError("Unable to load this Site Check. Please try again.");
+            return null;
         }
-        else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Plant and Equipment Inspection" &&
-            siteCheck.category === "Air Conditioning F-Gas Report"
-        ) {
-            setStep("inspection-air-conditioning-report");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Plant and Equipment Inspection" &&
-            siteCheck.category === "Ventilation System(s) Servicing"
-        ) {
-            setStep("inspection-ventilation-report");
-        } else if (
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Gas" &&
-            siteCheck.category === "Gas Safety Annual Inspection"
-        ) {
-            setStep("inspection-gas");
-        }else if(
-            siteCheck.type === "Inspection" &&
-            siteCheck.subType === "Legionella" &&
-            siteCheck.category === "Periodic Shower Head Cleaning"){
-            setStep("shower-head")
-        }
-        else if (siteCheck.type === "Assessment") {
-            setStep("assessment-fire-risk");
-        } else if (
-            siteCheck.type === "Audit" &&
-            siteCheck?.subType === "Monthly Audit"
-        ) {
-            setStep("audit-question");
-        } else if (
-            siteCheck.type === "Audit" &&
-            siteCheck?.subType === "Annual Winter Audit"
-        ) {
-            setStep("audit-question");
-        } else if (siteCheck.type === "Audit") {
-            setStep("audit-unit-maintenance-periodic");
-        } else if (
-            siteCheck.type === "Survey" &&
-            siteCheck?.subType === "Water" &&
-            siteCheck.category === "Water Temperature Monitoring"
-        ) {
-            setStep("survey-water-outlet-temperature");
-        } else if (
-            siteCheck.type === "Survey" &&
-            siteCheck?.subType === "Water" &&
-            (
-                siteCheck.category === "Water Risk Assessment" ||
-                siteCheck.category === "Domestic RA"
-            )
-        ) {
-            setStep("survey-water-domestic-ra");
-        } else if (
-            siteCheck.type === "Survey" &&
-            siteCheck?.subType === "Asbestos"
-        ) {
-            setStep("survey-asbestos");
-        } else if (
-            siteCheck.type === "Survey" &&
-            siteCheck?.subType === "Water" &&
-            siteCheck.category === "Tank"
-        ) {
-            setStep("survey-water-tank");
-        }
-        setSiteCheck(siteCheck);
     };
+
+    const getSiteChecks = async () => loadSiteCheck({ resetDetail: false });
 
     const handleOpenInspectionEarlyDialog = () => {
         setPlannedInspectionDate(todayUk);
@@ -409,7 +509,7 @@ const SiteChecks = ({
 
             setShowManualOpenDialog(false);
             toast.success(response?.data?.message || "Inspection opened successfully.");
-            navigate("/site-checks");
+            returnToSiteChecks();
         } catch (error) {
             const message =
                 error?.response?.data?.message ||
@@ -516,25 +616,27 @@ const SiteChecks = ({
 
     return (
         <Fragment>
-            <SidebarNew />
+            {!embedded && <SidebarNew />}
 
             <div
-                className="content"
+                className={embedded ? "site-check-update-embedded" : "content"}
                 ref={printRef}
                 style={{ backgroundColor: "#f8f9fa" }}
             >
-                <Header />
-                <div className="container-fluid">
-                    <BreadCrumHeader
-                        header={`Site Check ${siteCheck?.type ? "- (" : ""}${
-                            siteCheck?.type ?? ""
-                        } ${siteCheck?.type ? "-" : ""} ${siteCheck?.subType ?? ""} ${
-                            siteCheck?.type ? "-" : ""
-                        } ${siteCheck?.category ?? ""}${siteCheck?.type ? ")" : ""}`}
-                        page={"Site Inspection"}
-                        chipColor={siteCheck?.status === "Done" ? "success" : "warning"}
-                        chipLabel={siteCheck?.status}
-                    />
+                {!embedded && <Header />}
+                <div className={embedded ? "" : "container-fluid"}>
+                    {!embedded && (
+                        <BreadCrumHeader
+                            header={`Site Check ${siteCheck?.type ? "- (" : ""}${
+                                siteCheck?.type ?? ""
+                            } ${siteCheck?.type ? "-" : ""} ${siteCheck?.subType ?? ""} ${
+                                siteCheck?.type ? "-" : ""
+                            } ${siteCheck?.category ?? ""}${siteCheck?.type ? ")" : ""}`}
+                            page={"Site Inspection"}
+                            chipColor={siteCheck?.status === "Done" ? "success" : "warning"}
+                            chipLabel={siteCheck?.status}
+                        />
+                    )}
                     <Stack spacing={2}>
                         <Item>
                             {" "}
@@ -739,6 +841,32 @@ const SiteChecks = ({
                                 <Grid sm={4}></Grid>
                             </Grid>
                         </Item>
+                        {detailLoading && (
+                            <Item className="print-hide">
+                                <div className="d-flex align-items-center justify-content-center gap-3 py-4 text-secondary">
+                                    <span
+                                        className="spinner-border spinner-border-sm"
+                                        role="status"
+                                        aria-hidden="true"
+                                    ></span>
+                                    <span>Loading selected Site Check...</span>
+                                </div>
+                            </Item>
+                        )}
+                        {!detailLoading && detailLoadError && (
+                            <Item className="print-hide">
+                                <div className="alert alert-warning mb-0 d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                                    <span>{detailLoadError}</span>
+                                    <button
+                                        type="button"
+                                        className="btn btn-sm btn-outline-secondary"
+                                        onClick={() => loadSiteCheck({ resetDetail: true })}
+                                    >
+                                        Retry
+                                    </button>
+                                </div>
+                            </Item>
+                        )}
                         <Item className="print-hide">
                             <Tabs
                                 value={activeDetailTab}
@@ -1094,7 +1222,7 @@ const SiteChecks = ({
                             {/*</button>*/}
                             {(!INSPECTION_STEPS_WITH_INTERNAL_BACK.has(step) || siteCheck?.status !== "Open") && (
                                 <div className="d-flex justify-content-end m-2 print-hide">
-                                    <SiteCheckBackButton onClick={() => navigate("/site-checks")} />
+                                    <SiteCheckBackButton onClick={returnToSiteChecks} />
                                 </div>
                             )}
                         </Grid>
@@ -1105,7 +1233,7 @@ const SiteChecks = ({
                             <Item>
                                 <SiteCheckHistory checkId={checkId} />
                                 <div className="d-flex justify-content-end mt-3 print-hide">
-                                    <SiteCheckBackButton onClick={() => navigate("/site-checks")} />
+                                    <SiteCheckBackButton onClick={returnToSiteChecks} />
                                 </div>
                             </Item>
                         )}

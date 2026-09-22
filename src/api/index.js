@@ -5,6 +5,60 @@ let axiosInstance = axios.create({
   timeout: 2000000,
 });
 
+export const SITE_CHECK_DATA_CHANGED_EVENT = "cafm:site-check-data-changed";
+export const API_REQUEST_FAILED_EVENT = "cafm:api-request-failed";
+
+export function notifyApiRequestFailed(error) {
+  if (!error || error.__cafmApiFailureNotified) return;
+  error.__cafmApiFailureNotified = true;
+
+  const method = String(error?.config?.method || "GET").toUpperCase();
+  const rawUrl = String(error?.config?.url || "");
+  const status = Number(error?.response?.status || 0);
+  let path = rawUrl;
+  try {
+    path = new URL(rawUrl, window.location.origin).pathname +
+      new URL(rawUrl, window.location.origin).search;
+  } catch {
+    // Relative paths are already suitable for diagnostics.
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(API_REQUEST_FAILED_EVENT, {
+      detail: {
+        method,
+        url: rawUrl,
+        path,
+        status,
+        responseData: error?.response?.data ?? null,
+      },
+    })
+  );
+}
+
+export function notifySiteCheckDataChanged(url, method) {
+  const rawUrl = String(url || "");
+  let path = rawUrl;
+  try {
+    path = new URL(rawUrl, window.location.origin).pathname;
+  } catch {
+    // Relative API paths are already usable as-is.
+  }
+  if (!path.startsWith("/api/site-check")) return;
+  window.dispatchEvent(
+    new CustomEvent(SITE_CHECK_DATA_CHANGED_EVENT, {
+      detail: { url: rawUrl, method },
+    })
+  );
+}
+
+function withSiteCheckChangeNotification(request, url, method) {
+  return Promise.resolve(request).then((response) => {
+    notifySiteCheckDataChanged(url, method);
+    return response;
+  });
+}
+
 function configAxios() {
   axiosInstance = axios.create({
     baseURL: window?.location?.origin, //,
@@ -17,7 +71,18 @@ function configAxios() {
 }
 
 function handleError(error) {
-  console.error("API Error:", error);
+  const method = String(error?.config?.method || "GET").toUpperCase();
+  const url = String(error?.config?.url || "");
+  const status = Number(error?.response?.status || 0);
+
+  console.error("API Error:", {
+    method,
+    url,
+    status,
+    responseData: error?.response?.data,
+    error,
+  });
+  notifyApiRequestFailed(error);
 
   if (error.response) {
     const { status } = error.response;
@@ -62,12 +127,16 @@ function getHeaders() {
 export function post(url, userData) {
   configAxios();
   try {
-    return axiosInstance({
-      method: "POST",
+    return withSiteCheckChangeNotification(
+      axiosInstance({
+        method: "POST",
+        url,
+        data: userData,
+        headers: getHeaders(),
+      }),
       url,
-      data: userData,
-      headers: getHeaders(),
-    });
+      "POST"
+    );
   } catch (error) {
     return handleError(error);
   }
@@ -76,13 +145,17 @@ export function post(url, userData) {
 
 export function postWithTimeout(url, userData, timeoutMs = 20000) {
   configAxios();
-  return axiosInstance({
-    method: "POST",
+  return withSiteCheckChangeNotification(
+    axiosInstance({
+      method: "POST",
+      url,
+      data: userData,
+      headers: getHeaders(),
+      timeout: timeoutMs,
+    }),
     url,
-    data: userData,
-    headers: getHeaders(),
-    timeout: timeoutMs,
-  });
+    "POST"
+  );
 }
 
 export async function getWithTimeout(url, timeoutMs = 15000) {
@@ -107,25 +180,33 @@ export function putWithTimeout(
   { suppressAuthRedirect = false } = {}
 ) {
   configAxios();
-  return axiosInstance({
-    method: "PUT",
+  return withSiteCheckChangeNotification(
+    axiosInstance({
+      method: "PUT",
+      url,
+      data,
+      headers: getHeaders(),
+      timeout: timeoutMs,
+      suppressAuthRedirect,
+    }),
     url,
-    data,
-    headers: getHeaders(),
-    timeout: timeoutMs,
-    suppressAuthRedirect,
-  });
+    "PUT"
+  );
 }
 
 export function postMultiPartFormData(url, userData) {
   configAxios();
   try {
-    return axiosInstance({
-      method: "POST",
+    return withSiteCheckChangeNotification(
+      axiosInstance({
+        method: "POST",
+        url,
+        data: userData,
+        headers: { ...getHeaders(), "Content-Type": "multipart/form-data" },
+      }),
       url,
-      data: userData,
-      headers: { ...getHeaders(), "Content-Type": "multipart/form-data" },
-    });
+      "POST"
+    );
   } catch (error) {
     return handleError(error);
   }
@@ -134,12 +215,16 @@ export function postMultiPartFormData(url, userData) {
 export function putMultiPartFormData(url, userData) {
   configAxios();
   try {
-    return axiosInstance({
-      method: "PUT",
+    return withSiteCheckChangeNotification(
+      axiosInstance({
+        method: "PUT",
+        url,
+        data: userData,
+        headers: { ...getHeaders(), "Content-Type": "multipart/form-data" },
+      }),
       url,
-      data: userData,
-      headers: { ...getHeaders(), "Content-Type": "multipart/form-data" },
-    });
+      "PUT"
+    );
   } catch (error) {
     return handleError(error);
   }
@@ -148,12 +233,16 @@ export function putMultiPartFormData(url, userData) {
 export function del(url, payload) {
   configAxios();
   try {
-    return axiosInstance({
-      method: "DELETE",
+    return withSiteCheckChangeNotification(
+      axiosInstance({
+        method: "DELETE",
+        url,
+        headers: getHeaders(),
+        data: payload,
+      }),
       url,
-      headers: getHeaders(),
-      data: payload,
-    });
+      "DELETE"
+    );
   } catch (error) {
     return handleError(error);
   }
@@ -176,12 +265,16 @@ export async function get(url) {
 export function put(url, data) {
   configAxios();
   try {
-    return axiosInstance({
-      method: "PUT",
+    return withSiteCheckChangeNotification(
+      axiosInstance({
+        method: "PUT",
+        url,
+        data: data,
+        headers: getHeaders(),
+      }),
       url,
-      data: data,
-      headers: getHeaders(),
-    });
+      "PUT"
+    );
   } catch (error) {
     return handleError(error);
   }
@@ -272,18 +365,42 @@ export async function uploadLogo(reqData) {
   }
 }
 
-export async function getSasToken() {
-  configAxios();
-  try {
-    const { data } = await axiosInstance({
-      method: "GET",
-      url: "/api/site-check/file/sas-token",
-      headers: getHeaders(),
-    });
-    return data;
-  } catch (error) {
-    return handleError(error);
+const SAS_TOKEN_CACHE_MS = 30 * 60 * 1000;
+let cachedSasToken = null;
+let cachedSasTokenLoadedAt = 0;
+let sasTokenRequestInFlight = null;
+
+export async function getSasToken(forceRefresh = false) {
+  const cacheAge = Date.now() - cachedSasTokenLoadedAt;
+  if (
+    !forceRefresh &&
+    cachedSasToken &&
+    cacheAge >= 0 &&
+    cacheAge < SAS_TOKEN_CACHE_MS
+  ) {
+    return cachedSasToken;
   }
+
+  if (!forceRefresh && sasTokenRequestInFlight) {
+    return sasTokenRequestInFlight;
+  }
+
+  configAxios();
+  sasTokenRequestInFlight = axiosInstance({
+    method: "GET",
+    url: "/api/site-check/file/sas-token",
+    headers: getHeaders(),
+  })
+    .then(({ data }) => {
+      cachedSasToken = data;
+      cachedSasTokenLoadedAt = Date.now();
+      return data;
+    })
+    .finally(() => {
+      sasTokenRequestInFlight = null;
+    });
+
+  return sasTokenRequestInFlight;
 }
 
 export async function getPdf(id) {
