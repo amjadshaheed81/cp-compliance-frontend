@@ -23,7 +23,10 @@ import {
   SITE_CHECK_TEST_TYPES,
   getSiteCheckTestType,
 } from "./siteCheckTestTypes";
-import { SITE_CHECK_HISTORY_TEST_BATCHES } from "./siteCheckTestBatches";
+import {
+  SITE_CHECK_ALL_INSPECTION_TEST_DEVICES,
+  SITE_CHECK_HISTORY_TEST_BATCHES,
+} from "./siteCheckTestBatches";
 
 const DEFAULT_FREQUENCY = "6-Monthly";
 const FREQUENCIES = ["Daily", "Weekly", "Monthly", "6-Monthly", "Yearly"];
@@ -125,6 +128,7 @@ const SiteCheckTestLauncher = ({
   const [leadUserId, setLeadUserId] = useState("");
   const [assistantUserId, setAssistantUserId] = useState("");
   const [createdHistoryTests, setCreatedHistoryTests] = useState([]);
+  const [creationProgress, setCreationProgress] = useState("");
 
   const selectedType = getSiteCheckTestType(testTypeKey);
   const { activeUsers, leadUserId: defaultLead, assistantUserId: defaultAssistant } =
@@ -163,6 +167,7 @@ const SiteCheckTestLauncher = ({
     if (menu) menu.open = false;
     resetDefaults();
     setCreatedHistoryTests([]);
+    setCreationProgress("");
     setOpen(true);
   };
 
@@ -281,6 +286,181 @@ const SiteCheckTestLauncher = ({
     }
 
     return { remainingChecks, remainingAssets };
+  };
+
+  const handleCreateAllInspectionTests = async () => {
+    const siteId = siteSelectedForGlobal?.siteId;
+    const testTypes = SITE_CHECK_TEST_TYPES;
+
+    if (!siteId) {
+      toast.error("Please select a site before creating the inspection test set.");
+      return;
+    }
+    if (!startDate) {
+      toast.error("Start Date is required.");
+      return;
+    }
+    if (!repeatFrequency || !dueDate) {
+      toast.error("A valid repeat frequency is required.");
+      return;
+    }
+    if (!leadUserId || !assistantUserId) {
+      toast.error(
+        "Lead and Assistant are required before creating the inspection test set."
+      );
+      return;
+    }
+    if (testTypes.length === 0) {
+      toast.error("No routed Inspection test types are configured.");
+      return;
+    }
+
+    setIsCreating(true);
+    setCreatedHistoryTests([]);
+    setCreationProgress("Preparing test data...");
+
+    const runTag = `ALL-${Date.now()}`;
+    const createdAssets = [];
+    const createdChecks = [];
+
+    try {
+      for (
+        let deviceIndex = 0;
+        deviceIndex < SITE_CHECK_ALL_INSPECTION_TEST_DEVICES.length;
+        deviceIndex += 1
+      ) {
+        const device = SITE_CHECK_ALL_INSPECTION_TEST_DEVICES[deviceIndex];
+        setCreationProgress(
+          `Creating test device ${deviceIndex + 1} of ${
+            SITE_CHECK_ALL_INSPECTION_TEST_DEVICES.length
+          }...`
+        );
+
+        const assetRequest = buildTestAssetRequest(device, "ALL", runTag);
+        assetRequest.assetName = `CAFM TEST ALL - ${device.label} - ${runTag}`;
+        assetRequest.model = "All Inspection UI Tests";
+
+        const multipart = new FormData();
+        multipart.append("assetRequestString", JSON.stringify(assetRequest));
+
+        const response = await putMultiPartFormData(
+          `/api/site/${siteId}/assets`,
+          multipart
+        );
+        const assetId = response?.data?.assetId;
+        if (!assetId) {
+          throw new Error(
+            `Test device '${device.label}' was created without returning an Asset ID.`
+          );
+        }
+
+        createdAssets.push({
+          key: device.key,
+          testTypeKey: device.testTypeKey,
+          label: device.label,
+          assetId,
+          assetName: assetRequest.assetName,
+        });
+      }
+
+      for (let index = 0; index < testTypes.length; index += 1) {
+        const testType = testTypes[index];
+        setCreationProgress(
+          `Creating inspection ${index + 1} of ${testTypes.length}: ${
+            testType.label
+          }`
+        );
+
+        const body = {
+          siteId,
+          type: testType.type,
+          subType: testType.subType,
+          category: testType.category,
+          status: "Open",
+          startDate: `${toSiteCheckDateOnly(startDate)}T00:00:00`,
+          dueDate,
+          repeatFrequency,
+          ...(testType.requiresAssignees === false
+            ? {}
+            : {
+                leadUserID: String(leadUserId),
+                assistantUserID: String(assistantUserId),
+              }),
+        };
+
+        const response = await post("/api/site-check/", body);
+        const checkId = response?.data?.checkId;
+        if (!checkId) {
+          throw new Error(
+            `${testType.label} was created without returning a Check ID.`
+          );
+        }
+
+        const device = createdAssets.find(
+          (item) => item.testTypeKey === testType.key
+        );
+
+        createdChecks.push({
+          key: testType.key,
+          label: testType.label,
+          checkId,
+          success: true,
+          batchNumber: "ALL",
+          device: device || null,
+        });
+      }
+
+      rememberTrackedRun({
+        runId: runTag,
+        batchNumber: "ALL",
+        batchLabel: `All ${testTypes.length} routed Inspection UI tests`,
+        siteId,
+        createdAt: new Date().toISOString(),
+        checks: createdChecks.map(({ key, label, checkId }) => ({
+          key,
+          label,
+          checkId,
+        })),
+        assets: createdAssets,
+      });
+
+      setCreatedHistoryTests(createdChecks);
+      toast.success(
+        `Created ${createdChecks.length} Inspection test checks and ${createdAssets.length} CAFM TEST devices.`
+      );
+    } catch (error) {
+      setCreationProgress("Creation failed. Rolling back new test data...");
+      const rollback = await rollbackNewTestRun(createdChecks, createdAssets);
+
+      if (
+        rollback.remainingChecks.length > 0 ||
+        rollback.remainingAssets.length > 0
+      ) {
+        rememberTrackedRun({
+          runId: `${runTag}-rollback`,
+          batchNumber: "ALL",
+          batchLabel: "All routed Inspection UI tests (partial cleanup required)",
+          siteId,
+          createdAt: new Date().toISOString(),
+          checks: rollback.remainingChecks.map(({ key, label, checkId }) => ({
+            key,
+            label,
+            checkId,
+          })),
+          assets: rollback.remainingAssets,
+        });
+      }
+
+      toast.error(
+        getSiteCheckErrorMessage(
+          error,
+          "Unable to create the complete Inspection test set. Any newly-created Open test data was rolled back where possible."
+        )
+      );
+    } finally {
+      setCreationProgress("");
+      setIsCreating(false);
+    }
   };
 
   const handleCreateHistoryTestSet = async (batch) => {
@@ -576,6 +756,31 @@ const SiteCheckTestLauncher = ({
             Developer test helper. This is currently enabled for testing and creates real test devices and Open Site Checks through the normal application APIs.
           </div>
 
+          <div className="border rounded p-3 mb-3">
+            <div className="fw-bold mb-1">All routed Inspection components</div>
+            <div className="small text-muted mb-2">
+              Creates one real Open Site Check for each current routed Inspection
+              component, plus the CAFM TEST devices required by their asset selectors.
+              The current catalogue contains {SITE_CHECK_TEST_TYPES.length} inspection
+              tests.
+            </div>
+            <Button
+              variant="contained"
+              color="success"
+              onClick={handleCreateAllInspectionTests}
+              disabled={
+                isCreating ||
+                !siteSelectedForGlobal?.siteId ||
+                activeUsers.length === 0
+              }
+              title={`Create all ${SITE_CHECK_TEST_TYPES.length} routed Inspection UI test checks and their required CAFM TEST devices`}
+            >
+              {isCreating && creationProgress
+                ? creationProgress
+                : `Create All ${SITE_CHECK_TEST_TYPES.length} Inspection Tests`}
+            </Button>
+          </div>
+
           <div className="border rounded p-3 mb-3 bg-light">
             <div className="fw-bold mb-1">History regression test batches</div>
             <div className="small text-muted mb-2">
@@ -751,7 +956,7 @@ const SiteCheckTestLauncher = ({
 
           {createdHistoryTests.length > 0 && (
             <div className="mt-3">
-              <div className="fw-bold mb-2">History Test Set</div>
+              <div className="fw-bold mb-2">Created Test Checks</div>
               {createdHistoryTests.map((item) => (
                 <div
                   key={item.key}

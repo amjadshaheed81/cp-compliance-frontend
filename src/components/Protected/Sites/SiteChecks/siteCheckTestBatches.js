@@ -218,6 +218,29 @@ export const SITE_CHECK_HISTORY_TEST_BATCHES = [
   },
 ];
 
+
+/**
+ * Complete routed Inspection UI test-device catalogue.
+ *
+ * SITE_CHECK_HISTORY_TEST_BATCHES already contains the exact test devices used
+ * by 20 of the current routed Inspection forms. Air Conditioning Service is
+ * added here because it is not part of the numbered History batches.
+ *
+ * This list is used by the developer-only "Create All Inspection Tests" action.
+ */
+export const SITE_CHECK_ALL_INSPECTION_TEST_DEVICES = [
+  {
+    key: "air-conditioning-service-device",
+    testTypeKey: "air-conditioning-service",
+    label: "Air Conditioning Indoor Unit",
+    category: "Mechanical",
+    subCategory: "Air Conditioning",
+    subCategory2: "Air Conditioning Unit (Indoor)",
+    subCategory3: "",
+  },
+  ...SITE_CHECK_HISTORY_TEST_BATCHES.flatMap((batch) => batch.devices || []),
+];
+
 export const getSiteCheckHistoryTestBatch = (batchNumber) =>
   SITE_CHECK_HISTORY_TEST_BATCHES.find(
     (batch) => Number(batch.number) === Number(batchNumber)
