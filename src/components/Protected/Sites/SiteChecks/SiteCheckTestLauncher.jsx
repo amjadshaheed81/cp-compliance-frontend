@@ -52,28 +52,88 @@ const writeTrackedRuns = (siteId, runs) => {
 
 const makeRunTag = (batchNumber) => `B${batchNumber}-${Date.now()}`;
 
-const buildTestAssetRequest = (device, batchNumber, runTag) => ({
-  assetId: null,
-  assetName: `CAFM TEST B${batchNumber} - ${device.label} - ${runTag}`,
-  manufacturer: "CAFM TEST",
-  category: device.category,
-  subCategory: device.subCategory || "",
-  subCategory2: device.subCategory2 || "",
-  subCategory3: device.subCategory3 || "",
-  model: `History Batch ${batchNumber}`,
-  serialNumber: `TEST-${runTag}-${device.key}`,
-  relatedAssetId: null,
-  folderId: null,
-  patItem: false,
-  pfpItem: false,
-  doorItem: false,
-  barcode: "",
-  deviceId: "",
-  position: "",
-  floor: "",
-  room: "",
-  damperSize: device.damperSize ?? null,
-});
+// property_management.assets stores the launcher-populated text columns below
+// as VARCHAR(50). Keep generated test identifiers inside the real schema limit
+// instead of relying on PostgreSQL to truncate or reject them.
+const TEST_ASSET_TEXT_MAX_LENGTH = 50;
+const TEST_ASSET_VARCHAR_50_FIELDS = [
+  "assetName",
+  "manufacturer",
+  "category",
+  "subCategory",
+  "subCategory2",
+  "subCategory3",
+  "position",
+  "floor",
+  "room",
+  "model",
+  "serialNumber",
+];
+
+const getCompactRunId = (runTag) =>
+  String(runTag || "TEST")
+    .replace(/[^A-Za-z0-9]/g, "")
+    .slice(-8);
+
+const fitTestAssetText = (prefix, value, suffix = "") => {
+  const safePrefix = String(prefix || "");
+  const safeSuffix = String(suffix || "");
+  const available = Math.max(0, TEST_ASSET_TEXT_MAX_LENGTH - safePrefix.length - safeSuffix.length);
+  return `${safePrefix}${String(value || "").slice(0, available)}${safeSuffix}`.slice(
+    0,
+    TEST_ASSET_TEXT_MAX_LENGTH
+  );
+};
+
+const validateTestAssetRequest = (assetRequest, deviceLabel) => {
+  const invalidField = TEST_ASSET_VARCHAR_50_FIELDS.find((field) =>
+    String(assetRequest?.[field] || "").length > TEST_ASSET_TEXT_MAX_LENGTH
+  );
+
+  if (invalidField) {
+    throw new Error(
+      `Test device '${deviceLabel}' has ${invalidField} longer than ${TEST_ASSET_TEXT_MAX_LENGTH} characters.`
+    );
+  }
+};
+
+const buildTestAssetRequest = (device, batchNumber, runTag) => {
+  const batchLabel = String(batchNumber) === "ALL" ? "ALL" : `B${batchNumber}`;
+  const compactRunId = getCompactRunId(runTag);
+
+  return {
+    assetId: null,
+    assetName: fitTestAssetText(
+      `CAFM TEST ${batchLabel} - `,
+      device.label,
+      ` - ${compactRunId}`
+    ),
+    manufacturer: "CAFM TEST",
+    category: device.category,
+    subCategory: device.subCategory || "",
+    subCategory2: device.subCategory2 || "",
+    subCategory3: device.subCategory3 || "",
+    model:
+      String(batchNumber) === "ALL"
+        ? "All Inspection UI Tests"
+        : `History Batch ${batchNumber}`,
+    serialNumber: fitTestAssetText(
+      `TEST-${compactRunId}-`,
+      device.key
+    ),
+    relatedAssetId: null,
+    folderId: null,
+    patItem: false,
+    pfpItem: false,
+    doorItem: false,
+    barcode: "",
+    deviceId: "",
+    position: "",
+    floor: "",
+    room: "",
+    damperSize: device.damperSize ?? null,
+  };
+};
 
 const isActiveUser = (user) =>
   Boolean(user?.id) &&
@@ -337,8 +397,7 @@ const SiteCheckTestLauncher = ({
         );
 
         const assetRequest = buildTestAssetRequest(device, "ALL", runTag);
-        assetRequest.assetName = `CAFM TEST ALL - ${device.label} - ${runTag}`;
-        assetRequest.model = "All Inspection UI Tests";
+        validateTestAssetRequest(assetRequest, device.label);
 
         const multipart = new FormData();
         multipart.append("assetRequestString", JSON.stringify(assetRequest));
@@ -508,6 +567,7 @@ const SiteCheckTestLauncher = ({
           batch.number,
           runTag
         );
+        validateTestAssetRequest(assetRequest, device.label);
         const multipart = new FormData();
         multipart.append("assetRequestString", JSON.stringify(assetRequest));
 
