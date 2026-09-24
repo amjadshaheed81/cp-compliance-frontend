@@ -7,7 +7,7 @@ const SiteCheckBackButton = ({ onClick }) => {
   return (
     <button
       type="button"
-      className="btn btn-danger d-inline-flex align-items-center justify-content-center gap-1 px-3 rounded-2 shadow-sm fw-semibold"
+      className="site-check-back-button btn btn-danger d-inline-flex align-items-center justify-content-center gap-1 px-3 rounded-2 shadow-sm fw-semibold"
       onClick={handleClick}
       aria-label="Go back"
     >

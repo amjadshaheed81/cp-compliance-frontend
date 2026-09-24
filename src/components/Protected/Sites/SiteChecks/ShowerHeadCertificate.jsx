@@ -41,6 +41,7 @@ const ShowerHeadCertificate = ({
                                    siteSelectedForGlobal,
                                    loggedInUserData,
                                    siteCheck = {},
+                                 embedded = false,
                                }) => {
     // State initialization
     const [formData, setFormData] = useState({
@@ -841,7 +842,11 @@ const ShowerHeadCertificate = ({
                 isSubmitted: true
             }));
 
-            setTimeout(() => navigate(-1), 1500);
+            if (!embedded) {
+
+              setTimeout(() => navigate(-1), 1500);
+
+            }
         } catch (error) {
             console.error('Error in form submission:', error);
             toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));

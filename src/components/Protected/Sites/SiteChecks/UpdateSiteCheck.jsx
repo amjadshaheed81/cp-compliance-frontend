@@ -19,7 +19,15 @@ import Audit from "./Audit";
 import TankSurvey from "./TankSurvey";
 import SurveyWaterDomesticRA from "./SurveyWaterDomesticRA";
 import { useNavigate, useParams } from "react-router-dom";
-import { get, getSasToken, getPdf, getPdfFromUrl, put, post } from "../../../../api";
+import {
+    get,
+    getSasToken,
+    getPdf,
+    getPdfFromUrl,
+    put,
+    post,
+    SITE_CHECK_DATA_CHANGED_EVENT,
+} from "../../../../api";
 import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Paper, styled, Tabs, Tab } from "@mui/material";
 import {
     deleteUser,
@@ -29,6 +37,7 @@ import {
 } from "../../../../store/thunk/site";
 import PrintIcon from "@mui/icons-material/Print";
 import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
+import PictureAsPdfRoundedIcon from "@mui/icons-material/PictureAsPdfRounded";
 import html2pdf from "html2pdf.js";
 import "./Print.css";
 import moment from "moment";
@@ -288,6 +297,7 @@ const SiteChecks = ({
     checkIdOverride,
     onRequestClose,
     workspaceHeaderActionTarget,
+    onSiteCheckUpdated,
 }) => {
     const printRef = useRef();
 
@@ -382,6 +392,8 @@ const SiteChecks = ({
     const [showManualOpenDialog, setShowManualOpenDialog] = useState(false);
     const [plannedInspectionDate, setPlannedInspectionDate] = useState("");
     const [openingInspectionEarly, setOpeningInspectionEarly] = useState(false);
+    const [latestInspectionPdfUrl, setLatestInspectionPdfUrl] = useState("");
+    const [siteCheckMutationVersion, setSiteCheckMutationVersion] = useState(0);
 
     const hasRecurringFrequency =
         Boolean(siteCheck?.repeatFrequency) &&
@@ -463,6 +475,7 @@ const SiteChecks = ({
 
             const nextStep = resolveSiteCheckStep(loadedSiteCheck);
             setSiteCheck(loadedSiteCheck);
+            onSiteCheckUpdated?.(loadedSiteCheck);
             setStep(nextStep);
             setDetailLoading(false);
 
@@ -490,6 +503,84 @@ const SiteChecks = ({
     };
 
     const getSiteChecks = async () => loadSiteCheck({ resetDetail: false });
+
+    const refreshEmbeddedSiteCheckState = async () => {
+        if (!embedded || !checkId) return;
+        try {
+            const refreshedSiteCheck = await get(`/api/site-check/check-id/${checkId}`);
+            if (!refreshedSiteCheck) return;
+            setSiteCheck(refreshedSiteCheck);
+            setStep(resolveSiteCheckStep(refreshedSiteCheck));
+            onSiteCheckUpdated?.(refreshedSiteCheck);
+        } catch (error) {
+            console.error("Unable to refresh embedded Site Check state:", error);
+        }
+    };
+
+    useEffect(() => {
+        if (!embedded || !checkId) return undefined;
+
+        let refreshTimer = null;
+        const handleSiteCheckMutation = () => {
+            if (refreshTimer) window.clearTimeout(refreshTimer);
+            refreshTimer = window.setTimeout(() => {
+                refreshEmbeddedSiteCheckState();
+                setSiteCheckMutationVersion((version) => version + 1);
+            }, 650);
+        };
+
+        window.addEventListener(SITE_CHECK_DATA_CHANGED_EVENT, handleSiteCheckMutation);
+        return () => {
+            window.removeEventListener(SITE_CHECK_DATA_CHANGED_EVENT, handleSiteCheckMutation);
+            if (refreshTimer) window.clearTimeout(refreshTimer);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [embedded, checkId]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        const loadLatestInspectionPdf = async () => {
+            if (
+                !embedded ||
+                !checkId ||
+                siteCheck?.type !== "Inspection" ||
+                siteCheck?.status !== "Done"
+            ) {
+                setLatestInspectionPdfUrl("");
+                return;
+            }
+
+            try {
+                // History is ordered newest-first by the site-service. Opening its
+                // pdfUrl preserves the exact inspection PDF that was generated and stored.
+                const history = await get(`/api/site-check/${checkId}/history`);
+                if (cancelled) return;
+                const latestPdf = Array.isArray(history)
+                    ? history.find((item) => Boolean(item?.pdfUrl))
+                    : null;
+                setLatestInspectionPdfUrl(latestPdf?.pdfUrl || "");
+            } catch (error) {
+                if (!cancelled) {
+                    console.error("Unable to load latest inspection PDF:", error);
+                    setLatestInspectionPdfUrl("");
+                }
+            }
+        };
+
+        loadLatestInspectionPdf();
+        return () => {
+            cancelled = true;
+        };
+    }, [embedded, checkId, siteCheck?.type, siteCheck?.status, siteCheckMutationVersion]);
+
+    const handleViewLatestPdf = () => {
+        if (!latestInspectionPdfUrl) {
+            toast.warn("The submitted PDF is not available yet.");
+            return;
+        }
+        window.open(latestInspectionPdfUrl, "_blank", "noopener,noreferrer");
+    };
 
     const handleOpenInspectionEarlyDialog = () => {
         setPlannedInspectionDate(todayUk);
@@ -621,18 +712,34 @@ const SiteChecks = ({
         <Fragment>
             {embedded &&
                 workspaceHeaderActionTarget &&
-                canOpenInspectionEarly &&
+                (canOpenInspectionEarly || latestInspectionPdfUrl) &&
                 createPortal(
-                    <button
-                        type="button"
-                        className="site-check-workspace__early-button"
-                        onClick={handleOpenInspectionEarlyDialog}
-                        title="Open inspection early"
-                        aria-label="Open inspection early"
-                    >
-                        <LockOpenRoundedIcon fontSize="small" />
-                        <span>Open Early</span>
-                    </button>,
+                    <>
+                        {canOpenInspectionEarly && (
+                            <button
+                                type="button"
+                                className="site-check-workspace__early-button"
+                                onClick={handleOpenInspectionEarlyDialog}
+                                title="Open inspection early"
+                                aria-label="Open inspection early"
+                            >
+                                <LockOpenRoundedIcon fontSize="small" />
+                                <span>Open Early</span>
+                            </button>
+                        )}
+                        {latestInspectionPdfUrl && (
+                            <button
+                                type="button"
+                                className="site-check-workspace__pdf-button"
+                                onClick={handleViewLatestPdf}
+                                title="View latest submitted PDF in a new tab"
+                                aria-label="View latest submitted PDF in a new tab"
+                            >
+                                <PictureAsPdfRoundedIcon fontSize="small" />
+                                <span>View PDF</span>
+                            </button>
+                        )}
+                    </>,
                     workspaceHeaderActionTarget
                 )}
             {!embedded && <SidebarNew />}
@@ -903,6 +1010,7 @@ const SiteChecks = ({
                             <Item>
                                 <EmergencyLightingInspectionForm
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     leadUserID={siteCheck?.leadUserID}
                                     siteCheck={siteCheck}
@@ -915,6 +1023,7 @@ const SiteChecks = ({
                                     uses the same site/status rules as Air Conditioning. */}
                                 <ExternalLightningCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
@@ -927,6 +1036,7 @@ const SiteChecks = ({
                             <Item>
                                 <SounderAudibilty
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
@@ -939,6 +1049,7 @@ const SiteChecks = ({
                             <Item>
                                 <RefugeIntercomTesting
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
@@ -951,6 +1062,7 @@ const SiteChecks = ({
                             <Item>
                                 <FireDamper
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
@@ -963,6 +1075,7 @@ const SiteChecks = ({
                             <Item>
                                 <MicroWaveOvenCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
@@ -975,6 +1088,7 @@ const SiteChecks = ({
                             <Item>
                                 <GasBoilerService
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck?.category}
@@ -986,6 +1100,7 @@ const SiteChecks = ({
                         {step === "inspection-electrical-wc-alarm" && (
                             <DisabledWCAlarmCertificate
                                 checkId={checkId}
+                                    embedded={embedded}
                                 sasToken={sasToken}
                                 subType={siteCheck?.subType}
                                 category={siteCheck.category}
@@ -1010,6 +1125,7 @@ const SiteChecks = ({
                             <Item>
                                 <FireFightingEquipmentReport
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1022,6 +1138,7 @@ const SiteChecks = ({
                             <Item>
                                 <CctvAlarmCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1034,6 +1151,7 @@ const SiteChecks = ({
                             <Item>
                                 <StorageTankService
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1046,6 +1164,7 @@ const SiteChecks = ({
                             <Item>
                                 <WaterChlorination
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1058,6 +1177,7 @@ const SiteChecks = ({
                             <Item>
                                 <IntruderAlarmCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1070,6 +1190,7 @@ const SiteChecks = ({
                             <Item>
                                 <WaterHeaterCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1082,6 +1203,7 @@ const SiteChecks = ({
                             <Item>
                                 <FanExtract
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1094,6 +1216,7 @@ const SiteChecks = ({
                             <Item>
                                 <AirConditioning
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1106,6 +1229,7 @@ const SiteChecks = ({
                             <Item>
                                 <AirConditioningRecurrenceCheck
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1118,6 +1242,7 @@ const SiteChecks = ({
                             <Item>
                                 <VentilationReport
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1130,6 +1255,7 @@ const SiteChecks = ({
                             <Item>
                                 <ShowerHeadCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
                                     category={siteCheck.category}
@@ -1206,6 +1332,7 @@ const SiteChecks = ({
                             <Item>
                                 <GasInspection
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     siteCheck={siteCheck}
                                 />
@@ -1216,6 +1343,7 @@ const SiteChecks = ({
                             <Item>
                                 <InspectionFireCertificate
                                     checkId={checkId}
+                                    embedded={embedded}
                                     sasToken={sasToken}
                                     leadUserID={siteCheck?.leadUserID}
                                     siteCheck={siteCheck}
@@ -1239,7 +1367,7 @@ const SiteChecks = ({
                             {/*>*/}
                             {/*  <PrintIcon /> Print PDF Report*/}
                             {/*</button>*/}
-                            {(!INSPECTION_STEPS_WITH_INTERNAL_BACK.has(step) || siteCheck?.status !== "Open") && (
+                            {!embedded && (!INSPECTION_STEPS_WITH_INTERNAL_BACK.has(step) || siteCheck?.status !== "Open") && (
                                 <div className="d-flex justify-content-end m-2 print-hide">
                                     <SiteCheckBackButton onClick={returnToSiteChecks} />
                                 </div>
@@ -1251,9 +1379,11 @@ const SiteChecks = ({
                         {activeDetailTab === "history" && (
                             <Item>
                                 <SiteCheckHistory checkId={checkId} />
-                                <div className="d-flex justify-content-end mt-3 print-hide">
-                                    <SiteCheckBackButton onClick={returnToSiteChecks} />
-                                </div>
+                                {!embedded && (
+                                    <div className="d-flex justify-content-end mt-3 print-hide">
+                                        <SiteCheckBackButton onClick={returnToSiteChecks} />
+                                    </div>
+                                )}
                             </Item>
                         )}
                     </Stack>

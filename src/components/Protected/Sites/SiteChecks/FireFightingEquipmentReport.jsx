@@ -42,6 +42,7 @@ const FireFightingEquipmentReport = ({
                                          siteSelectedForGlobal,
                                          loggedInUserData,
                                          siteCheck = {},
+                                       embedded = false,
                                      }) => {
     const license = JSON.parse(localStorage.getItem("license"));
 
@@ -933,7 +934,11 @@ should be carried out more frequently.`;
                 isSubmitted: true
             }));
 
-            setTimeout(() => navigate(-1), 1500);
+            if (!embedded) {
+
+              setTimeout(() => navigate(-1), 1500);
+
+            }
         } catch (error) {
             console.error('Error in form submission:', error);
             toast.error(getSiteCheckErrorMessage(error, "Failed to submit form"));

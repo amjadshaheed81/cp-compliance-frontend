@@ -81,6 +81,7 @@ const FireDamper = ({
                         siteSelectedForGlobal,
                         loggedInUserData,
                         siteCheck = {},
+                      embedded = false,
                     }) => {
     const [formData, setFormData] = useState({
         address: "",
@@ -1441,7 +1442,9 @@ const FireDamper = ({
             setIsSubmitted(true);
 
             setTimeout(() => {
-                navigate(-1);
+                if (!embedded) {
+                  navigate(-1);
+                }
             }, 1500);
 
         } catch (error) {
@@ -2136,7 +2139,7 @@ const FireDamper = ({
                                 Report submitted successfully on {getUkLocalDate()}
                             </div>
                         )}
-                        {showPdfButton && generatedPdfBlob && (
+                        {!embedded && showPdfButton && generatedPdfBlob && (
                             <button
                                 className="btn btn-success"
                                 onClick={() => savePdfToLocal(generatedPdfBlob, `FireDamperReport_${formData.selectedAsset?.assetName || 'report'}.pdf`)}

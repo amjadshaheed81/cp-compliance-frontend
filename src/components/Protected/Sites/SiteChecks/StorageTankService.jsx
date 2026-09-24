@@ -81,6 +81,7 @@ const StorageTankService = ({
   siteSelectedForGlobal,
   loggedInUserData,
   siteCheck = {},
+  embedded = false,
 }) => {
   const [formData, setFormData] = useState({
     address: "",
@@ -1390,7 +1391,9 @@ const StorageTankService = ({
       setIsSubmitted(true);
 
       setTimeout(() => {
-        navigate(-1);
+        if (!embedded) {
+          navigate(-1);
+        }
       }, 1500);
 
     } catch (error) {
@@ -2191,7 +2194,7 @@ const StorageTankService = ({
                 Report submitted successfully on {formatDate(formData.inspectionDate)}
               </div>
             )}
-            {showPdfButton && generatedPdfBlob && (
+            {!embedded && showPdfButton && generatedPdfBlob && (
               <button
                 className="btn btn-success"
                 onClick={() => savePdfToLocal(generatedPdfBlob, `StorageTankServiceCertificate_${formData.selectedAsset?.assetName || 'report'}.pdf`)}

@@ -138,7 +138,8 @@
 }
 
 .site-check-workspace__icon-button,
-.site-check-workspace__early-button {
+.site-check-workspace__early-button,
+.site-check-workspace__pdf-button {
   min-height: 40px;
   border-radius: 11px;
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -194,8 +195,45 @@
   transform: translateY(-1px);
 }
 
+.site-check-workspace__pdf-button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1px solid rgba(248, 113, 113, 0.38);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #ffe4e6;
+  background: rgba(220, 53, 69, 0.16);
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 3px 9px rgba(0, 0, 0, 0.12);
+  transition:
+    transform 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.site-check-workspace__pdf-button:hover {
+  color: #ffffff;
+  background: rgba(220, 53, 69, 0.34);
+  border-color: rgba(254, 202, 202, 0.58);
+  transform: translateY(-1px);
+}
+
+.site-check-workspace .site-check-back-button {
+  display: none !important;
+}
+
 .site-check-workspace__icon-button:focus-visible,
-.site-check-workspace__early-button:focus-visible {
+.site-check-workspace__early-button:focus-visible,
+.site-check-workspace__pdf-button:focus-visible {
   outline: 2px solid #7dd3fc;
   outline-offset: 2px;
 }
@@ -352,12 +390,16 @@
     width: 36px;
   }
 
-  .site-check-workspace__early-button {
+  .site-check-workspace__early-button,
+  .site-check-workspace__pdf-button {
     width: 36px;
+    min-height: 36px;
     padding: 0;
+    border-radius: 10px;
   }
 
-  .site-check-workspace__early-button span {
+  .site-check-workspace__early-button span,
+  .site-check-workspace__pdf-button span {
     display: none;
   }
 }

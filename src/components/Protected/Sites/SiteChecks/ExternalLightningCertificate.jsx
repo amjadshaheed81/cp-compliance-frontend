@@ -80,6 +80,7 @@ const ExternalLightningCertificate = ({
                                         getUsers,
                                         siteSelectedForGlobal,
                                         loggedInUserData,
+                                        embedded = false,
                                       }) => {
   //const license = JSON.parse(localStorage.getItem("license"));
 
@@ -1499,7 +1500,9 @@ const ExternalLightningCertificate = ({
       setSubmissionSuccess(true);
 
       setTimeout(() => {
-        navigate(-1);
+        if (!embedded) {
+          navigate(-1);
+        }
       }, 1500);
 
     } catch (error) {

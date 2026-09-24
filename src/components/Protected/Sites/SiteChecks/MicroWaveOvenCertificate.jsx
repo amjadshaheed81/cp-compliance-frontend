@@ -73,6 +73,7 @@ const MicroWaveOvenCertificate = ({
                                     getUsers,
                                     siteSelectedForGlobal,
                                     loggedInUserData,
+                                    embedded = false,
                                   }) => {
   const [formData, setFormData] = useState({
     address: "",
@@ -1443,7 +1444,9 @@ const MicroWaveOvenCertificate = ({
       setSubmissionSuccess(true);
 
       setTimeout(() => {
-        navigate(-1);
+        if (!embedded) {
+          navigate(-1);
+        }
       }, 1500);
 
     } catch (error) {

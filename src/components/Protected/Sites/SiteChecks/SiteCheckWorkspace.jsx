@@ -21,6 +21,7 @@ const SiteCheckWorkspace = ({
   onClose,
 }) => {
   const [headerActionTarget, setHeaderActionTarget] = useState(null);
+  const [liveSiteCheckSummary, setLiveSiteCheckSummary] = useState(siteCheckSummary || null);
 
   useEffect(() => {
     const interceptorId = axios.interceptors.response.use(
@@ -39,6 +40,10 @@ const SiteCheckWorkspace = ({
 
     return () => axios.interceptors.response.eject(interceptorId);
   }, []);
+
+  useEffect(() => {
+    setLiveSiteCheckSummary(siteCheckSummary || null);
+  }, [checkId, siteCheckSummary]);
 
   useEffect(() => {
     let lastFailureSignature = "";
@@ -79,10 +84,11 @@ const SiteCheckWorkspace = ({
     const nextMode = isFullScreen ? "half" : "full";
     onModeChange?.(nextMode);
   };
+  const headerSummary = liveSiteCheckSummary || siteCheckSummary;
   const titleParts = [
-    siteCheckSummary?.type,
-    siteCheckSummary?.subType,
-    siteCheckSummary?.category,
+    headerSummary?.type,
+    headerSummary?.subType,
+    headerSummary?.category,
   ].filter(Boolean);
 
   return (
@@ -107,13 +113,13 @@ const SiteCheckWorkspace = ({
             </div>
             <div className="site-check-workspace__meta">
               <span className="site-check-workspace__check-pill">Check #{checkId}</span>
-              {siteCheckSummary?.status && (
+              {headerSummary?.status && (
                 <span
                   className={`site-check-workspace__status site-check-workspace__status--${String(
-                    siteCheckSummary.status
+                    headerSummary.status
                   ).toLowerCase()}`}
                 >
-                  {siteCheckSummary.status}
+                  {headerSummary.status}
                 </span>
               )}
             </div>
@@ -121,11 +127,6 @@ const SiteCheckWorkspace = ({
         </div>
 
         <div className="site-check-workspace__actions">
-          <div
-            ref={setHeaderActionTarget}
-            className="site-check-workspace__context-actions"
-          />
-
           <button
             type="button"
             className="site-check-workspace__icon-button site-check-workspace__mode-button"
@@ -139,6 +140,11 @@ const SiteCheckWorkspace = ({
               <FullscreenRoundedIcon fontSize="small" />
             )}
           </button>
+
+          <div
+            ref={setHeaderActionTarget}
+            className="site-check-workspace__context-actions"
+          />
 
           <button
             type="button"
@@ -159,6 +165,7 @@ const SiteCheckWorkspace = ({
           checkIdOverride={checkId}
           onRequestClose={onClose}
           workspaceHeaderActionTarget={headerActionTarget}
+          onSiteCheckUpdated={setLiveSiteCheckSummary}
         />
       </div>
     </section>

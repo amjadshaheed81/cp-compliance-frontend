@@ -74,6 +74,7 @@ const GasSafetyRecord = ({
                              siteSelectedForGlobal,
                              loggedInUserData,
                              siteCheck = {},
+                           embedded = false,
                          }) => {
     const license = JSON.parse(localStorage.getItem("license"));
     const [sasToken, setSasToken] = useState('');
@@ -2661,7 +2662,7 @@ const GasSafetyRecord = ({
                         <div className="alert alert-success mb-4">
                             Gas Safety Record submitted successfully on {formatDate(formData.date)}
                         </div>
-                        {showPdfButton && generatedPdfBlob && (
+                        {!embedded && showPdfButton && generatedPdfBlob && (
                             <button
                                 className="btn btn-success"
                                 onClick={() => savePdfToLocal(generatedPdfBlob, `GasSafetyRecord_${siteSelectedForGlobal?.siteId}_${getUkLocalDate()}.pdf`)}

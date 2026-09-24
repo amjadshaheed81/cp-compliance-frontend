@@ -78,6 +78,7 @@ const WaterHeaterCertificate = ({
                                   siteSelectedForGlobal,
                                   loggedInUserData,
                                   siteCheck = {},
+                                  embedded = false,
                                 }) => {
   const [formData, setFormData] = useState({
     address: "",
@@ -1435,7 +1436,9 @@ const WaterHeaterCertificate = ({
       setIsSubmitted(true);
 
       setTimeout(() => {
-        navigate(-1);
+        if (!embedded) {
+          navigate(-1);
+        }
       }, 1500);
 
     } catch (error) {
@@ -2291,7 +2294,7 @@ const WaterHeaterCertificate = ({
                     Report submitted successfully on {getUkLocalDate()}
                   </div>
                 )}
-                {showPdfButton && generatedPdfBlob && (
+                {!embedded && showPdfButton && generatedPdfBlob && (
                     <button
                         className="btn btn-success"
                         onClick={() => savePdfToLocal(generatedPdfBlob, `WaterHeaterServiceCertificate_${formData.selectedAsset?.assetName || 'report'}.pdf`)}

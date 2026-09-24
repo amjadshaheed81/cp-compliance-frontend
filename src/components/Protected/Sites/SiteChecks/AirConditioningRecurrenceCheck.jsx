@@ -59,6 +59,7 @@ const AirConditioningRecurrenceCheck = ({
     siteSelectedForGlobal,
     loggedInUserData,
     siteCheck = {},
+  embedded = false,
 }) => {
     const [selectedAsset, setSelectedAsset] = useState(null);
     const [relatedAssets, setRelatedAssets] = useState([]);
@@ -1296,7 +1297,9 @@ const AirConditioningRecurrenceCheck = ({
             setSubmissionSuccess(true);
 
             setTimeout(() => {
-                navigate(-1);
+                if (!embedded) {
+                  navigate(-1);
+                }
             }, 1500);
 
         } catch (error) {
@@ -1759,7 +1762,7 @@ const AirConditioningRecurrenceCheck = ({
                             <div className="alert alert-success mb-4">
                                 Report submitted successfully on {formatDate(formData.signedDate)}
                             </div>
-                            {showPdfButton && generatedPdfBlob && (
+                            {!embedded && showPdfButton && generatedPdfBlob && (
                                 <button
                                     className="btn btn-success"
                                     onClick={() => savePdfToLocal(generatedPdfBlob, `AirConditioningRecurrenceCheck_${selectedAsset?.assetName || 'Report'}.pdf`)}
