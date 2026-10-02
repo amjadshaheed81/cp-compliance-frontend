@@ -289,9 +289,20 @@ const GasBoilerService = ({
 
     const isgasEngineer = (loggedInUserData?.userType === "External" && loggedInUserData.trade === "Gas Engineer");
 
-    const selectedAsset = siteAssets.find(
-        (asset) => asset.assetId === formData.assetId
-    );
+    // Use the asset already selected on the form as the main source.
+    // Fall back to the current Site Check asset list for saved inspections.
+    const selectedAsset = formData.selectedAsset || siteAssets?.find(
+        (asset) => String(asset.assetId) === String(formData.assetId)
+    ) || null;
+
+    const selectedAssetLocation = [
+        selectedAsset?.position,
+        selectedAsset?.floor,
+        selectedAsset?.room
+    ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .join(' - ');
 
     useEffect(() => {
         const fetchToken = async () => {
@@ -354,7 +365,7 @@ const GasBoilerService = ({
 
                 if (inspectionData) {
                     const selectedAsset = assetsForInspection.find(
-                        asset => asset.assetId === inspectionData.assetId
+                        asset => String(asset.assetId) === String(inspectionData.assetId)
                     );
 
                     let siteContactUser;
@@ -869,17 +880,39 @@ const GasBoilerService = ({
             setTextField('Make', selectedAsset?.manufacturer || '');
             setTextField('Type', selectedAsset?.subCategory2 || '');
             setTextField('Model', selectedAsset?.model || '');
-            setTextField('Location', [
-                selectedAsset?.position,
-                selectedAsset?.floor,
-                selectedAsset?.room
-            ].filter(Boolean).join(' - ') || '');
+            setTextField('Location', selectedAssetLocation);
 
-            const comment = (formData.comments || '').split(',');
-            setTextField('CommentsMake', comment[0] || '');
-            setTextField('CommentsType', comment[1] || '');
-            setTextField('CommentsModel', comment[2] || '');
-            setTextField('CommentsLocation', comment[3] || '');
+            // The PDF has four single-line comment fields. Treat Comments as one
+            // normal note and wrap it across those rows instead of splitting on commas.
+            const wrapComments = (value, maxCharsPerLine = 60, maxLines = 4) => {
+                const words = String(value || '').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
+                const lines = [];
+                let currentLine = '';
+
+                words.forEach((word) => {
+                    const candidate = currentLine ? `${currentLine} ${word}` : word;
+                    if (candidate.length <= maxCharsPerLine || !currentLine) {
+                        currentLine = candidate;
+                        return;
+                    }
+
+                    if (lines.length < maxLines - 1) {
+                        lines.push(currentLine);
+                        currentLine = word;
+                    } else {
+                        currentLine = `${currentLine} ${word}`;
+                    }
+                });
+
+                if (currentLine) lines.push(currentLine);
+                return Array.from({ length: maxLines }, (_, index) => lines[index] || '');
+            };
+
+            const commentLines = wrapComments(formData.comments);
+            setTextField('CommentsMake', commentLines[0], 8);
+            setTextField('CommentsType', commentLines[1], 8);
+            setTextField('CommentsModel', commentLines[2], 8);
+            setTextField('CommentsLocation', commentLines[3], 8);
             // Appliance Checks - Updated to use checkbox fields with new naming pattern
             formData.applianceChecks.forEach((check) => {
                 const baseName = `Appliance_${check.id}`;
@@ -1640,7 +1673,7 @@ const GasBoilerService = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`${selectedAsset?.assetName} - ${selectedAsset?.manufacturer} , Asset No-${formData.assetId} - ${selectedAsset?.position}, ${selectedAsset?.floor}, ${selectedAsset?.room}`}
+                                            value={selectedAssetLocation}
                                             disabled
                                         />
                                     </div>
