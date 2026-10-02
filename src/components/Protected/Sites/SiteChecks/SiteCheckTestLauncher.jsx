@@ -25,6 +25,7 @@ import {
 } from "./siteCheckTestTypes";
 import {
   SITE_CHECK_ALL_INSPECTION_TEST_DEVICES,
+  SITE_CHECK_GAS_FIX_TEST_SET,
   SITE_CHECK_HISTORY_TEST_BATCHES,
 } from "./siteCheckTestBatches";
 
@@ -128,9 +129,9 @@ const buildTestAssetRequest = (device, batchNumber, runTag) => {
     doorItem: false,
     barcode: "",
     deviceId: "",
-    position: "",
-    floor: "",
-    room: "",
+    position: device.position || "",
+    floor: device.floor || "",
+    room: device.room || "",
     damperSize: device.damperSize ?? null,
   };
 };
@@ -838,6 +839,29 @@ const SiteCheckTestLauncher = ({
               {isCreating && creationProgress
                 ? creationProgress
                 : `Create All ${SITE_CHECK_TEST_TYPES.length} Inspection Tests`}
+            </Button>
+          </div>
+
+          <div className="border rounded p-3 mb-3">
+            <div className="fw-bold mb-1">Gas fixes test</div>
+            <div className="small text-muted mb-2">
+              Creates one Gas Boiler test and one Gas Safety test with matching
+              CAFM TEST devices. Both devices include Plant Room / Ground Floor /
+              Boiler Room so the Location and Notes fixes can be checked quickly.
+            </div>
+            <Button
+              variant="contained"
+              color="warning"
+              onClick={() => handleCreateHistoryTestSet(SITE_CHECK_GAS_FIX_TEST_SET)}
+              disabled={
+                isCreating ||
+                createdHistoryTests.length > 0 ||
+                !siteSelectedForGlobal?.siteId ||
+                activeUsers.length === 0
+              }
+              title="Create Gas Boiler and Gas Safety regression tests with test devices"
+            >
+              {isCreating ? "Creating..." : "Create Gas Boiler + Gas Safety Tests"}
             </Button>
           </div>
 

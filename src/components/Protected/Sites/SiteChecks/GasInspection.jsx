@@ -111,6 +111,7 @@ const GasSafetyRecord = ({
         assetId: "",
         selectedAsset: null,
         applianceLocation: "",
+        notes: "",
         applianceType: "",
         applianceManufacturer: "",
         applianceModel: "",
@@ -337,7 +338,7 @@ const GasSafetyRecord = ({
 
                 // Find the selected asset
                 const selectedAsset = siteAssets.find(
-                    asset => asset.assetId === gasSafetyData.assetId
+                    asset => String(asset.assetId) === String(gasSafetyData.assetId)
                 );
 
                 // Load action if exists
@@ -425,8 +426,13 @@ const GasSafetyRecord = ({
                     // Appliance
                     assetId: gasSafetyData.assetId || prev.assetId,
                     selectedAsset: selectedAsset || prev.selectedAsset,
-                    applianceLocation: gasSafetyData.applianceLocation ||
-                        (selectedAsset ? `${selectedAsset?.assetName} - Asset No-${selectedAsset?.assetId} - ${selectedAsset?.manufacturer}, ${selectedAsset?.position}, ${selectedAsset?.floor}, ${selectedAsset?.room}` : prev.applianceLocation),
+                    applianceLocation: selectedAsset
+                        ? [selectedAsset?.position, selectedAsset?.floor, selectedAsset?.room]
+                            .map((value) => String(value ?? '').trim())
+                            .filter(Boolean)
+                            .join(' - ')
+                        : (gasSafetyData.applianceLocation || prev.applianceLocation),
+                    notes: gasSafetyData.notes || prev.notes,
                     applianceType: selectedAsset?.subCategory || gasSafetyData.applianceType || prev.applianceType,
                     applianceManufacturer: selectedAsset?.manufacturer || gasSafetyData.applianceManufacturer || prev.applianceManufacturer,
                     applianceModel: selectedAsset?.model || gasSafetyData.applianceModel || prev.applianceModel,
@@ -998,9 +1004,20 @@ const GasSafetyRecord = ({
         }
     };
 
-    const selectedAsset = siteAssets.find(
-        (asset) => asset.assetId === formData.assetId
-    );
+    // Keep the selected appliance as the main source. Fall back to the current
+    // Site Check asset list when loading an existing inspection.
+    const selectedAsset = formData.selectedAsset || siteAssets.find(
+        (asset) => String(asset.assetId) === String(formData.assetId)
+    ) || null;
+
+    const selectedAssetLocation = [
+        selectedAsset?.position,
+        selectedAsset?.floor,
+        selectedAsset?.room,
+    ]
+        .map((value) => String(value ?? '').trim())
+        .filter(Boolean)
+        .join(' - ');
 
 
 
@@ -1012,7 +1029,10 @@ const GasSafetyRecord = ({
                 ...prev,
                 assetId: newValue.assetId,
                 selectedAsset: newValue,
-                applianceLocation: `${newValue.assetName} - Asset No-${newValue.assetId} - ${newValue.manufacturer}, ${newValue.position}, ${newValue.floor}, ${newValue.room}`,
+                applianceLocation: [newValue.position, newValue.floor, newValue.room]
+                    .map((value) => String(value ?? '').trim())
+                    .filter(Boolean)
+                    .join(' - '),
                 applianceType: newValue.subCategory,
                 applianceManufacturer: newValue.manufacturer,
                 applianceModel: newValue.model
@@ -1136,7 +1156,7 @@ const GasSafetyRecord = ({
             setTextField('Contact Number_3', formData.siteContactNo || '');
 
             // Appliance Details
-            setTextField('Location1', formData.applianceLocation || '');
+            setTextField('Location1', selectedAssetLocation || formData.applianceLocation || '');
             setTextField('Type', selectedAsset?.subCategory || '');
             setTextField('Manufacturer', selectedAsset?.manufacturer || '');
             setTextField('Model', selectedAsset?.model || '');
@@ -1161,7 +1181,7 @@ const GasSafetyRecord = ({
             setTextField('Yes_9', formData.pipeworkVisualInspection || '');
             setTextField('Yes_10', formData.coAlarmFitted || '');
             setTextField('Yes_11', formData.fireAlarmFitted || '');
-            setTextField('NotesRow', formData.applianceLocation || '');
+            setTextField('NotesRow', formData.notes || '', 7);
             // Combustion Performance Readings
             setTextField('CO', formData.combustionLowCO || '');
             setTextField('CO1', formData.combustionHighCO || '');
@@ -1860,7 +1880,7 @@ const GasSafetyRecord = ({
                                         <input
                                             type="text"
                                             className="form-control"
-                                            value={`${selectedAsset?.assetName} - Asset No-${formData.assetId} - ${selectedAsset?.manufacturer} ,  - ${selectedAsset?.position}, ${selectedAsset?.floor}, ${selectedAsset?.room}`}
+                                            value={selectedAssetLocation || formData.applianceLocation || ''}
                                             disabled
                                         />
                                     </div>
@@ -2209,8 +2229,8 @@ const GasSafetyRecord = ({
                                 <textarea
                                     className="form-control"
                                     rows={4}
-                                    name="applianceLocation"
-                                    value={formData.applianceLocation}
+                                    name="notes"
+                                    value={formData.notes}
                                     onChange={handleInputChange}
                                     disabled={isSubmitted}
                                 />

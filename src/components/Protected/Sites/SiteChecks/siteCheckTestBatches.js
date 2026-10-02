@@ -220,6 +220,43 @@ export const SITE_CHECK_HISTORY_TEST_BATCHES = [
 
 
 /**
+ * Focused regression set for the two Gas fixes. These devices deliberately
+ * include Position/Floor/Room values so Location can be checked immediately.
+ */
+export const SITE_CHECK_GAS_FIX_TEST_SET = {
+  number: "GAS",
+  label: "Gas Boiler / Gas Safety fixes",
+  testKeys: ["gas-boiler", "gas-safety"],
+  devices: [
+    {
+      key: "gas-fix-boiler-device",
+      testTypeKey: "gas-boiler",
+      label: "Gas Boiler Fix Test",
+      category: "Mechanical",
+      subCategory: "Central Heating",
+      subCategory2: "Boiler",
+      subCategory3: "",
+      position: "Plant Room",
+      floor: "Ground Floor",
+      room: "Boiler Room",
+    },
+    {
+      key: "gas-fix-safety-device",
+      testTypeKey: "gas-safety",
+      label: "Gas Safety Fix Test",
+      category: "Mechanical",
+      subCategory: "Central Heating",
+      subCategory2: "Boiler",
+      subCategory3: "",
+      position: "Plant Room",
+      floor: "Ground Floor",
+      room: "Boiler Room",
+    },
+  ],
+};
+
+
+/**
  * Complete routed Inspection UI test-device catalogue.
  *
  * SITE_CHECK_HISTORY_TEST_BATCHES already contains the exact test devices used
