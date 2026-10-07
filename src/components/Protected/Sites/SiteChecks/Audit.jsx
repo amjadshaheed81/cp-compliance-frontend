@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
+import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
+import SiteCheckEarlyOpenDialog from "./shared/SiteCheckEarlyOpenDialog";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import moment from "moment";
@@ -78,6 +81,9 @@ const AssessmentFireRisk = ({
                                 siteCheck,
                                 managerList,
                                 onAuditSubmitted,
+                                onAuditOpened,
+                                earlyOpenActionTarget,
+                                embedded = false,
                             }) => {
     const carouselSettings = {
         dots: true,
@@ -105,6 +111,8 @@ const AssessmentFireRisk = ({
     const [monthlyContext, setMonthlyContext] = useState(null);
     const [monthlyActions, setMonthlyActions] = useState([]);
     const [monthlyError, setMonthlyError] = useState("");
+    const [monthlyEarlyOpenReview, setMonthlyEarlyOpenReview] = useState(null);
+    const [monthlyEarlyOpenError, setMonthlyEarlyOpenError] = useState("");
     const [inspectionDate, setInspectionDate] = useState("");
     const [monthlyBusy, setMonthlyBusy] = useState(false);
     const [savingQuestionId, setSavingQuestionId] = useState(null);
@@ -265,6 +273,8 @@ const AssessmentFireRisk = ({
         blockingQuestionOrders.length - visibleBlockingOrders.length;
 
     useEffect(() => {
+        setMonthlyEarlyOpenReview(null);
+        setMonthlyEarlyOpenError("");
         getQuestions();
         if (!isMonthlyAudit && siteSelectedForGlobal?.siteId) {
             getSiteCheckAssets(siteSelectedForGlobal?.siteId);
@@ -761,24 +771,51 @@ const AssessmentFireRisk = ({
         }
     };
 
+    const handleMonthlyOpenEarlyDialog = () => {
+        const context = monthlyContextRef.current;
+        if (!isMonthlyAudit || !context?.canOpenEarly || monthlyBusyRef.current || isSubmitting || isLoading) return;
+        // Keep the reviewed period token: a stale dialog must never open a later period.
+        setMonthlyEarlyOpenReview(context);
+        setMonthlyEarlyOpenError("");
+    };
+
     const handleMonthlyOpenEarly = async () => {
-        if (!monthlyContext?.canOpenEarly || !beginMonthlyWork()) return;
+        const review = monthlyEarlyOpenReview;
+        if (!review || !monthlyContextRef.current?.canOpenEarly || !beginMonthlyWork()) return;
+        setMonthlyEarlyOpenError("");
         try {
-            const previousPeriod = monthlyContextRef.current.periodToken;
-            const context = await openMonthlyAuditEarly(checkId, { periodToken: previousPeriod });
+            if (Number(review.checkId) !== Number(checkId) || review.periodToken !== monthlyContextRef.current.periodToken) {
+                throw new Error("The audit period has changed. Cancel this dialog and reload the audit.");
+            }
+            const latest = await getMonthlyAuditContext(checkId);
+            if (latest.periodToken !== review.periodToken || !latest.canOpenEarly || latest.status !== "SUBMITTED") {
+                throw new Error("This audit can no longer be opened from this dialog. Cancel and reload to see its current status.");
+            }
+            if (Boolean(latest.nextCarryForwardEnabled) !== Boolean(review.nextCarryForwardEnabled) ||
+                latest.checkHeader?.repeatFrequency !== review.checkHeader?.repeatFrequency ||
+                latest.checkHeader?.dueDate !== review.checkHeader?.dueDate) {
+                setMonthlyEarlyOpenReview(latest);
+                setMonthlyEarlyOpenError("The audit settings have changed. Review the updated details before clicking Open Audit again.");
+                return;
+            }
+            const context = await openMonthlyAuditEarly(checkId, { periodToken: review.periodToken });
             if (context.status !== "OPEN") throw new Error("The next audit has not opened. Reload to check its status.");
             applyMonthlyContext(context);
+            setMonthlyEarlyOpenReview(null);
             const loaded = await getQuestions();
             if (!loaded) throw new Error("The audit opened, but its answers could not be loaded. Reload the form.");
-            onAuditSubmitted?.();
+            // Keep the opened audit visible, including when opened from the History tab.
+            await (onAuditOpened || onAuditSubmitted)?.();
             toast.success(context.openedNewPeriod === false
                 ? "This audit is already Open. Its current answers have been kept."
                 : context.carryForwardEnabled
                 ? "Next audit opened. Previous answers are ready for review; previous photos remain in History."
                 : "Next audit opened with blank answers. Previous submissions remain in History.");
         } catch (error) {
-            setMonthlyError(monthlyAuditError(error));
-            toast.error(monthlyAuditError(error));
+            const message = monthlyAuditError(error);
+            setMonthlyEarlyOpenError(message);
+            setMonthlyError(message);
+            toast.error(message);
         } finally {
             endMonthlyWork();
         }
@@ -1288,6 +1325,58 @@ const AssessmentFireRisk = ({
     };
 
     return (
+        <>
+            {isMonthlyAudit && monthlyContext?.canOpenEarly && earlyOpenActionTarget && createPortal(
+                <button
+                    type="button"
+                    className={embedded ? "site-check-workspace__early-button" : "btn fw-bold shadow-sm"}
+                    style={embedded ? undefined : {
+                        width: "100%", backgroundColor: "#e67e22", borderColor: "#c76410", color: "#ffffff",
+                    }}
+                    onClick={handleMonthlyOpenEarlyDialog}
+                    disabled={monthlyBusy || isSubmitting || isLoading}
+                    title="Open audit early"
+                    aria-label="Open audit early"
+                >
+                    {embedded && <LockOpenRoundedIcon fontSize="small" />}
+                    <span>{embedded ? "Open Early" : "Open Monthly Audit Early"}</span>
+                </button>,
+                earlyOpenActionTarget
+            )}
+            {isMonthlyAudit && (
+                <SiteCheckEarlyOpenDialog
+                    open={Boolean(monthlyEarlyOpenReview)}
+                    title="Open Monthly Audit Early"
+                    frequency={monthlyEarlyOpenReview?.checkHeader?.repeatFrequency}
+                    currentDueDate={monthlyEarlyOpenReview?.checkHeader?.dueDate}
+                    opening={monthlyBusy || isSubmitting}
+                    confirmDisabled={isLoading || !monthlyContext?.canOpenEarly || !monthlyEarlyOpenReview}
+                    confirmLabel="Open Audit"
+                    onClose={() => setMonthlyEarlyOpenReview(null)}
+                    onConfirm={handleMonthlyOpenEarly}
+                >
+                    <div className="alert alert-info py-2 mt-3 mb-2">
+                        <strong>Next audit starts with:</strong>{" "}
+                        {monthlyEarlyOpenReview?.nextCarryForwardEnabled
+                            ? "Previous answers for review"
+                            : "Blank answers"}
+                        <div className="small mt-1">
+                            Previous reports, saved History, photos and outstanding Actions are preserved.
+                            Previous photos are not copied into the new audit.
+                        </div>
+                    </div>
+                    <div className="form-text mt-2">
+                        This opens the next audit period. The existing Due Date stays unchanged.
+                        The next Due Date is calculated from the actual Inspection Date and repeat
+                        frequency when the audit is submitted.
+                    </div>
+                    {monthlyEarlyOpenError && (
+                        <div role="alert" className="alert alert-danger py-2 mt-3 mb-0">
+                            {monthlyEarlyOpenError}
+                        </div>
+                    )}
+                </SiteCheckEarlyOpenDialog>
+            )}
         <Box p={3}>
             <Card>
                 {true && (
@@ -1327,12 +1416,6 @@ const AssessmentFireRisk = ({
                                                 <Button variant="outlined" size="small" onClick={handleMonthlyTestFill}
                                                     disabled={monthlyBusy || isSubmitting || isLoading || !quest.length}>
                                                     Fill test answers
-                                                </Button>
-                                            )}
-                                            {monthlyContext?.canOpenEarly && (
-                                                <Button variant="outlined" size="small" onClick={handleMonthlyOpenEarly}
-                                                    disabled={monthlyBusy || isSubmitting || isLoading}>
-                                                    Open next audit early
                                                 </Button>
                                             )}
                                         </Box>
@@ -2614,6 +2697,7 @@ const AssessmentFireRisk = ({
                 ))}
             </div>
         </Box>
+        </>
     );
 };
 

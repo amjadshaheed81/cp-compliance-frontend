@@ -28,7 +28,7 @@ import {
     post,
     SITE_CHECK_DATA_CHANGED_EVENT,
 } from "../../../../api";
-import { Dialog, DialogActions, DialogContent, DialogTitle, Grid, Stack, Paper, styled, Tabs, Tab } from "@mui/material";
+import { Grid, Stack, Paper, styled, Tabs, Tab } from "@mui/material";
 import {
     deleteUser,
     getSites,
@@ -68,6 +68,7 @@ import FireFightingEquipmentReport from "./FireFightingEquipmentReport";
 import AirConditioningRecurrenceCheck from "./AirConditioningRecurrenceCheck";
 import SiteCheckBackButton from "./shared/SiteCheckBackButton";
 import SiteCheckHistory from "./SiteCheckHistory";
+import SiteCheckEarlyOpenDialog from "./shared/SiteCheckEarlyOpenDialog";
 import { getUkLocalDate } from "./shared/siteCheckDateUtils";
 
 const Item = styled(Paper)(({ theme }) => ({
@@ -390,6 +391,7 @@ const SiteChecks = ({
 
     const [savingAssignees, setSavingAssignees] = useState(false);
     const [showManualOpenDialog, setShowManualOpenDialog] = useState(false);
+    const [monthlyEarlyOpenActionTarget, setMonthlyEarlyOpenActionTarget] = useState(null);
     const [plannedInspectionDate, setPlannedInspectionDate] = useState("");
     const [openingInspectionEarly, setOpeningInspectionEarly] = useState(false);
     const [latestInspectionPdfUrl, setLatestInspectionPdfUrl] = useState("");
@@ -943,6 +945,12 @@ const SiteChecks = ({
                                     )}
                                 </Grid>
                                 <Grid sm={4}>
+                                    {!embedded && siteCheck?.type === "Audit" && siteCheck?.subType === "Monthly Audit" && (
+                                        <div
+                                            ref={setMonthlyEarlyOpenActionTarget}
+                                            style={{ margin: "10px", marginTop: "32px" }}
+                                        />
+                                    )}
                                     {!embedded && canOpenInspectionEarly && (
                                         <div style={{ margin: "10px", marginTop: "32px" }}>
                                             <button
@@ -1274,6 +1282,12 @@ const SiteChecks = ({
                         {step === "audit-question" && (
                             <Item>
                                 <Audit
+                                    embedded={embedded}
+                                    earlyOpenActionTarget={embedded ? workspaceHeaderActionTarget : monthlyEarlyOpenActionTarget}
+                                    onAuditOpened={() => {
+                                        setActiveDetailTab("form");
+                                        return getSiteChecks();
+                                    }}
                                     checkId={checkId}
                                     sasToken={sasToken}
                                     subType={siteCheck?.subType}
@@ -1390,25 +1404,15 @@ const SiteChecks = ({
                 </div>
             </div>
 
-            <Dialog
+            <SiteCheckEarlyOpenDialog
                 open={showManualOpenDialog}
-                onClose={() => !openingInspectionEarly && setShowManualOpenDialog(false)}
-                maxWidth="sm"
-                fullWidth
+                frequency={siteCheck?.repeatFrequency}
+                currentDueDate={currentDueDateValue}
+                opening={openingInspectionEarly}
+                confirmDisabled={!hasCurrentDueDate || !plannedInspectionDate}
+                onClose={() => setShowManualOpenDialog(false)}
+                onConfirm={handleOpenInspectionEarly}
             >
-                <DialogTitle>Open Inspection Early</DialogTitle>
-                <DialogContent>
-                    <div className="mb-2">
-                        <strong>Frequency:</strong>{" "}
-                        {siteCheck?.repeatFrequency || "Not available"}
-                    </div>
-                    <div className="mb-3">
-                        <strong>Current Due Date:</strong>{" "}
-                        {currentDueDateValue
-                            ? moment(currentDueDateValue).format("DD-MM-YYYY")
-                            : "Not available"}
-                    </div>
-
                     {!hasCurrentDueDate && (
                         <div className="alert alert-warning py-2">
                             This inspection does not have a current Due Date, so it cannot be opened early.
@@ -1441,30 +1445,7 @@ const SiteChecks = ({
                         The existing Due Date stays unchanged. The final next Due Date is still
                         calculated from the actual Inspection Date when the engineer submits the report.
                     </div>
-                </DialogContent>
-                <DialogActions>
-                    <button
-                        type="button"
-                        className="btn btn-secondary"
-                        onClick={() => setShowManualOpenDialog(false)}
-                        disabled={openingInspectionEarly}
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={handleOpenInspectionEarly}
-                        disabled={
-                            openingInspectionEarly ||
-                            !hasCurrentDueDate ||
-                            !plannedInspectionDate
-                        }
-                    >
-                        {openingInspectionEarly ? "Opening..." : "Open Inspection"}
-                    </button>
-                </DialogActions>
-            </Dialog>
+            </SiteCheckEarlyOpenDialog>
         </Fragment>
     );
 };
