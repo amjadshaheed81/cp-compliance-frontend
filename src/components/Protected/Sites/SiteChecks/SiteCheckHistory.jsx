@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import CircularProgress from "@mui/material/CircularProgress";
 import moment from "moment";
 import { get } from "../../../../api";
+import { downloadMonthlyAuditHistorySnapshot } from "./shared/monthlyAuditHistory";
 
 const formatDate = (value, includeTime = false) => {
     if (!value) return "--";
@@ -27,6 +28,8 @@ const SiteCheckHistory = ({ checkId }) => {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [downloadError, setDownloadError] = useState("");
+    const [downloadingHistoryId, setDownloadingHistoryId] = useState(null);
 
     useEffect(() => {
         let cancelled = false;
@@ -34,6 +37,7 @@ const SiteCheckHistory = ({ checkId }) => {
         const loadHistory = async () => {
             setLoading(true);
             setError("");
+            setDownloadError("");
             try {
                 const response = await get(`/api/site-check/${checkId}/history`);
                 if (!cancelled) {
@@ -65,6 +69,23 @@ const SiteCheckHistory = ({ checkId }) => {
         };
     }, [checkId]);
 
+    const downloadSavedAuditData = async (item) => {
+        setDownloadError("");
+        setDownloadingHistoryId(item.historyId);
+        try {
+            await downloadMonthlyAuditHistorySnapshot({
+                checkId,
+                historyId: item.historyId,
+                snapshotSchemaVersion: item.snapshotSchemaVersion,
+                sourceReference: item.sourceReference,
+            });
+        } catch (e) {
+            setDownloadError("Saved audit data could not be downloaded and verified. Please reload History and try again.");
+        } finally {
+            setDownloadingHistoryId(null);
+        }
+    };
+
     if (loading) {
         return (
             <div className="d-flex justify-content-center align-items-center py-5">
@@ -89,7 +110,14 @@ const SiteCheckHistory = ({ checkId }) => {
         );
     }
 
+    const isMonthlyAudit = (item) => item.siteCheckType === "Audit" && item.siteCheckSubType === "Monthly Audit";
+    const showAuditData = history.some(isMonthlyAudit);
+
     return (
+        <>
+        {downloadError && (
+            <div className="alert alert-danger" role="alert">{downloadError}</div>
+        )}
         <div className="table-responsive">
             <table className="table table-striped table-hover align-middle mb-0">
                 <thead className="table-dark">
@@ -100,6 +128,7 @@ const SiteCheckHistory = ({ checkId }) => {
                         <th>Frequency / Next Due</th>
                         <th>Source</th>
                         <th>PDF</th>
+                        {showAuditData && <th>Saved audit data</th>}
                     </tr>
                 </thead>
                 <tbody>
@@ -184,12 +213,29 @@ const SiteCheckHistory = ({ checkId }) => {
                                         <span className="text-muted">No PDF linked</span>
                                     )}
                                 </td>
+                                {showAuditData && (
+                                    <td>
+                                        {item.snapshotAvailable === true && isMonthlyAudit(item) ? (
+                                            <button
+                                                type="button"
+                                                className="btn btn-sm btn-outline-secondary"
+                                                disabled={downloadingHistoryId !== null}
+                                                onClick={() => downloadSavedAuditData(item)}
+                                            >
+                                                {downloadingHistoryId === item.historyId ? "Downloading…" : "Download data"}
+                                            </button>
+                                        ) : (
+                                            <span className="text-muted">Saved audit data unavailable</span>
+                                        )}
+                                    </td>
+                                )}
                             </tr>
                         );
                     })}
                 </tbody>
             </table>
         </div>
+        </>
     );
 };
 

@@ -16,6 +16,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { jsPDF } from "jspdf";
 import { formatLocalDateTime } from "../../../../utils/dateFormat";
+import { recordMonthlyAuditHistory } from "./shared/monthlyAuditHistory";
 
 import Swal from "sweetalert2";
 
@@ -591,12 +592,14 @@ const AssessmentFireRisk = ({
             await getQuestions();
             onAuditSubmitted?.();
 
+            let monthlyHistorySaved = false;
+            let monthlyHistoryError = "Audit is marked Done, but its report and saved audit data were not confirmed in History. Please check History before submitting again.";
             try {
                 const r = await handlePrint();
                 if (r?.blob && r?.fileName && auditFolderId) {
                     const uploadResult = await uploadPdfToServer(r.blob, r.fileName);
 
-                    // Phase 2: record immutable LIVE history only for Monthly Audit.
+                    // Save and verify the full saved-data snapshot only for Monthly Audit.
                     // Annual Winter Audit keeps its current workflow unchanged for now.
                     if (
                         subType === "Monthly Audit" &&
@@ -604,22 +607,32 @@ const AssessmentFireRisk = ({
                         uploadResult?.sourceReference
                     ) {
                         try {
-                            await post(`/api/site-check/${checkId}/history/monthly-audit`, {
+                            await recordMonthlyAuditHistory({
+                                checkId,
                                 sourceReference: uploadResult.sourceReference,
                             });
+                            monthlyHistorySaved = true;
                         } catch (historyErr) {
                             console.error("Record Monthly Audit history:", historyErr);
-                            toast.error(
-                                "Audit submitted and report uploaded, but the History record could not be created."
-                            );
+                            monthlyHistoryError = "Audit submitted and report uploaded, but the saved audit data was not confirmed in History. Please check History before submitting again.";
                         }
                     }
                 }
             } catch (uploadErr) {
                 console.error("Upload audit PDF:", uploadErr);
-                toast.error("Audit submitted. Report upload to folder failed.");
+                if (subType !== "Monthly Audit") {
+                    toast.error("Audit submitted. Report upload to folder failed.");
+                }
             }
-            toast.success("Audit submitted successfully. Site check is now done.");
+            if (subType === "Monthly Audit") {
+                if (monthlyHistorySaved) {
+                    toast.success("Audit submitted. Report and saved audit data are confirmed in History.");
+                } else {
+                    toast.error(monthlyHistoryError);
+                }
+            } else {
+                toast.success("Audit submitted successfully. Site check is now done.");
+            }
         } catch (err) {
             toast.error(err?.message || "Failed to submit audit.");
         } finally {
