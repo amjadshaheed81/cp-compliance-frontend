@@ -17,6 +17,17 @@ import "slick-carousel/slick/slick-theme.css";
 import { jsPDF } from "jspdf";
 import { formatLocalDateTime } from "../../../../utils/dateFormat";
 import { recordMonthlyAuditHistory } from "./shared/monthlyAuditHistory";
+import MonthlyAuditActionChoices from "./shared/MonthlyAuditActionChoices";
+import {
+    completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
+    getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
+    hydrateMonthlyQuestion, isMonthlyQuestionVisible, mayFillMonthlyAuditForTest,
+    monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete,
+    monthlyResponseIssues, monthlyResponseRequest, newMonthlyAuditRequestId,
+    openMonthlyAuditEarly, prepareMonthlyAuditSubmission, saveMonthlyAuditResponse, splitMonthlyAssetIds, uploadMonthlyAuditPdf,
+} from "./shared/monthlyAuditWorkflow";
+import { getUkLocalDate } from "./shared/siteCheckDateUtils";
+import { calculateSiteCheckDueDate, formatSiteCheckDisplayDate } from "../../../../utils/siteCheckRecurrence";
 
 import Swal from "sweetalert2";
 
@@ -37,6 +48,7 @@ import {
     Chip,
     AccordionSummary,
     AccordionDetails,
+    Alert,
     Card,
     CardContent,
     Autocomplete,
@@ -87,9 +99,76 @@ const AssessmentFireRisk = ({
     const [isUploading, setIsUploading] = useState(false);
     const [auditFolderId, setAuditFolderId] = useState(null);
     const printRef = useRef(null);
+    const isMonthlyAudit = subType === "Monthly Audit";
+    const [monthlySiteAssets, setMonthlySiteAssets] = useState([]);
+    const auditAssets = isMonthlyAudit ? monthlySiteAssets : siteAssets;
+    const [monthlyContext, setMonthlyContext] = useState(null);
+    const [monthlyActions, setMonthlyActions] = useState([]);
+    const [monthlyError, setMonthlyError] = useState("");
+    const [inspectionDate, setInspectionDate] = useState("");
+    const [monthlyBusy, setMonthlyBusy] = useState(false);
+    const [savingQuestionId, setSavingQuestionId] = useState(null);
+    const monthlyContextRef = useRef(null);
+    const monthlyBusyRef = useRef(false);
+    const monthlyLoadSequence = useRef(0);
+    const questionSaveRequests = useRef(new Map());
+    const uploadedImageUrls = useRef(new WeakMap());
+    const submissionRequest = useRef(null);
+    const uploadedPdfReference = useRef(null);
+    const monthlyReadOnly = isMonthlyAudit &&
+        (monthlyContext?.canEdit !== true || monthlyBusy || isSubmitting || isLoading);
+    const questionReadOnly = (question) => isMonthlyAudit ? monthlyReadOnly : question?.completed;
+    const monthlySubmitted = monthlyContext?.status === "SUBMITTED";
+    const monthlyRecovery = ["SUBMITTING", "ARCHIVE_REQUIRED"].includes(monthlyContext?.status);
+    const canTestFill = isMonthlyAudit && mayFillMonthlyAuditForTest(loggedInUserData, monthlyContext);
+    const monthlyFrequency = monthlyContext?.checkHeader?.repeatFrequency;
+    const calculatedMonthlyDue = inspectionDate && monthlyFrequency
+        ? calculateSiteCheckDueDate(inspectionDate, monthlyFrequency)
+        : null;
+
+    const applyMonthlyContext = (context) => {
+        const changedPeriod = monthlyContextRef.current?.periodToken !== context.periodToken;
+        monthlyContextRef.current = context;
+        setMonthlyContext(context);
+        if (changedPeriod) {
+            questionSaveRequests.current.clear();
+            submissionRequest.current = null;
+            uploadedPdfReference.current = null;
+        }
+        setInspectionDate((current) => context.status === "OPEN"
+            ? (changedPeriod ? getUkLocalDate() : current || getUkLocalDate())
+            : String(context.inspectionDate || "").slice(0, 10));
+    };
+
+    const beginMonthlyWork = () => {
+        if (monthlyBusyRef.current) return false;
+        monthlyBusyRef.current = true;
+        setMonthlyBusy(true);
+        setMonthlyError("");
+        return true;
+    };
+
+    const endMonthlyWork = () => {
+        monthlyBusyRef.current = false;
+        setMonthlyBusy(false);
+        setSavingQuestionId(null);
+    };
+
+    const markQuestionChanged = (questions, index) => {
+        if (isMonthlyAudit) questions[index] = { ...questions[index], dirty: true };
+        setquest(questions);
+    };
 
     // Helper: get catAsset and completion state for a question (same logic as UI)
     const getQuestionState = (q, siteAssetsList) => {
+        if (isMonthlyAudit) {
+            const catAsset = monthlyQuestionAssets(q, siteAssetsList);
+            const okAsset = (q.response?.assets?.split(",") || []).filter(Boolean).length;
+            const faultAsset = (q.response?.faultassets?.split(",") || []).filter(Boolean).length;
+            return { catAsset, okAsset, faultAsset,
+                isSpecialQuestion: ["3.5.1", "8.1.1"].includes(q.order),
+                isCompleted: monthlyQuestionComplete(q, siteAssetsList) };
+        }
         let catAsset = [];
         const assetCategory = q?.assetCategory?.split(",") ?? [];
         const trimmed = assetCategory.map((item) => item.trim());
@@ -147,11 +226,11 @@ const AssessmentFireRisk = ({
             }
             const { catAsset, okAsset, faultAsset, isCompleted } = getQuestionState(
                 q,
-                siteAssets
+                auditAssets
             );
             const catLen = catAsset?.length ?? 0;
             const remaining = catLen - okAsset - faultAsset;
-            const pass = catLen === 0 || isCompleted || remaining === 0;
+            const pass = isMonthlyAudit ? isCompleted : catLen === 0 || isCompleted || remaining === 0;
             if (!pass) {
                 failing.push({
                     order: q.order,
@@ -170,7 +249,7 @@ const AssessmentFireRisk = ({
         });
         const blockingOrders = failing.map((f) => f.order).filter(Boolean);
         return { canPrint: result, blockingOrders };
-    }, [quest, siteAssets, header]);
+    }, [quest, auditAssets, header, isMonthlyAudit]);
 
     const canPrint = printState?.canPrint ?? false;
     const blockingQuestionOrders = printState?.blockingOrders ?? [];
@@ -187,14 +266,15 @@ const AssessmentFireRisk = ({
 
     useEffect(() => {
         getQuestions();
-        if (siteSelectedForGlobal?.siteId) {
+        if (!isMonthlyAudit && siteSelectedForGlobal?.siteId) {
             getSiteCheckAssets(siteSelectedForGlobal?.siteId);
             getSiteLayout(siteSelectedForGlobal?.siteId);
             fetchFolderStructure(siteSelectedForGlobal.siteId);
         }
-    }, []);
+        return () => { monthlyLoadSequence.current += 1; };
+    }, [checkId, subType]);
 
-    const fetchFolderStructure = async (siteId) => {
+    const fetchFolderStructure = async (siteId, loadSequence = null) => {
         try {
             const parentFoldersResponse = await get(`/api/document/site/${siteId}/parent/folders`);
             if (!parentFoldersResponse?.parentFolders?.length) return;
@@ -209,7 +289,7 @@ const AssessmentFireRisk = ({
             const internalMonthlyAudit = childFolders.find(
                 (folder) => folder.name?.trim() === "Internal Monthly Audit"
             );
-            if (internalMonthlyAudit?.id) {
+            if (internalMonthlyAudit?.id && (loadSequence === null || loadSequence === monthlyLoadSequence.current)) {
                 setAuditFolderId(internalMonthlyAudit.id);
             }
         } catch (error) {
@@ -265,14 +345,26 @@ const AssessmentFireRisk = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName) => {
+    const uploadPdfToServer = async (pdfBlob, fileName, submission = null) => {
         if (!auditFolderId) return { stored: false, sourceReference: null };
+        if (isMonthlyAudit) {
+            setIsUploading(true);
+            try {
+                const context = await uploadMonthlyAuditPdf(checkId, submission.periodToken, auditFolderId, pdfBlob, fileName);
+                applyMonthlyContext(context);
+                return { stored: true, sourceReference: context.sourceReference, context };
+            } finally {
+                setIsUploading(false);
+            }
+        }
         try {
             setIsUploading(true);
             const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
             const { exists, file: existingFile } = await checkFileExists(auditFolderId, fileName);
             const uploadFormData = new FormData();
             const sourceReference = `Audit-${checkId}-${Date.now()}`;
+            const issueDate = formatDateForBackend(siteCheck?.startDate);
+            const expiryDate = formatDateForBackend(calculateExpiryDate(siteCheck?.startDate, siteCheck?.repeatFrequency));
 
             if (exists && existingFile) {
                 uploadFormData.append("file", pdfFile);
@@ -284,8 +376,8 @@ const AssessmentFireRisk = ({
                         originalFileName: fileName,
                         fileVersion: (existingFile.fileVersion ?? 1) + 1,
                         siteId: siteSelectedForGlobal?.siteId || 0,
-                        issueDate: formatDateForBackend(siteCheck?.startDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(siteCheck?.startDate, siteCheck?.repeatFrequency)),
+                        issueDate,
+                        expiryDate,
                         uploaderUserId: loggedInUserData?.id || 0,
                         reviewerUserId: loggedInUserData?.id || 0,
                         referenceNumber: sourceReference,
@@ -305,8 +397,8 @@ const AssessmentFireRisk = ({
                     folderId: auditFolderId,
                     files: [{
                         name: fileName.split(".")[0],
-                        issueDate: formatDateForBackend(siteCheck?.startDate),
-                        expiryDate: formatDateForBackend(calculateExpiryDate(siteCheck?.startDate, siteCheck?.repeatFrequency)),
+                        issueDate,
+                        expiryDate,
                         note: "Monthly Audit Report",
                         fileVersion,
                         siteId: siteSelectedForGlobal?.siteId || 0,
@@ -334,6 +426,52 @@ const AssessmentFireRisk = ({
     };
 
     const getQuestions = async () => {
+        if (isMonthlyAudit) {
+            const sequence = ++monthlyLoadSequence.current;
+            setIsLoading(true);
+            try {
+                const context = await getMonthlyAuditContext(checkId);
+                if (!context.siteId) throw new Error("The audit site could not be verified. Reload the form.");
+                setAuditFolderId(null);
+                const [lovs, definitions, saved, actions, scopedAssets] = await Promise.all([
+                    get("/api/lov/SITE_CHECK_AUDIT_HEADER"),
+                    get("/api/site-check/assessment/questions/monthly-inspection"),
+                    getMonthlyAuditResponses(checkId, context.periodToken),
+                    getMonthlyAuditActions(checkId, context.periodToken),
+                    get(`/api/site/${context.siteId}/assets?siteCheckSummary=true`),
+                    fetchFolderStructure(context.siteId, sequence),
+                ]);
+                if (sequence !== monthlyLoadSequence.current) return null;
+                if (!Array.isArray(scopedAssets?.assets)) throw new Error("The site assets could not be loaded. Reload before filling or submitting the audit.");
+                setMonthlySiteAssets(scopedAssets.assets);
+                const headers = (lovs || []).filter((item) => item.attribite1 === "monthly-inspection")
+                    .sort((a, b) => parseFloat(a.lovDesc) - parseFloat(b.lovDesc));
+                const questions = (definitions || []).filter((q) => q?.order?.length > 4)
+                    .map((q) => hydrateMonthlyQuestion(q, saved.find((state) => Number(state.response?.qid) === Number(q.qid))))
+                    .sort((a, b) => a.order.localeCompare(b.order, undefined, { numeric: true }));
+                setheaders(headers);
+                setquest(questions);
+                setMonthlyActions(actions);
+                applyMonthlyContext(context);
+                setMonthlyError("");
+                const counts = [0, 0, 0, 0];
+                saved.forEach(({ response }) => {
+                    const score = Number(response?.totalRiskScore || 0);
+                    counts[score > 17 ? 0 : score > 10 ? 1 : score > 5 ? 2 : 3] += 1;
+                });
+                setrisks(counts);
+                return { context, questions, headers, actions };
+            } catch (error) {
+                if (sequence === monthlyLoadSequence.current) {
+                    setMonthlyError(monthlyAuditError(error, "The Monthly Audit could not be loaded."));
+                    setMonthlyContext(null);
+                    monthlyContextRef.current = null;
+                }
+                return null;
+            } finally {
+                if (sequence === monthlyLoadSequence.current) setIsLoading(false);
+            }
+        }
         setIsLoading(true);
         let questionCat =
             subType === "Annual Winter Audit"
@@ -414,6 +552,7 @@ const AssessmentFireRisk = ({
     };
 
     const handleInputChange = (e, idx) => {
+        if (isMonthlyAudit && monthlyReadOnly) return;
         const { name, value } = e.target;
         const uquest = [...quest];
         const udata = {
@@ -421,10 +560,11 @@ const AssessmentFireRisk = ({
             [name]: value,
         };
         uquest[idx].response = udata;
-        setquest(uquest);
+        markQuestionChanged(uquest, idx);
     };
 
     const setResponseCheck = (e, idx) => {
+        if (isMonthlyAudit && monthlyReadOnly) return;
         if (e.target.checked) {
             const uquest = [...quest];
             const udata = {
@@ -432,11 +572,12 @@ const AssessmentFireRisk = ({
                 response: "Yes",
             };
             uquest[idx].response = udata;
-            setquest(uquest);
+            markQuestionChanged(uquest, idx);
         }
     };
 
     const setResponseCheck2 = (e, idx) => {
+        if (isMonthlyAudit && monthlyReadOnly) return;
         if (e.target.checked) {
             const uquest = [...quest];
             const udata = {
@@ -444,11 +585,12 @@ const AssessmentFireRisk = ({
                 response: "No",
             };
             uquest[idx].response = udata;
-            setquest(uquest);
+            markQuestionChanged(uquest, idx);
         }
     };
 
     const handleFileChange = (e, idx) => {
+        if (isMonthlyAudit && monthlyReadOnly) return;
         const files = Array.from(e.target.files || []);
         const validImageFiles = files.filter((file) =>
             ["image/jpeg", "image/jpg", "image/png"].includes(file.type)
@@ -464,17 +606,19 @@ const AssessmentFireRisk = ({
             ...(uquest[idx].response.file || []),
             ...validImageFiles,
         ];
-        setquest(uquest);
+        markQuestionChanged(uquest, idx);
     };
     const handleFileDelete = (idx, idx2) => {
+        if (isMonthlyAudit && monthlyReadOnly) return;
         const uquest = [...quest];
-        quest[idx].response.file = [...quest[idx].response.file].filter(
+        uquest[idx].response.file = [...quest[idx].response.file].filter(
             (_, index) => index !== idx2
         );
-        setquest(uquest);
+        markQuestionChanged(uquest, idx);
     };
 
     const deleteAssessmentResponseImage = async (image) => {
+        if (isMonthlyAudit && monthlyReadOnly) return;
         Swal.fire({
             title: `Are you sure you'd like to permanently delete this image?`,
             showDenyButton: false,
@@ -482,6 +626,28 @@ const AssessmentFireRisk = ({
             confirmButtonText: "Delete",
         }).then(async (result) => {
             if (result.isConfirmed) {
+                if (isMonthlyAudit) {
+                    if (!beginMonthlyWork()) return;
+                    try {
+                        const context = monthlyContextRef.current;
+                        const question = quest.find((q) => q.response?.images?.some((item) => item.imageId === image.imageId));
+                        await deleteMonthlyAuditImage(checkId, image.imageId, context.periodToken, question?.responseRevision || 0);
+                        const states = await getMonthlyAuditResponses(checkId, context.periodToken);
+                        const state = states.find((item) => Number(item.response?.qid) === Number(question?.qid));
+                        if (!state) throw new Error("The saved image change could not be confirmed. Reload the audit.");
+                        setquest((current) => current.map((q) => Number(q.qid) === Number(question.qid)
+                            ? { ...q, responseRevision: state.revision,
+                                response: { ...q.response, images: state.response.images || [] } }
+                            : q));
+                        toast.success("Image removed from this audit. Saved History is preserved.");
+                    } catch (error) {
+                        setMonthlyError(monthlyAuditError(error));
+                        toast.error(monthlyAuditError(error));
+                    } finally {
+                        endMonthlyWork();
+                    }
+                    return;
+                }
                 await del(`/api/site-check/assessment/response/image/${image.imageId}`);
                 toast.success("Image deleted successfully");
                 await getQuestions();
@@ -491,7 +657,236 @@ const AssessmentFireRisk = ({
         });
     };
 
+    const persistMonthlyQuestion = async (question, periodToken) => {
+        if (monthlyContextRef.current?.periodToken !== periodToken || monthlyContextRef.current?.canEdit !== true) {
+            throw new Error("This audit is no longer editable. Reload it before continuing.");
+        }
+        let candidates = monthlyActions;
+        if (question.response?.faultassets) {
+            candidates = await getMonthlyAuditActions(checkId, periodToken);
+            setMonthlyActions(candidates);
+        }
+        const issues = monthlyResponseIssues(question, candidates, monthlyContextRef.current?.siteId);
+        if (issues.length) throw new Error(`Question ${question.order}: ${issues[0]}`);
+        setSavingQuestionId(question.qid);
+        const files = [];
+        for (const file of question.response?.file || []) {
+            let url = uploadedImageUrls.current.get(file);
+            if (!url) {
+                const result = await uploadSiteCheckDoc({ file, siteId: monthlyContextRef.current?.siteId });
+                url = typeof result === "string" ? result : result?.url || result?.data;
+                if (typeof url !== "string" || !url.trim()) {
+                    throw new Error(`An image for question ${question.order} could not be uploaded. Retry saving this question.`);
+                }
+                uploadedImageUrls.current.set(file, url);
+            }
+            files.push(url);
+        }
+        const nextRequest = monthlyResponseRequest(question, { checkId, periodToken, files });
+        const fingerprint = JSON.stringify({ ...nextRequest, requestId: null });
+        const cacheKey = `${periodToken}:${question.qid}`;
+        let pending = questionSaveRequests.current.get(cacheKey);
+        if (!pending || pending.fingerprint !== fingerprint) {
+            pending = { fingerprint, request: nextRequest };
+            questionSaveRequests.current.set(cacheKey, pending);
+        }
+        const state = await saveMonthlyAuditResponse(checkId, pending.request);
+        questionSaveRequests.current.delete(cacheKey);
+        const savedQuestion = hydrateMonthlyQuestion(question, state);
+        setquest((current) => current.map((q) => q.qid === question.qid ? savedQuestion : q));
+        return savedQuestion;
+    };
+
+    const saveMonthlyQuestion = async (event, index) => {
+        event.preventDefault();
+        if (!event.currentTarget.checkValidity()) {
+            event.currentTarget.reportValidity();
+            return;
+        }
+        if (monthlyReadOnly || !beginMonthlyWork()) return;
+        try {
+            await persistMonthlyQuestion(quest[index], monthlyContextRef.current.periodToken);
+            toast.success("Assessment response and Action selections saved.");
+        } catch (error) {
+            setMonthlyError(monthlyAuditError(error));
+            toast.error(monthlyAuditError(error));
+        } finally {
+            endMonthlyWork();
+        }
+    };
+
+    const handleMonthlyTestFill = async () => {
+        if (!canTestFill || !beginMonthlyWork()) return;
+        try {
+            const periodToken = monthlyContextRef.current.periodToken;
+            const filled = quest.map((question) => isMonthlyQuestionVisible(question, header) &&
+                monthlyQuestionAssets(question, auditAssets).length
+                ? fillMonthlyQuestionForTest(question, auditAssets) : question);
+            setquest(filled);
+            let savedCount = 0;
+            const savedQuestions = [];
+            const needsReview = [];
+            for (const question of filled) {
+                if (!isMonthlyQuestionVisible(question, header) || !monthlyQuestionAssets(question, auditAssets).length) continue;
+                if (splitMonthlyAssetIds(question.response?.faultassets).length) {
+                    needsReview.push(question.order);
+                    continue;
+                }
+                savedQuestions.push(await persistMonthlyQuestion(question, periodToken));
+                savedCount += 1;
+            }
+            // Confirm persistence without replacing any unfinished fault details
+            // the tester already entered on screen.
+            const stored = await getMonthlyAuditResponses(checkId, periodToken);
+            if (savedQuestions.some((question) => {
+                const persisted = stored.find((item) => Number(item.response?.qid) === Number(question.qid));
+                return !persisted || ["assets", "faultassets"].some((field) =>
+                    splitMonthlyAssetIds(persisted.response?.[field]).sort().join(",") !==
+                    splitMonthlyAssetIds(question.response?.[field]).sort().join(","));
+            })) {
+                throw new Error("Some test answers could not be confirmed. Reload and check the audit.");
+            }
+            if (needsReview.length) {
+                const message = `Test answers saved for ${savedCount} questions. Existing failures were left unchanged: question(s) ${needsReview.join(", ")}. Review and save those questions before submitting.`;
+                setMonthlyError(message);
+                toast.info(message);
+            } else {
+                toast.success("Test answers saved. You can change answers, review the audit and click Submit audit.");
+            }
+        } catch (error) {
+            setMonthlyError(monthlyAuditError(error));
+            toast.error(monthlyAuditError(error));
+        } finally {
+            endMonthlyWork();
+        }
+    };
+
+    const handleMonthlyOpenEarly = async () => {
+        if (!monthlyContext?.canOpenEarly || !beginMonthlyWork()) return;
+        try {
+            const previousPeriod = monthlyContextRef.current.periodToken;
+            const context = await openMonthlyAuditEarly(checkId, { periodToken: previousPeriod });
+            if (context.status !== "OPEN") throw new Error("The next audit has not opened. Reload to check its status.");
+            applyMonthlyContext(context);
+            const loaded = await getQuestions();
+            if (!loaded) throw new Error("The audit opened, but its answers could not be loaded. Reload the form.");
+            onAuditSubmitted?.();
+            toast.success(context.openedNewPeriod === false
+                ? "This audit is already Open. Its current answers have been kept."
+                : context.carryForwardEnabled
+                ? "Next audit opened. Previous answers are ready for review; previous photos remain in History."
+                : "Next audit opened with blank answers. Previous submissions remain in History.");
+        } catch (error) {
+            setMonthlyError(monthlyAuditError(error));
+            toast.error(monthlyAuditError(error));
+        } finally {
+            endMonthlyWork();
+        }
+    };
+
+    const handleMonthlySubmit = async () => {
+        if (!monthlyContext || monthlySubmitted || !monthlyContext.canSubmit || !beginMonthlyWork()) return;
+        const attemptedPeriod = monthlyContextRef.current.periodToken;
+        setIsSubmitting(true);
+        try {
+            let context = await getMonthlyAuditContext(checkId);
+            if (context.periodToken !== monthlyContextRef.current.periodToken) {
+                throw new Error("A new audit period has already opened. Reload the form before submitting.");
+            }
+            applyMonthlyContext(context);
+            if (context.status === "SUBMITTED") {
+                toast.info("This audit is already submitted and saved in History.");
+                return;
+            }
+            if (!context.pdfStored && !auditFolderId) {
+                throw new Error("The Internal Monthly Audit document folder could not be found. Restore the folder and reload this audit before submitting.");
+            }
+            if (context.status === "OPEN") {
+                if (!inspectionDate) throw new Error("Enter the actual Inspection Date before submitting.");
+                if (!calculatedMonthlyDue) throw new Error("The audit's repeat frequency could not be verified. Reload before submitting.");
+                if (!canPrint) throw new Error(`Complete question(s): ${visibleBlockingOrders.join(", ") || "all applicable questions"}.`);
+                for (const question of quest) {
+                    if (isMonthlyQuestionVisible(question, header) && monthlyQuestionAssets(question, auditAssets).length &&
+                        (question.dirty || !question.response?.responseId ||
+                            (question.response?.faultassets && !question.actionLinks?.length))) {
+                        await persistMonthlyQuestion(question, context.periodToken);
+                    }
+                }
+            }
+            if (context.status !== "SUBMITTING") {
+                if (!submissionRequest.current || submissionRequest.current.periodToken !== context.periodToken) {
+                    submissionRequest.current = {
+                        periodToken: context.periodToken,
+                        inspectionDate: context.status === "ARCHIVE_REQUIRED"
+                            ? String(context.inspectionDate || "").slice(0, 10) : inspectionDate,
+                        requestId: newMonthlyAuditRequestId(),
+                    };
+                }
+                context = await prepareMonthlyAuditSubmission(checkId, submissionRequest.current);
+                applyMonthlyContext(context);
+            }
+            if (context.status === "SUBMITTED") return;
+            if (context.status !== "SUBMITTING" || !context.sourceReference) {
+                throw new Error("The audit could not be prepared for submission. Reload its status.");
+            }
+            // Load the persisted, now-frozen responses. A report must not use an
+            // earlier React state snapshot or unsaved screen selections.
+            const frozen = await getMonthlyAuditResponses(checkId, context.periodToken);
+            const reportQuestions = quest.map((question) => hydrateMonthlyQuestion(question,
+                frozen.find((item) => Number(item.response?.qid) === Number(question.qid))));
+            setquest(reportQuestions);
+            if (!context.pdfStored && uploadedPdfReference.current !== context.sourceReference) {
+                if (!auditFolderId) throw new Error("The Internal Monthly Audit document folder could not be found. Restore the folder, then retry saving the report and History.");
+                const report = await handlePrint({ questions: reportQuestions, context });
+                if (!report?.blob) throw new Error("The report could not be generated. Retry saving the report and History.");
+                const uploaded = await uploadPdfToServer(report.blob, report.fileName, context);
+                if (!uploaded?.stored) throw new Error("The report upload could not be confirmed. Retry saving the report and History.");
+                uploadedPdfReference.current = context.sourceReference;
+                context = uploaded.context || context;
+            }
+            const completed = await completeMonthlyAuditSubmission(checkId, {
+                periodToken: context.periodToken, sourceReference: context.sourceReference,
+            });
+            if (completed.status !== "SUBMITTED" || !completed.historyId || completed.pdfStored !== true) {
+                throw new Error("The report and History have not both been confirmed. Retry saving the report and History.");
+            }
+            applyMonthlyContext(completed);
+            onAuditSubmitted?.();
+            toast.success("Audit submitted. Report and saved audit data are confirmed in History.");
+        } catch (error) {
+            const message = monthlyAuditError(error, "The audit could not be submitted.");
+            try {
+                // A lost success response may still have completed. Reconcile
+                // server state before enabling a recovery action or another save.
+                const recovered = await getMonthlyAuditContext(checkId);
+                if (recovered.periodToken !== attemptedPeriod) {
+                    // Never attach a new period token to stale on-screen answers.
+                    setquest([]);
+                    const loaded = await getQuestions();
+                    if (!loaded) throw new Error("The new audit could not be loaded.");
+                } else {
+                    applyMonthlyContext(recovered);
+                    if (recovered.status === "SUBMITTED" && recovered.historyId && recovered.pdfStored) {
+                        setMonthlyError("");
+                        onAuditSubmitted?.();
+                        toast.success("Audit submitted. Report and saved audit data are confirmed in History.");
+                        return;
+                    }
+                }
+            } catch {
+                setMonthlyContext(null);
+                monthlyContextRef.current = null;
+            }
+            setMonthlyError(message);
+            toast.error(message);
+        } finally {
+            setIsSubmitting(false);
+            endMonthlyWork();
+        }
+    };
+
     const saveAssessmentResponse = async (event, index, completed) => {
+        if (isMonthlyAudit) return saveMonthlyQuestion(event, index);
         event.preventDefault();
         const form = event.target;
         if (!form.checkValidity()) {
@@ -503,7 +898,7 @@ const AssessmentFireRisk = ({
         const okAssets = (q.response?.assets?.split(",") || []).filter(Boolean);
         const isSpecialQuestion = ['3.5.1', '8.1.1'].includes(q.order);
 
-        const { catAsset } = getQuestionState(q, siteAssets);
+        const { catAsset } = getQuestionState(q, auditAssets);
 
         if (faultAssets.length > 0) {
             if (!q.response.position || !q.response.action) {
@@ -573,6 +968,7 @@ const AssessmentFireRisk = ({
     };
 
     const handleSubmitAudit = async () => {
+        if (isMonthlyAudit) return handleMonthlySubmit();
         if (!canPrint) {
             toast.error(
                 visibleBlockingOrders?.length > 0
@@ -666,8 +1062,20 @@ const AssessmentFireRisk = ({
         }
     };
 
-    const handlePrint = async () => {
-        if (!quest?.length || !header?.length) {
+    const handlePrint = async (options = {}) => {
+        const reportQuestions = options.questions || quest;
+        const reportContext = options.context || monthlyContext;
+        const reportCheck = isMonthlyAudit ? reportContext?.checkHeader : siteCheck;
+        if (isMonthlyAudit && (!reportContext?.siteId || !reportCheck)) {
+            throw new Error("The audit header could not be verified. Reload before producing its report.");
+        }
+        const reportSiteName = isMonthlyAudit
+            ? (reportContext.siteName || `Site ${reportContext.siteId}`)
+            : siteSelectedForGlobal?.siteName || "Site";
+        const reportInspectionDate = isMonthlyAudit
+            ? (reportContext?.status !== "OPEN" ? reportContext?.inspectionDate : inspectionDate)
+            : siteCheck?.startDate;
+        if (!reportQuestions?.length || !header?.length) {
             toast.warn("No audit data to print.");
             return;
         }
@@ -736,7 +1144,7 @@ const AssessmentFireRisk = ({
             });
         };
 
-        const addImagesToPdf = async (images, sasToken) => {
+        const addImagesToPdf = async (images, sasToken, questionOrder) => {
             if (!images?.length) return;
             doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
@@ -747,14 +1155,22 @@ const AssessmentFireRisk = ({
                 const hasQuery = baseUrl.includes("?");
                 const src = baseUrl + (!hasQuery && sasToken ? "?" + sasToken : "");
                 const dataUrl = await loadImageAsDataUrl(src);
-                if (!dataUrl) continue;
+                if (!dataUrl) {
+                    if (isMonthlyAudit) throw new Error(`Photo ${img.imageId || ""} for question ${questionOrder} could not be loaded into the report. Check the photo is available, then retry saving the report and History.`);
+                    continue;
+                }
                 if (y + maxImgH > pageH - margin) {
                     doc.addPage();
                     y = margin;
                 }
                 const imgW = maxImgW;
                 const imgH = maxImgH;
-                doc.addImage(dataUrl, "JPEG", margin, y, imgW, imgH);
+                try {
+                    doc.addImage(dataUrl, "JPEG", margin, y, imgW, imgH);
+                } catch (error) {
+                    if (isMonthlyAudit) throw new Error(`Photo ${img.imageId || ""} for question ${questionOrder} could not be added to the report. Check the saved photo, then retry saving the report and History.`);
+                    throw error;
+                }
                 y += imgH + 2;
             }
             doc.setFont("helvetica", "normal");
@@ -767,13 +1183,15 @@ const AssessmentFireRisk = ({
             return `${u.trade || ""}(${u.role || ""}) - ${u.name || ""} (${u.email || ""}) - ${u.company || ""}`.trim();
         };
         const infoRows = [
-            ["Type", siteCheck?.type ?? "Audit"],
-            ["Sub Type", siteCheck?.subType ?? "Monthly Audit"],
-            ["Category", siteCheck?.category ?? "—"],
-            ["Start Date", siteCheck?.startDate ? moment(siteCheck.startDate).format("DD-MM-YYYY") : "—"],
-            ["Lead", formatUserLabel(siteCheck?.leadUserID)],
-            ["Assistant", formatUserLabel(siteCheck?.assistantUserID)],
-            ["Repeats", siteCheck?.repeatFrequency ?? "Monthly"],
+            ["Type", reportCheck?.type ?? "Audit"],
+            ["Sub Type", reportCheck?.subType ?? "Monthly Audit"],
+            ["Category", reportCheck?.category ?? "—"],
+            [isMonthlyAudit ? "Inspection Date" : "Start Date", reportInspectionDate ? moment(reportInspectionDate).format("DD-MM-YYYY") : "—"],
+            ...(isMonthlyAudit ? [["Next Due Date", formatSiteCheckDisplayDate(reportContext?.status !== "OPEN"
+                ? reportContext?.nextDueDate : calculatedMonthlyDue) || "—"]] : []),
+            ["Lead", formatUserLabel(reportCheck?.leadUserID)],
+            ["Assistant", formatUserLabel(reportCheck?.assistantUserID)],
+            ["Repeats", reportCheck?.repeatFrequency ?? "Monthly"],
         ];
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
@@ -794,7 +1212,7 @@ const AssessmentFireRisk = ({
         });
         y += blockGap;
 
-        const siteName = siteSelectedForGlobal?.siteName || "Site";
+        const siteName = reportSiteName;
         const auditType = subType || "Audit";
         doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
@@ -804,8 +1222,8 @@ const AssessmentFireRisk = ({
         doc.setFont("helvetica", "normal");
         doc.text(`Printed on ${moment().format("DD/MM/YYYY HH:mm")}`, margin, y);
         y += lineH + blockGap;
-        const closedCount = quest?.filter((q) => q?.completed).length || 0;
-        doc.text(`Total questions: ${quest?.length || 0}, Closed: ${closedCount}, Open: ${(quest?.length || 0) - closedCount}`, margin, y);
+        const closedCount = reportQuestions?.filter((q) => q?.completed).length || 0;
+        doc.text(`Total questions: ${reportQuestions?.length || 0}, Closed: ${closedCount}, Open: ${(reportQuestions?.length || 0) - closedCount}`, margin, y);
         y += lineH + blockGap * 2;
 
         for (const h of header || []) {
@@ -820,11 +1238,11 @@ const AssessmentFireRisk = ({
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
 
-            const sectionQuestions = quest.filter(
+            const sectionQuestions = reportQuestions.filter(
                 (q) => !q?.question?.includes("DELETE") && q.order?.startsWith(h.lovDesc + ".")
             );
             for (const q of sectionQuestions) {
-                const { catAsset } = getQuestionState(q, siteAssets);
+                const { catAsset } = getQuestionState(q, auditAssets);
                 const okIds = (q.response?.assets?.split(",") ?? []).filter(Boolean).map((id) => id.trim());
                 const faultIds = (q.response?.faultassets?.split(",") ?? []).filter(Boolean).map((id) => id.trim());
                 const faultCount = faultIds.length;
@@ -843,7 +1261,7 @@ const AssessmentFireRisk = ({
                     addText(q.response?.action || "—");
                     const images = q.response?.images || [];
                     if (images.length > 0) {
-                        await addImagesToPdf(images, sasToken);
+                        await addImagesToPdf(images, sasToken, q.order);
                     }
                     const cons = q.response?.consequence ?? "—";
                     const like = q.response?.likelihood ?? "—";
@@ -855,7 +1273,7 @@ const AssessmentFireRisk = ({
             }
         }
 
-        const siteNameRaw = siteSelectedForGlobal?.siteName || "Site";
+        const siteNameRaw = reportSiteName;
         const siteNameSanitized = siteNameRaw.replace(/[^a-zA-Z0-9-_\s]/g, "").replace(/\s+/g, "_") || "Site";
         const fileName = `Audit_Monthly_${siteNameSanitized}.pdf`;
         const blob = doc.output("blob");
@@ -874,6 +1292,71 @@ const AssessmentFireRisk = ({
             <Card>
                 {true && (
                     <CardContent>
+                        {isMonthlyAudit && (
+                            <Box className="dont-print" sx={{ mb: 2 }}>
+                                <Grid container spacing={2} alignItems="center">
+                                    <Grid item xs={12} sm={4}>
+                                        <TextField
+                                            id={`monthly-inspection-date-${checkId}`}
+                                            type="date"
+                                            label="Inspection Date"
+                                            value={inspectionDate}
+                                            onChange={(event) => { setInspectionDate(event.target.value); submissionRequest.current = null; }}
+                                            disabled={monthlyReadOnly}
+                                            InputLabelProps={{ shrink: true }}
+                                            size="small"
+                                            fullWidth
+                                            required
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <TextField
+                                            label="Next Due Date"
+                                            value={formatSiteCheckDisplayDate(monthlyContext?.status === "OPEN"
+                                                ? calculatedMonthlyDue : monthlyContext?.nextDueDate) || ""}
+                                            InputProps={{ readOnly: true }}
+                                            InputLabelProps={{ shrink: true }}
+                                            size="small"
+                                            fullWidth
+                                            helperText={`Repeat frequency: ${monthlyFrequency || "Not set"}`}
+                                        />
+                                    </Grid>
+                                    <Grid item xs={12} sm={4}>
+                                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                                            {canTestFill && (
+                                                <Button variant="outlined" size="small" onClick={handleMonthlyTestFill}
+                                                    disabled={monthlyBusy || isSubmitting || isLoading || !quest.length}>
+                                                    Fill test answers
+                                                </Button>
+                                            )}
+                                            {monthlyContext?.canOpenEarly && (
+                                                <Button variant="outlined" size="small" onClick={handleMonthlyOpenEarly}
+                                                    disabled={monthlyBusy || isSubmitting || isLoading}>
+                                                    Open next audit early
+                                                </Button>
+                                            )}
+                                        </Box>
+                                    </Grid>
+                                </Grid>
+                                {isLoading && <Typography sx={{ mt: 1 }} variant="body2">Loading the current audit…</Typography>}
+                                {monthlyBusy && !isSubmitting && <Typography sx={{ mt: 1 }} variant="body2">
+                                    {savingQuestionId ? "Saving answers and Action selections…" : "Updating the audit…"}
+                                </Typography>}
+                                {monthlySubmitted && <Alert severity="success" sx={{ mt: 1 }}>
+                                    Submitted. The report and saved audit data are confirmed in History.
+                                </Alert>}
+                                {monthlyRecovery && <Alert severity="warning" sx={{ mt: 1 }}>
+                                    {monthlyContext.status === "ARCHIVE_REQUIRED"
+                                        ? "This completed audit needs its report and saved data confirmed in History before the next audit can open."
+                                        : "Submission is in progress. Answers are saved and locked. Use Save report and History to complete it."}
+                                </Alert>}
+                                {monthlyError && <Alert severity="error" sx={{ mt: 1 }}
+                                    action={<Button color="inherit" size="small" disabled={monthlyBusy || isSubmitting}
+                                        onClick={getQuestions}>Reload</Button>}>
+                                    {monthlyError}
+                                </Alert>}
+                            </Box>
+                        )}
                         {/* Sticky header so Print button stays visible when scrolling the long question list */}
                         <Box
                             sx={{
@@ -980,18 +1463,22 @@ const AssessmentFireRisk = ({
                           size="small"
                           startIcon={<Print />}
                           onClick={async () => {
-                              const r = await handlePrint();
-                              if (r?.blob && r?.fileName) {
-                                  const url = URL.createObjectURL(r.blob);
-                                  const a = document.createElement("a");
-                                  a.href = url;
-                                  a.download = r.fileName;
-                                  a.click();
-                                  URL.revokeObjectURL(url);
-                                  toast.success("PDF downloaded.");
+                              try {
+                                  const r = await handlePrint();
+                                  if (r?.blob && r?.fileName) {
+                                      const url = URL.createObjectURL(r.blob);
+                                      const a = document.createElement("a");
+                                      a.href = url;
+                                      a.download = r.fileName;
+                                      a.click();
+                                      URL.revokeObjectURL(url);
+                                      toast.success("PDF downloaded.");
+                                  }
+                              } catch (error) {
+                                  toast.error(monthlyAuditError(error, "The report could not be downloaded."));
                               }
                           }}
-                          disabled={!canPrint}
+                          disabled={!canPrint || (isMonthlyAudit && (!monthlyContext || isLoading || monthlyBusy || isSubmitting))}
                           className="dont-print"
                       >
                         Download PDF
@@ -1028,7 +1515,7 @@ const AssessmentFireRisk = ({
                                                 );
 
                                                 if (assetCategory.length === 4) {
-                                                    catAsset = siteAssets?.filter(
+                                                    catAsset = auditAssets?.filter(
                                                         (s) =>
                                                             s.category?.trim() === assetCategory[0]?.trim() &&
                                                             s.subCategory?.trim() ===
@@ -1039,7 +1526,7 @@ const AssessmentFireRisk = ({
                                                                 assetCategory[3]?.trim())
                                                     );
                                                 } else if (assetCategory.length === 3) {
-                                                    catAsset = siteAssets?.filter(
+                                                    catAsset = auditAssets?.filter(
                                                         (s) =>
                                                             s.category?.trim() === assetCategory[0]?.trim() &&
                                                             s.subCategory?.trim() ===
@@ -1048,7 +1535,7 @@ const AssessmentFireRisk = ({
                                                             assetCategory[2]?.trim()
                                                     );
                                                 } else if (assetCategory.length === 2) {
-                                                    catAsset = siteAssets?.filter(
+                                                    catAsset = auditAssets?.filter(
                                                         (s) =>
                                                             s.category === assetCategory[0]?.trim() &&
                                                             s.subCategory?.trim() === assetCategory[1]?.trim()
@@ -1057,12 +1544,12 @@ const AssessmentFireRisk = ({
                                                     assetCategory.length === 1 &&
                                                     assetCategory[0]?.trim() !== ""
                                                 ) {
-                                                    catAsset = siteAssets?.filter(
+                                                    catAsset = auditAssets?.filter(
                                                         (s) =>
                                                             s.category?.trim() === assetCategory[0]?.trim()
                                                     );
                                                 } else {
-                                                    catAsset = siteAssets;
+                                                    catAsset = auditAssets;
                                                 }
 
                                                 const faultAsset = (
@@ -1085,15 +1572,15 @@ const AssessmentFireRisk = ({
                                                         <AccordionSummary expandIcon={<ExpandMore />}>
                                                             <Typography>
                                                                 {q.order} {q.question}
-                                                                {/* <Checkbox disabled={q?.completed} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
-                  <Checkbox disabled={q?.completed} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
+                                                                {/* <Checkbox disabled={questionReadOnly(q)} checked={q?.response?.response === "Yes"} onChange={(e)=>setResponseCheck(e, idx)}/> Yes
+                  <Checkbox disabled={questionReadOnly(q)} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
                                                             </Typography>
                                                             &nbsp;&nbsp;&nbsp;&nbsp;
                                                             {catAsset?.length > 0 && (
                                                                 <Chip
                                                                     style={{ margin: "5px", marginLeft: "30px" }}
                                                                     color={!q?.completed ? "success" : "primary"}
-                                                                    label={!q?.completed ? "Open" : "Closed"}
+                                                                    label={isMonthlyAudit ? (q.dirty ? "Unsaved" : q.response?.responseId ? "Saved" : "Open") : !q?.completed ? "Open" : "Closed"}
                                                                 />
                                                             )}
                                                         </AccordionSummary>
@@ -1159,7 +1646,7 @@ const AssessmentFireRisk = ({
                                                                         <Grid item xs={12} sm={12}>
                                                                             <Autocomplete
                                                                                 //limitTags={3}
-                                                                                disabled={q?.completed}
+                                                                                disabled={questionReadOnly(q)}
                                                                                 multiple
                                                                                 disableCloseOnSelect={true}
                                                                                 onClose={(event, reason) => {
@@ -1175,6 +1662,7 @@ const AssessmentFireRisk = ({
                                                                                     )
                                                                                     .map((option) => option.assetId)}
                                                                                 onChange={(event, newValue) => {
+                                                                                    if (isMonthlyAudit && monthlyReadOnly) return;
                                                                                     const assetsList = catAsset.filter(
                                                                                         (s) =>
                                                                                             !q?.response?.faultassets
@@ -1208,7 +1696,7 @@ const AssessmentFireRisk = ({
                                                                                             assets: newValue.join(","),
                                                                                         };
                                                                                     }
-                                                                                    setquest(uquest);
+                                                                                    markQuestionChanged(uquest, idx);
                                                                                 }}
                                                                                 options={[
                                                                                     "Select All",
@@ -1331,7 +1819,7 @@ const AssessmentFireRisk = ({
                                                                         </Grid>
                                                                         <Grid item xs={12} sm={12}>
                                                                             <Autocomplete
-                                                                                disabled={q?.completed}
+                                                                                disabled={questionReadOnly(q)}
                                                                                 multiple
                                                                                 disableCloseOnSelect={true}
                                                                                 onClose={(event, reason) => {
@@ -1347,6 +1835,7 @@ const AssessmentFireRisk = ({
                                                                                     )
                                                                                     .map((option) => option.assetId)}
                                                                                 onChange={(event, newValue) => {
+                                                                                    if (isMonthlyAudit && monthlyReadOnly) return;
                                                                                     const assetsList = catAsset.filter(
                                                                                         (s) =>
                                                                                             !q?.response?.assets
@@ -1379,7 +1868,7 @@ const AssessmentFireRisk = ({
                                                                                             faultassets: newValue.join(","),
                                                                                         };
                                                                                     }
-                                                                                    setquest(uquest);
+                                                                                    markQuestionChanged(uquest, idx);
                                                                                 }}
                                                                                 options={[
                                                                                     "Select All",
@@ -1500,6 +1989,24 @@ const AssessmentFireRisk = ({
                                                                                 )}
                                                                             />
                                                                         </Grid>
+                                                                        {isMonthlyAudit && faultAsset > 0 && (
+                                                                            <Grid item xs={12}>
+                                                                                <MonthlyAuditActionChoices
+                                                                                    question={q}
+                                                                                    candidates={monthlyActions}
+                                                                                    siteId={monthlyContext?.siteId}
+                                                                                    assets={catAsset}
+                                                                                    disabled={monthlyReadOnly}
+                                                                                    onChange={(assetId, choice) => {
+                                                                                        if (monthlyReadOnly) return;
+                                                                                        const questions = [...quest];
+                                                                                        questions[idx] = { ...q,
+                                                                                            actionChoices: { ...q.actionChoices, [assetId]: choice } };
+                                                                                        markQuestionChanged(questions, idx);
+                                                                                    }}
+                                                                                />
+                                                                            </Grid>
+                                                                        )}
                                                                         {faultAsset > 0 && (
                                                                             <Grid item xs={6}>
                                                                                 <label
@@ -1509,7 +2016,7 @@ const AssessmentFireRisk = ({
                                                                                     Observation
                                                                                 </label>
                                                                                 <textarea
-                                                                                    disabled={q?.completed}
+                                                                                    disabled={questionReadOnly(q)}
                                                                                     name="position"
                                                                                     className="form-control"
                                                                                     id="position"
@@ -1537,7 +2044,7 @@ const AssessmentFireRisk = ({
                                                                                     Suggested Action
                                                                                 </label>
                                                                                 <textarea
-                                                                                    disabled={q?.completed}
+                                                                                    disabled={questionReadOnly(q)}
                                                                                     name="action"
                                                                                     required={faultAsset > 0}
                                                                                     className="form-control"
@@ -1597,6 +2104,7 @@ const AssessmentFireRisk = ({
                                                                                     onDrop={(e) => {
                                                                                         e.preventDefault();
                                                                                         e.stopPropagation();
+                                                                                        if (isMonthlyAudit && monthlyReadOnly) return;
                                                                                         const files = Array.from(
                                                                                             e.dataTransfer.files || []
                                                                                         );
@@ -1626,13 +2134,13 @@ const AssessmentFireRisk = ({
                                                                                                     []),
                                                                                                 ...validImageFiles,
                                                                                             ];
-                                                                                            setquest(uquest);
+                                                                                            markQuestionChanged(uquest, idx);
                                                                                         }
                                                                                     }}
                                                                                 >
                                                                                     <IconButton
                                                                                         component="label"
-                                                                                        disabled={q?.completed}
+                                                                                        disabled={questionReadOnly(q)}
                                                                                     >
                                                                                         <input
                                                                                             hidden
@@ -1642,7 +2150,7 @@ const AssessmentFireRisk = ({
                                                                                             }
                                                                                             accept="image/jpeg, image/jpg, image/png"
                                                                                             multiple
-                                                                                            disabled={q?.completed}
+                                                                                            disabled={questionReadOnly(q)}
                                                                                         />
                                                                                         <UploadFile
                                                                                             color={
@@ -1706,7 +2214,7 @@ const AssessmentFireRisk = ({
                                                                                                     width={200}
                                                                                                     alt="ActionResponse"
                                                                                                 />
-                                                                                                {!q?.completed && (
+                                                                                                {!questionReadOnly(q) && (
                                                                                                     <button
                                                                                                         type="button"
                                                                                                         className="btn btn-sm btn-danger mb-2"
@@ -1752,7 +2260,7 @@ const AssessmentFireRisk = ({
                                                                                         height={200}
                                                                                         width={200}
                                                                                     />
-                                                                                    {!q?.completed && (
+                                                                                    {!questionReadOnly(q) && (
                                                                                         <button
                                                                                             type="button"
                                                                                             className="btn btn-sm btn-danger mb-2"
@@ -1815,7 +2323,7 @@ const AssessmentFireRisk = ({
                                                                                             </label>
                                                                                             <select
                                                                                                 required={faultAsset > 0}
-                                                                                                disabled={q?.completed}
+                                                                                                disabled={questionReadOnly(q)}
                                                                                                 className="form-control form-select"
                                                                                                 name="consequence"
                                                                                                 value={q?.response?.consequence}
@@ -1842,7 +2350,7 @@ const AssessmentFireRisk = ({
                                                                                             </label>
                                                                                             <select
                                                                                                 required={faultAsset > 0}
-                                                                                                disabled={q?.completed}
+                                                                                                disabled={questionReadOnly(q)}
                                                                                                 className="form-control form-select"
                                                                                                 name="likelihood"
                                                                                                 value={q?.response?.likelihood}
@@ -1886,7 +2394,7 @@ const AssessmentFireRisk = ({
                                                                                 </Grid>
                                                                             </Grid>
                                                                         )}
-                                                                        {!q?.completed && (
+                                                                        {(isMonthlyAudit ? monthlyContext?.canEdit : !q?.completed) && (
                                                                             <Grid item xs={12}>
                                                                                 <button
                                                                                     style={{
@@ -1897,11 +2405,11 @@ const AssessmentFireRisk = ({
                                                                                     }}
                                                                                     className="btn btn-primary text-white pr-2"
                                                                                     disabled={
-                                                                                        okAsset === 0 && faultAsset === 0
+                                                                                        (okAsset === 0 && faultAsset === 0) || (isMonthlyAudit && monthlyReadOnly)
                                                                                     }
                                                                                     type="submit"
                                                                                 >
-                                                                                    {isLoading ? (
+                                                                                    {isLoading || (isMonthlyAudit && savingQuestionId === q.qid) ? (
                                                                                         <CircularProgress
                                                                                             sx={{ color: "white" }}
                                                                                         />
@@ -1947,7 +2455,11 @@ const AssessmentFireRisk = ({
                             >
                                 <Tooltip
                                     title={
-                                        canPrint
+                                        isMonthlyAudit && monthlySubmitted
+                                            ? "This audit is already saved in History"
+                                            : isMonthlyAudit && monthlyRecovery
+                                                ? "Complete the saved submission without creating another audit"
+                                                : canPrint
                                             ? "Submit audit and close this site check"
                                             : visibleBlockingOrders.length > 0
                                                 ? `Complete question(s): ${visibleBlockingOrders.join(", ")}${hiddenBlockingCount > 0 ? ` (+ ${hiddenBlockingCount} in other sections)` : ""}`
@@ -1963,9 +2475,13 @@ const AssessmentFireRisk = ({
                         size="medium"
                         startIcon={<CheckCircle />}
                         onClick={handleSubmitAudit}
-                        disabled={!canPrint || isSubmitting}
+                        disabled={isMonthlyAudit
+                            ? !monthlyContext?.canSubmit || monthlySubmitted || monthlyBusy || isSubmitting || isLoading ||
+                                (!monthlyRecovery && !canPrint)
+                            : !canPrint || isSubmitting}
                     >
-                      {isSubmitting ? "Submitting…" : "Submit audit"}
+                      {isSubmitting ? "Submitting…" : isMonthlyAudit && monthlySubmitted ? "Submitted"
+                          : isMonthlyAudit && monthlyRecovery ? "Save report and History" : "Submit audit"}
                     </Button>
                   </span>
                                 </Tooltip>
@@ -1989,7 +2505,7 @@ const AssessmentFireRisk = ({
                 }}
             >
                 <h2 style={{ marginBottom: 8 }}>
-                    {siteSelectedForGlobal?.siteName || "Site"} – {subType || "Audit"}
+                    {isMonthlyAudit ? monthlyContext?.siteName || `Site ${monthlyContext?.siteId || ""}` : siteSelectedForGlobal?.siteName || "Site"} – {subType || "Audit"}
                 </h2>
                 <p style={{ marginBottom: 16 }}>
                     Printed on {moment().format("DD/MM/YYYY HH:mm")}
@@ -2014,7 +2530,7 @@ const AssessmentFireRisk = ({
                             .map((q) => {
                                 const { catAsset, okAsset, faultAsset } = getQuestionState(
                                     q,
-                                    siteAssets
+                                    auditAssets
                                 );
                                 const okIds = (q.response?.assets?.split(",") ?? []).filter(
                                     Boolean
