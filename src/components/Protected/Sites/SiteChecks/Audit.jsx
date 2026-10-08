@@ -107,6 +107,7 @@ const AssessmentFireRisk = ({
     const [monthlyError, setMonthlyError] = useState("");
     const [inspectionDate, setInspectionDate] = useState("");
     const [recoveryStartDate, setRecoveryStartDate] = useState(getUkLocalDate());
+    const [confirmOverdueRenewal, setConfirmOverdueRenewal] = useState(false);
     const [monthlyBusy, setMonthlyBusy] = useState(false);
     const [savingQuestionId, setSavingQuestionId] = useState(null);
     const monthlyContextRef = useRef(null);
@@ -129,6 +130,7 @@ const AssessmentFireRisk = ({
         setMonthlyContext(context);
         if (changedPeriod) {
             questionSaveRequests.current.clear();
+            setConfirmOverdueRenewal(false);
         }
         setInspectionDate((current) => {
             if (context.status !== "OPEN") return String(context.inspectionDate || "").slice(0, 10);
@@ -266,6 +268,7 @@ const AssessmentFireRisk = ({
 
     useEffect(() => {
         setRecoveryStartDate(getUkLocalDate());
+        setConfirmOverdueRenewal(false);
         getQuestions();
         if (!isMonthlyAudit && siteSelectedForGlobal?.siteId) {
             getSiteCheckAssets(siteSelectedForGlobal?.siteId);
@@ -436,6 +439,9 @@ const AssessmentFireRisk = ({
                     setMonthlyActions([]);
                     setrisks([0, 0, 0, 0]);
                     applyMonthlyContext(context);
+                    // Show the in-panel confirmation when an overdue audit is opened.
+                    // No archive call is made until the engineer clicks Confirm.
+                    setConfirmOverdueRenewal(true);
                     setMonthlyError("");
                     return { context, questions: [], headers: [], actions: [] };
                 }
@@ -907,30 +913,35 @@ const AssessmentFireRisk = ({
     };
 
     const handleMonthlyOverdueRenewal = async () => {
-        if (!monthlyContext?.canRenewOverdue || !beginMonthlyWork()) return;
+        // The confirmation is rendered inside View Inspection, not in a popup
+        // behind the full-screen Site Check workspace. Never show Archiving
+        // until the engineer explicitly confirms and the request can begin.
+        if (!monthlyContext?.canRenewOverdue || !confirmOverdueRenewal || monthlyBusyRef.current) return;
+        const today = getUkLocalDate();
+        const earliest = moment(today).subtract(1, "month").format("YYYY-MM-DD");
+        if (!recoveryStartDate || recoveryStartDate < earliest || recoveryStartDate > today) {
+            setMonthlyError("Choose a new Inspection Date between one calendar month ago and today.");
+            return;
+        }
+        const due = calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency);
+        if (!due) {
+            setMonthlyError("The next Due Date could not be calculated. Reload the audit.");
+            return;
+        }
+        const oldToken = monthlyContextRef.current?.periodToken;
+        if (!oldToken) {
+            setMonthlyError("Reload this Monthly Audit before renewal.");
+            return;
+        }
+        if (!beginMonthlyWork()) return;
         try {
-            const today = getUkLocalDate();
-            const earliest = moment(today).subtract(1, "month").format("YYYY-MM-DD");
-            if (!recoveryStartDate || recoveryStartDate < earliest || recoveryStartDate > today) {
-                throw new Error("Choose a new Inspection Date between one calendar month ago and today.");
-            }
-            const due = calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency);
-            if (!due) throw new Error("The next Due Date could not be calculated. Reload the audit.");
-            const confirmation = await Swal.fire({
-                title: "Start New Monthly Audit?",
-                text: `The previous audit and its answers must be saved to History first. ` +
-                    `The new audit will start ${formatSiteCheckDisplayDate(recoveryStartDate)} ` +
-                    `and be due ${formatSiteCheckDisplayDate(due)}. Continue?`,
-                icon: "warning",
-                showCancelButton: true,
-                confirmButtonText: "Archive and start new audit",
-                cancelButtonText: "Cancel",
-            });
-            if (!confirmation.isConfirmed) return;
-            const oldToken = monthlyContextRef.current?.periodToken;
-            if (!oldToken) throw new Error("Reload this Monthly Audit before renewal.");
             await renewOverdueMonthlyAudit(checkId, { periodToken: oldToken, inspectionDate: recoveryStartDate });
-            await getQuestions();
+            setConfirmOverdueRenewal(false);
+            const refreshed = await getQuestions();
+            if (!refreshed) {
+                setMonthlyError("The previous audit was renewed, but the new form could not be loaded. Close and reopen this inspection. Do not renew it again.");
+                return;
+            }
             onAuditSubmitted?.();
             toast.success("Previous Monthly Audit archived. New blank audit is ready.");
         } catch (error) {
@@ -1250,7 +1261,10 @@ const AssessmentFireRisk = ({
                                     label="New Inspection / Start Date"
                                     type="date"
                                     value={recoveryStartDate}
-                                    onChange={(event) => setRecoveryStartDate(event.target.value)}
+                                    onChange={(event) => {
+                                        setRecoveryStartDate(event.target.value);
+                                        setMonthlyError("");
+                                    }}
                                     inputProps={{
                                         min: moment(getUkLocalDate()).subtract(1, "month").format("YYYY-MM-DD"),
                                         max: getUkLocalDate(),
@@ -1275,13 +1289,48 @@ const AssessmentFireRisk = ({
                                     fullWidth
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={3}>
-                                <Button variant="contained" onClick={handleMonthlyOverdueRenewal}
-                                    disabled={monthlyBusy || isLoading || !recoveryStartDate}>
-                                    {monthlyBusy ? "Archiving…" : "Start New Monthly Audit"}
-                                </Button>
-                            </Grid>
+                            {!confirmOverdueRenewal && (
+                                <Grid item xs={12} sm={3}>
+                                    <Button variant="contained"
+                                        onClick={() => {
+                                            setMonthlyError("");
+                                            setConfirmOverdueRenewal(true);
+                                        }}
+                                        disabled={monthlyBusy || isLoading || !recoveryStartDate}>
+                                        Start New Monthly Audit
+                                    </Button>
+                                </Grid>
+                            )}
                         </Grid>
+                        {confirmOverdueRenewal && (
+                            <Box role="group" aria-label="Confirm new Monthly Audit"
+                                sx={{ mt: 2, p: 2, border: "1px solid", borderColor: "warning.main",
+                                    borderRadius: 1, backgroundColor: "rgba(255, 152, 0, 0.06)" }}>
+                                <Typography variant="h6" sx={{ mb: 1 }}>Start New Monthly Audit?</Typography>
+                                <Typography variant="body2">
+                                    The previous audit and its answers must be saved to History first.
+                                    The new audit will start {formatSiteCheckDisplayDate(recoveryStartDate)} and
+                                    be due {formatSiteCheckDisplayDate(recoveryStartDate && monthlyFrequency
+                                        ? calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency) : null)}.
+                                    Continue?
+                                </Typography>
+                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+                                    <Button variant="contained" color="primary" onClick={handleMonthlyOverdueRenewal}
+                                        disabled={monthlyBusy || isLoading}>
+                                        {monthlyBusy ? "Archiving…" : "Archive and start new audit"}
+                                    </Button>
+                                    <Button variant="outlined" color="inherit"
+                                        onClick={() => setConfirmOverdueRenewal(false)} disabled={monthlyBusy}>
+                                        Cancel
+                                    </Button>
+                                </Box>
+                                {monthlyBusy && (
+                                    <Typography variant="body2" role="status" sx={{ mt: 1 }}>
+                                        Archiving the previous audit and verifying its PDF and History. Please wait.
+                                    </Typography>
+                                )}
+                            </Box>
+                        )}
                         {recoveryStartDate && monthlyFrequency &&
                             calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency) === getUkLocalDate() && (
                             <Alert severity="info" sx={{ mt: 2 }}>
