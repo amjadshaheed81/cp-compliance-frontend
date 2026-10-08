@@ -15,6 +15,8 @@ const sourceLabel = (source) => {
     switch (source) {
         case "LIVE_SUBMISSION":
             return "Submitted Site Check";
+        case "SCHEDULED_ROLLOVER":
+            return "Monthly Audit Renewal";
         case "LEGACY_SITE_DOCUMENT":
             return "Existing Site Document";
         case "LEGACY_MONTHLY_AUDIT_PDF_RECORD":
@@ -127,6 +129,7 @@ const SiteCheckHistory = ({ checkId }) => {
                         <th>Engineer / Submitted By</th>
                         <th>Frequency / Next Due</th>
                         <th>Source</th>
+                        {showAuditData && <th>Completion</th>}
                         <th>PDF</th>
                         {showAuditData && <th>Saved audit data</th>}
                     </tr>
@@ -191,6 +194,17 @@ const SiteCheckHistory = ({ checkId }) => {
                                         <small className="text-muted d-block">Legacy evidence</small>
                                     )}
                                 </td>
+                                {showAuditData && (
+                                    <td>
+                                        {isMonthlyAudit(item) && item.completionStatus ? (
+                                            <span className={`badge ${item.completionStatus === "COMPLETED" ? "bg-success" : "bg-warning text-dark"}`}>
+                                                {item.completionStatus === "COMPLETED" ? "Completed" : "Not Completed"}
+                                            </span>
+                                        ) : (
+                                            <span className="text-muted">--</span>
+                                        )}
+                                    </td>
+                                )}
                                 <td>
                                     {item.pdfUrl ? (
                                         <>

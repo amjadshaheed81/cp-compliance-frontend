@@ -18,7 +18,6 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get, post } from "../../../../api";
 import { calculateSiteCheckDueDate } from "../../../../utils/siteCheckRecurrence";
 import { ROLE } from "../../../../Constant/Role";
-import { getMonthlyAuditContext, monthlyAuditError } from "./shared/monthlyAuditWorkflow";
 
 const problemLabels = {
   DUE_DATE_MISMATCH: "Due date mismatch",
@@ -57,9 +56,6 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [cycleStartDate, setCycleStartDate] = useState("");
   const [reason, setReason] = useState("");
   const [pendingAction, setPendingAction] = useState(null);
-  const [monthlyReview, setMonthlyReview] = useState(null);
-  const [loadingMonthlyReview, setLoadingMonthlyReview] = useState(false);
-  const reviewSequence = useRef(0);
   const recoveryRunning = useRef(false);
 
   const siteId = siteSelectedForGlobal?.siteId;
@@ -67,7 +63,6 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const isAdmin = loggedInUserData?.role === ROLE.ADMIN;
   const isMonthly = (item) => item?.type === "Audit" && item?.subType === "Monthly Audit";
   const selectedMonthly = isMonthly(selected);
-  const monthlyOpenAction = selectedMonthly && ["REOPEN_EARLY", "OPEN_MISSED_CYCLE"].includes(selected?.recommendedAction);
 
   const loadHealth = async () => {
     if (!siteId || !isAdmin) return;
@@ -92,11 +87,8 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
   }, [siteId, isAdmin]);
 
   const openReview = async (item) => {
-    const sequence = ++reviewSequence.current;
     setPendingAction(null);
     setSelected(item);
-    setMonthlyReview(null);
-    setLoadingMonthlyReview(false);
     setCycleStartDate(
       item?.suggestedCycleStartDate ||
         dateOnly(item?.expectedDueDate) ||
@@ -105,17 +97,6 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
         moment().format("YYYY-MM-DD")
     );
     setReason("");
-    if (isMonthly(item) && ["REOPEN_EARLY", "OPEN_MISSED_CYCLE"].includes(item.recommendedAction)) {
-      setLoadingMonthlyReview(true);
-      try {
-        const context = await getMonthlyAuditContext(item.checkId);
-        if (sequence === reviewSequence.current) setMonthlyReview(context);
-      } catch (error) {
-        toast.error(monthlyAuditError(error, "The Monthly Audit could not be checked. Close and reopen this review."));
-      } finally {
-        if (sequence === reviewSequence.current) setLoadingMonthlyReview(false);
-      }
-    }
   };
 
   const nextDuePreview = useMemo(() => {
@@ -130,8 +111,7 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
   }, [selected, cycleStartDate]);
 
   const requestRecovery = (action) => {
-    if (!selected) return;
-    if (selectedMonthly && (!monthlyOpenAction || !monthlyReview?.canOpenEarly || !monthlyReview?.periodToken)) return;
+    if (!selected || selectedMonthly) return;
 
     if (!selectedMonthly && action === "OPEN_MISSED_CYCLE" && !cycleStartDate) {
       toast.error("Cycle Start Date is required");
@@ -142,8 +122,7 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
   };
 
   const runRecovery = async () => {
-    if (!selected || !pendingAction || recoveryRunning.current) return;
-    if (selectedMonthly && (!monthlyReview?.canOpenEarly || !monthlyReview?.periodToken)) return;
+    if (!selected || !pendingAction || recoveryRunning.current || selectedMonthly) return;
 
     const action = pendingAction;
     recoveryRunning.current = true;
@@ -153,7 +132,6 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
         action,
         cycleStartDate: !selectedMonthly && action === "OPEN_MISSED_CYCLE" ? cycleStartDate : null,
         reason,
-        ...(selectedMonthly ? { periodToken: monthlyReview.periodToken } : {}),
       });
       toast.success(response?.data?.message || "Site Check recovery completed");
       setPendingAction(null);
@@ -173,34 +151,18 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
 
   const closeReview = () => {
     if (isRunning) return;
-    reviewSequence.current += 1;
     setPendingAction(null);
     setSelected(null);
-    setMonthlyReview(null);
-    setLoadingMonthlyReview(false);
   };
 
   const renderAction = () => {
     if (!selected) return null;
     if (selectedMonthly) {
-      if (!monthlyOpenAction) return (
-        <div className="alert alert-secondary mb-0">
-          Monthly Audit dates are recorded from the actual Inspection Date when submitted. Open the audit to review its saved dates and History.
-        </div>
-      );
-      if (loadingMonthlyReview) return <div className="alert alert-info mb-0">Checking this audit and its saved History…</div>;
-      if (!monthlyReview?.canOpenEarly) return (
-        <div className="alert alert-warning mb-0">
-          The next Monthly Audit cannot open from this review. Open the audit and confirm its completed report and saved data in History first.
-        </div>
-      );
       return (
-        <div className="alert alert-warning mb-0">
-          <div className="fw-bold mb-2">Open next Monthly Audit</div>
-          <div>{monthlyReview.nextCarryForwardEnabled
-            ? "Previous answers will be copied for review. Previous photos remain in History."
-            : "The next audit will start with blank answers."}</div>
-          <div className="small mt-2">Saved History, PDFs and outstanding Actions remain available. The next due date will be calculated from the actual Inspection Date when the new audit is submitted.</div>
+        <div className="alert alert-info mb-0">
+          <div className="fw-bold mb-2">Monthly Audit renewal</div>
+          <div>The current Monthly Audit stays editable until its exact Due Date.</div>
+          <div className="small mt-2">At renewal it is saved to History as Completed or Not Completed, then the working audit resets for the next period. Monthly Audit is not opened early from this page.</div>
         </div>
       );
     }
@@ -457,11 +419,11 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
           <Button disabled={isRunning} onClick={closeReview}>
             Cancel
           </Button>
-          {selected?.recommendedAction && selected.recommendedAction !== "REVIEW_ONLY" && (!selectedMonthly || monthlyOpenAction) && (
+          {selected?.recommendedAction && selected.recommendedAction !== "REVIEW_ONLY" && !selectedMonthly && (
             <Button
               variant="contained"
               color="primary"
-              disabled={isRunning || loadingMonthlyReview || (selectedMonthly && !monthlyReview?.canOpenEarly)}
+              disabled={isRunning}
               onClick={() => requestRecovery(selected.recommendedAction)}
             >
               {isRunning ? "Running..." : actionLabels[selected.recommendedAction] || "Run Recovery"}
@@ -504,7 +466,7 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
           <Button
             variant="contained"
             color="warning"
-            disabled={isRunning || (selectedMonthly && !monthlyReview?.canOpenEarly)}
+            disabled={isRunning}
             onClick={runRecovery}
           >
             {isRunning ? "Running..." : "Confirm"}

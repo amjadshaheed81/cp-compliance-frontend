@@ -1,7 +1,4 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
-import { createPortal } from "react-dom";
-import LockOpenRoundedIcon from "@mui/icons-material/LockOpenRounded";
-import SiteCheckEarlyOpenDialog from "./shared/SiteCheckEarlyOpenDialog";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import moment from "moment";
@@ -19,15 +16,13 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { jsPDF } from "jspdf";
 import { formatLocalDateTime } from "../../../../utils/dateFormat";
-import { recordMonthlyAuditHistory } from "./shared/monthlyAuditHistory";
 import MonthlyAuditActionChoices from "./shared/MonthlyAuditActionChoices";
 import {
-    completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
+    deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
     getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
     hydrateMonthlyQuestion, isMonthlyQuestionVisible, mayFillMonthlyAuditForTest,
     monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete,
-    monthlyResponseIssues, monthlyResponseRequest, newMonthlyAuditRequestId,
-    openMonthlyAuditEarly, prepareMonthlyAuditSubmission, saveMonthlyAuditResponse, splitMonthlyAssetIds, uploadMonthlyAuditPdf,
+    monthlyResponseIssues, monthlyResponseRequest, saveMonthlyAuditResponse, splitMonthlyAssetIds,
 } from "./shared/monthlyAuditWorkflow";
 import { getUkLocalDate } from "./shared/siteCheckDateUtils";
 import { calculateSiteCheckDueDate, formatSiteCheckDisplayDate } from "../../../../utils/siteCheckRecurrence";
@@ -81,8 +76,6 @@ const AssessmentFireRisk = ({
                                 siteCheck,
                                 managerList,
                                 onAuditSubmitted,
-                                onAuditOpened,
-                                earlyOpenActionTarget,
                                 embedded = false,
                             }) => {
     const carouselSettings = {
@@ -111,8 +104,6 @@ const AssessmentFireRisk = ({
     const [monthlyContext, setMonthlyContext] = useState(null);
     const [monthlyActions, setMonthlyActions] = useState([]);
     const [monthlyError, setMonthlyError] = useState("");
-    const [monthlyEarlyOpenReview, setMonthlyEarlyOpenReview] = useState(null);
-    const [monthlyEarlyOpenError, setMonthlyEarlyOpenError] = useState("");
     const [inspectionDate, setInspectionDate] = useState("");
     const [monthlyBusy, setMonthlyBusy] = useState(false);
     const [savingQuestionId, setSavingQuestionId] = useState(null);
@@ -121,13 +112,9 @@ const AssessmentFireRisk = ({
     const monthlyLoadSequence = useRef(0);
     const questionSaveRequests = useRef(new Map());
     const uploadedImageUrls = useRef(new WeakMap());
-    const submissionRequest = useRef(null);
-    const uploadedPdfReference = useRef(null);
     const monthlyReadOnly = isMonthlyAudit &&
         (monthlyContext?.canEdit !== true || monthlyBusy || isSubmitting || isLoading);
     const questionReadOnly = (question) => isMonthlyAudit ? monthlyReadOnly : question?.completed;
-    const monthlySubmitted = monthlyContext?.status === "SUBMITTED";
-    const monthlyRecovery = ["SUBMITTING", "ARCHIVE_REQUIRED"].includes(monthlyContext?.status);
     const canTestFill = isMonthlyAudit && mayFillMonthlyAuditForTest(loggedInUserData, monthlyContext);
     const monthlyFrequency = monthlyContext?.checkHeader?.repeatFrequency;
     const calculatedMonthlyDue = inspectionDate && monthlyFrequency
@@ -140,12 +127,15 @@ const AssessmentFireRisk = ({
         setMonthlyContext(context);
         if (changedPeriod) {
             questionSaveRequests.current.clear();
-            submissionRequest.current = null;
-            uploadedPdfReference.current = null;
         }
-        setInspectionDate((current) => context.status === "OPEN"
-            ? (changedPeriod ? getUkLocalDate() : current || getUkLocalDate())
-            : String(context.inspectionDate || "").slice(0, 10));
+        setInspectionDate((current) => {
+            if (context.status !== "OPEN") return String(context.inspectionDate || "").slice(0, 10);
+            if (!changedPeriod) return current || String(context.inspectionDate || "").slice(0, 10) || getUkLocalDate();
+            if (context.hasSavedResponses && context.inspectionDate) {
+                return String(context.inspectionDate).slice(0, 10);
+            }
+            return getUkLocalDate();
+        });
     };
 
     const beginMonthlyWork = () => {
@@ -355,18 +345,8 @@ const AssessmentFireRisk = ({
         }
     };
 
-    const uploadPdfToServer = async (pdfBlob, fileName, submission = null) => {
+    const uploadPdfToServer = async (pdfBlob, fileName) => {
         if (!auditFolderId) return { stored: false, sourceReference: null };
-        if (isMonthlyAudit) {
-            setIsUploading(true);
-            try {
-                const context = await uploadMonthlyAuditPdf(checkId, submission.periodToken, auditFolderId, pdfBlob, fileName);
-                applyMonthlyContext(context);
-                return { stored: true, sourceReference: context.sourceReference, context };
-            } finally {
-                setIsUploading(false);
-            }
-        }
         try {
             setIsUploading(true);
             const pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
@@ -692,7 +672,7 @@ const AssessmentFireRisk = ({
             }
             files.push(url);
         }
-        const nextRequest = monthlyResponseRequest(question, { checkId, periodToken, files });
+        const nextRequest = monthlyResponseRequest(question, { checkId, periodToken, files, inspectionDate });
         const fingerprint = JSON.stringify({ ...nextRequest, requestId: null });
         const cacheKey = `${periodToken}:${question.qid}`;
         let pending = questionSaveRequests.current.get(cacheKey);
@@ -704,6 +684,19 @@ const AssessmentFireRisk = ({
         questionSaveRequests.current.delete(cacheKey);
         const savedQuestion = hydrateMonthlyQuestion(question, state);
         setquest((current) => current.map((q) => q.qid === question.qid ? savedQuestion : q));
+        if (monthlyContextRef.current?.periodToken === periodToken) {
+            const updatedContext = {
+                ...monthlyContextRef.current,
+                hasSavedResponses: true,
+                inspectionDate: inspectionDate ? `${inspectionDate}T00:00:00` : monthlyContextRef.current.inspectionDate,
+                nextDueDate: calculatedMonthlyDue
+                    ? `${calculatedMonthlyDue}T00:00:00`
+                    : monthlyContextRef.current.nextDueDate,
+                message: "Editing the current Monthly Audit. Changes can be made until its renewal date.",
+            };
+            monthlyContextRef.current = updatedContext;
+            setMonthlyContext(updatedContext);
+        }
         return savedQuestion;
     };
 
@@ -757,167 +750,16 @@ const AssessmentFireRisk = ({
                 throw new Error("Some test answers could not be confirmed. Reload and check the audit.");
             }
             if (needsReview.length) {
-                const message = `Test answers saved for ${savedCount} questions. Existing failures were left unchanged: question(s) ${needsReview.join(", ")}. Review and save those questions before submitting.`;
+                const message = `Test answers saved for ${savedCount} questions. Existing failures were left unchanged: question(s) ${needsReview.join(", ")}. Review and save those questions before the audit renews.`;
                 setMonthlyError(message);
                 toast.info(message);
             } else {
-                toast.success("Test answers saved. You can change answers, review the audit and click Submit audit.");
+                toast.success("Test answers saved. You can keep editing this Monthly Audit until its renewal date.");
             }
         } catch (error) {
             setMonthlyError(monthlyAuditError(error));
             toast.error(monthlyAuditError(error));
         } finally {
-            endMonthlyWork();
-        }
-    };
-
-    const handleMonthlyOpenEarlyDialog = () => {
-        const context = monthlyContextRef.current;
-        if (!isMonthlyAudit || !context?.canOpenEarly || monthlyBusyRef.current || isSubmitting || isLoading) return;
-        // Keep the reviewed period token: a stale dialog must never open a later period.
-        setMonthlyEarlyOpenReview(context);
-        setMonthlyEarlyOpenError("");
-    };
-
-    const handleMonthlyOpenEarly = async () => {
-        const review = monthlyEarlyOpenReview;
-        if (!review || !monthlyContextRef.current?.canOpenEarly || !beginMonthlyWork()) return;
-        setMonthlyEarlyOpenError("");
-        try {
-            if (Number(review.checkId) !== Number(checkId) || review.periodToken !== monthlyContextRef.current.periodToken) {
-                throw new Error("The audit period has changed. Cancel this dialog and reload the audit.");
-            }
-            const latest = await getMonthlyAuditContext(checkId);
-            if (latest.periodToken !== review.periodToken || !latest.canOpenEarly || latest.status !== "SUBMITTED") {
-                throw new Error("This audit can no longer be opened from this dialog. Cancel and reload to see its current status.");
-            }
-            if (Boolean(latest.nextCarryForwardEnabled) !== Boolean(review.nextCarryForwardEnabled) ||
-                latest.checkHeader?.repeatFrequency !== review.checkHeader?.repeatFrequency ||
-                latest.checkHeader?.dueDate !== review.checkHeader?.dueDate) {
-                setMonthlyEarlyOpenReview(latest);
-                setMonthlyEarlyOpenError("The audit settings have changed. Review the updated details before clicking Open Audit again.");
-                return;
-            }
-            const context = await openMonthlyAuditEarly(checkId, { periodToken: review.periodToken });
-            if (context.status !== "OPEN") throw new Error("The next audit has not opened. Reload to check its status.");
-            applyMonthlyContext(context);
-            setMonthlyEarlyOpenReview(null);
-            const loaded = await getQuestions();
-            if (!loaded) throw new Error("The audit opened, but its answers could not be loaded. Reload the form.");
-            // Keep the opened audit visible, including when opened from the History tab.
-            await (onAuditOpened || onAuditSubmitted)?.();
-            toast.success(context.openedNewPeriod === false
-                ? "This audit is already Open. Its current answers have been kept."
-                : context.carryForwardEnabled
-                ? "Next audit opened. Previous answers are ready for review; previous photos remain in History."
-                : "Next audit opened with blank answers. Previous submissions remain in History.");
-        } catch (error) {
-            const message = monthlyAuditError(error);
-            setMonthlyEarlyOpenError(message);
-            setMonthlyError(message);
-            toast.error(message);
-        } finally {
-            endMonthlyWork();
-        }
-    };
-
-    const handleMonthlySubmit = async () => {
-        if (!monthlyContext || monthlySubmitted || !monthlyContext.canSubmit || !beginMonthlyWork()) return;
-        const attemptedPeriod = monthlyContextRef.current.periodToken;
-        setIsSubmitting(true);
-        try {
-            let context = await getMonthlyAuditContext(checkId);
-            if (context.periodToken !== monthlyContextRef.current.periodToken) {
-                throw new Error("A new audit period has already opened. Reload the form before submitting.");
-            }
-            applyMonthlyContext(context);
-            if (context.status === "SUBMITTED") {
-                toast.info("This audit is already submitted and saved in History.");
-                return;
-            }
-            if (!context.pdfStored && !auditFolderId) {
-                throw new Error("The Internal Monthly Audit document folder could not be found. Restore the folder and reload this audit before submitting.");
-            }
-            if (context.status === "OPEN") {
-                if (!inspectionDate) throw new Error("Enter the actual Inspection Date before submitting.");
-                if (!calculatedMonthlyDue) throw new Error("The audit's repeat frequency could not be verified. Reload before submitting.");
-                if (!canPrint) throw new Error(`Complete question(s): ${visibleBlockingOrders.join(", ") || "all applicable questions"}.`);
-                for (const question of quest) {
-                    if (isMonthlyQuestionVisible(question, header) && monthlyQuestionAssets(question, auditAssets).length &&
-                        (question.dirty || !question.response?.responseId ||
-                            (question.response?.faultassets && !question.actionLinks?.length))) {
-                        await persistMonthlyQuestion(question, context.periodToken);
-                    }
-                }
-            }
-            if (context.status !== "SUBMITTING") {
-                if (!submissionRequest.current || submissionRequest.current.periodToken !== context.periodToken) {
-                    submissionRequest.current = {
-                        periodToken: context.periodToken,
-                        inspectionDate: context.status === "ARCHIVE_REQUIRED"
-                            ? String(context.inspectionDate || "").slice(0, 10) : inspectionDate,
-                        requestId: newMonthlyAuditRequestId(),
-                    };
-                }
-                context = await prepareMonthlyAuditSubmission(checkId, submissionRequest.current);
-                applyMonthlyContext(context);
-            }
-            if (context.status === "SUBMITTED") return;
-            if (context.status !== "SUBMITTING" || !context.sourceReference) {
-                throw new Error("The audit could not be prepared for submission. Reload its status.");
-            }
-            // Load the persisted, now-frozen responses. A report must not use an
-            // earlier React state snapshot or unsaved screen selections.
-            const frozen = await getMonthlyAuditResponses(checkId, context.periodToken);
-            const reportQuestions = quest.map((question) => hydrateMonthlyQuestion(question,
-                frozen.find((item) => Number(item.response?.qid) === Number(question.qid))));
-            setquest(reportQuestions);
-            if (!context.pdfStored && uploadedPdfReference.current !== context.sourceReference) {
-                if (!auditFolderId) throw new Error("The Internal Monthly Audit document folder could not be found. Restore the folder, then retry saving the report and History.");
-                const report = await handlePrint({ questions: reportQuestions, context });
-                if (!report?.blob) throw new Error("The report could not be generated. Retry saving the report and History.");
-                const uploaded = await uploadPdfToServer(report.blob, report.fileName, context);
-                if (!uploaded?.stored) throw new Error("The report upload could not be confirmed. Retry saving the report and History.");
-                uploadedPdfReference.current = context.sourceReference;
-                context = uploaded.context || context;
-            }
-            const completed = await completeMonthlyAuditSubmission(checkId, {
-                periodToken: context.periodToken, sourceReference: context.sourceReference,
-            });
-            if (completed.status !== "SUBMITTED" || !completed.historyId || completed.pdfStored !== true) {
-                throw new Error("The report and History have not both been confirmed. Retry saving the report and History.");
-            }
-            applyMonthlyContext(completed);
-            onAuditSubmitted?.();
-            toast.success("Audit submitted. Report and saved audit data are confirmed in History.");
-        } catch (error) {
-            const message = monthlyAuditError(error, "The audit could not be submitted.");
-            try {
-                // A lost success response may still have completed. Reconcile
-                // server state before enabling a recovery action or another save.
-                const recovered = await getMonthlyAuditContext(checkId);
-                if (recovered.periodToken !== attemptedPeriod) {
-                    // Never attach a new period token to stale on-screen answers.
-                    setquest([]);
-                    const loaded = await getQuestions();
-                    if (!loaded) throw new Error("The new audit could not be loaded.");
-                } else {
-                    applyMonthlyContext(recovered);
-                    if (recovered.status === "SUBMITTED" && recovered.historyId && recovered.pdfStored) {
-                        setMonthlyError("");
-                        onAuditSubmitted?.();
-                        toast.success("Audit submitted. Report and saved audit data are confirmed in History.");
-                        return;
-                    }
-                }
-            } catch {
-                setMonthlyContext(null);
-                monthlyContextRef.current = null;
-            }
-            setMonthlyError(message);
-            toast.error(message);
-        } finally {
-            setIsSubmitting(false);
             endMonthlyWork();
         }
     };
@@ -1005,7 +847,7 @@ const AssessmentFireRisk = ({
     };
 
     const handleSubmitAudit = async () => {
-        if (isMonthlyAudit) return handleMonthlySubmit();
+        if (isMonthlyAudit) return;
         if (!canPrint) {
             toast.error(
                 visibleBlockingOrders?.length > 0
@@ -1025,47 +867,17 @@ const AssessmentFireRisk = ({
             await getQuestions();
             onAuditSubmitted?.();
 
-            let monthlyHistorySaved = false;
-            let monthlyHistoryError = "Audit is marked Done, but its report and saved audit data were not confirmed in History. Please check History before submitting again.";
             try {
                 const r = await handlePrint();
                 if (r?.blob && r?.fileName && auditFolderId) {
                     const uploadResult = await uploadPdfToServer(r.blob, r.fileName);
 
-                    // Save and verify the full saved-data snapshot only for Monthly Audit.
-                    // Annual Winter Audit keeps its current workflow unchanged for now.
-                    if (
-                        subType === "Monthly Audit" &&
-                        uploadResult?.stored &&
-                        uploadResult?.sourceReference
-                    ) {
-                        try {
-                            await recordMonthlyAuditHistory({
-                                checkId,
-                                sourceReference: uploadResult.sourceReference,
-                            });
-                            monthlyHistorySaved = true;
-                        } catch (historyErr) {
-                            console.error("Record Monthly Audit history:", historyErr);
-                            monthlyHistoryError = "Audit submitted and report uploaded, but the saved audit data was not confirmed in History. Please check History before submitting again.";
-                        }
-                    }
                 }
             } catch (uploadErr) {
                 console.error("Upload audit PDF:", uploadErr);
-                if (subType !== "Monthly Audit") {
-                    toast.error("Audit submitted. Report upload to folder failed.");
-                }
+                toast.error("Audit submitted. Report upload to folder failed.");
             }
-            if (subType === "Monthly Audit") {
-                if (monthlyHistorySaved) {
-                    toast.success("Audit submitted. Report and saved audit data are confirmed in History.");
-                } else {
-                    toast.error(monthlyHistoryError);
-                }
-            } else {
-                toast.success("Audit submitted successfully. Site check is now done.");
-            }
+            toast.success("Audit submitted successfully. Site check is now done.");
         } catch (err) {
             toast.error(err?.message || "Failed to submit audit.");
         } finally {
@@ -1326,57 +1138,6 @@ const AssessmentFireRisk = ({
 
     return (
         <>
-            {isMonthlyAudit && monthlyContext?.canOpenEarly && earlyOpenActionTarget && createPortal(
-                <button
-                    type="button"
-                    className={embedded ? "site-check-workspace__early-button" : "btn fw-bold shadow-sm"}
-                    style={embedded ? undefined : {
-                        width: "100%", backgroundColor: "#e67e22", borderColor: "#c76410", color: "#ffffff",
-                    }}
-                    onClick={handleMonthlyOpenEarlyDialog}
-                    disabled={monthlyBusy || isSubmitting || isLoading}
-                    title="Open audit early"
-                    aria-label="Open audit early"
-                >
-                    {embedded && <LockOpenRoundedIcon fontSize="small" />}
-                    <span>{embedded ? "Open Early" : "Open Monthly Audit Early"}</span>
-                </button>,
-                earlyOpenActionTarget
-            )}
-            {isMonthlyAudit && (
-                <SiteCheckEarlyOpenDialog
-                    open={Boolean(monthlyEarlyOpenReview)}
-                    title="Open Monthly Audit Early"
-                    frequency={monthlyEarlyOpenReview?.checkHeader?.repeatFrequency}
-                    currentDueDate={monthlyEarlyOpenReview?.checkHeader?.dueDate}
-                    opening={monthlyBusy || isSubmitting}
-                    confirmDisabled={isLoading || !monthlyContext?.canOpenEarly || !monthlyEarlyOpenReview}
-                    confirmLabel="Open Audit"
-                    onClose={() => setMonthlyEarlyOpenReview(null)}
-                    onConfirm={handleMonthlyOpenEarly}
-                >
-                    <div className="alert alert-info py-2 mt-3 mb-2">
-                        <strong>Next audit starts with:</strong>{" "}
-                        {monthlyEarlyOpenReview?.nextCarryForwardEnabled
-                            ? "Previous answers for review"
-                            : "Blank answers"}
-                        <div className="small mt-1">
-                            Previous reports, saved History, photos and outstanding Actions are preserved.
-                            Previous photos are not copied into the new audit.
-                        </div>
-                    </div>
-                    <div className="form-text mt-2">
-                        This opens the next audit period. The existing Due Date stays unchanged.
-                        The next Due Date is calculated from the actual Inspection Date and repeat
-                        frequency when the audit is submitted.
-                    </div>
-                    {monthlyEarlyOpenError && (
-                        <div role="alert" className="alert alert-danger py-2 mt-3 mb-0">
-                            {monthlyEarlyOpenError}
-                        </div>
-                    )}
-                </SiteCheckEarlyOpenDialog>
-            )}
         <Box p={3}>
             <Card>
                 {true && (
@@ -1390,7 +1151,7 @@ const AssessmentFireRisk = ({
                                             type="date"
                                             label="Inspection Date"
                                             value={inspectionDate}
-                                            onChange={(event) => { setInspectionDate(event.target.value); submissionRequest.current = null; }}
+                                            onChange={(event) => setInspectionDate(event.target.value)}
                                             disabled={monthlyReadOnly}
                                             InputLabelProps={{ shrink: true }}
                                             size="small"
@@ -1425,14 +1186,13 @@ const AssessmentFireRisk = ({
                                 {monthlyBusy && !isSubmitting && <Typography sx={{ mt: 1 }} variant="body2">
                                     {savingQuestionId ? "Saving answers and Action selections…" : "Updating the audit…"}
                                 </Typography>}
-                                {monthlySubmitted && <Alert severity="success" sx={{ mt: 1 }}>
-                                    Submitted. The report and saved audit data are confirmed in History.
-                                </Alert>}
-                                {monthlyRecovery && <Alert severity="warning" sx={{ mt: 1 }}>
-                                    {monthlyContext.status === "ARCHIVE_REQUIRED"
-                                        ? "This completed audit needs its report and saved data confirmed in History before the next audit can open."
-                                        : "Submission is in progress. Answers are saved and locked. Use Save report and History to complete it."}
-                                </Alert>}
+                                {monthlyContext && (
+                                    <Alert severity={monthlyContext.hasSavedResponses ? "info" : "success"} sx={{ mt: 1 }}>
+                                        {monthlyContext.hasSavedResponses
+                                            ? `Editing current Monthly Audit. Changes can be made until ${formatSiteCheckDisplayDate(calculatedMonthlyDue || monthlyContext.nextDueDate) || "the renewal date"}.`
+                                            : "New Monthly Audit. Save the first answer to start this period's record."}
+                                    </Alert>
+                                )}
                                 {monthlyError && <Alert severity="error" sx={{ mt: 1 }}
                                     action={<Button color="inherit" size="small" disabled={monthlyBusy || isSubmitting}
                                         onClick={getQuestions}>Reload</Button>}>
@@ -2524,7 +2284,7 @@ const AssessmentFireRisk = ({
                             })}
 
 
-                        {(subType === "Monthly Audit" || subType === "Annual Winter Audit") && (
+                        {subType === "Annual Winter Audit" && (
                             <Box
                                 className="dont-print"
                                 sx={{
@@ -2538,11 +2298,7 @@ const AssessmentFireRisk = ({
                             >
                                 <Tooltip
                                     title={
-                                        isMonthlyAudit && monthlySubmitted
-                                            ? "This audit is already saved in History"
-                                            : isMonthlyAudit && monthlyRecovery
-                                                ? "Complete the saved submission without creating another audit"
-                                                : canPrint
+                                        canPrint
                                             ? "Submit audit and close this site check"
                                             : visibleBlockingOrders.length > 0
                                                 ? `Complete question(s): ${visibleBlockingOrders.join(", ")}${hiddenBlockingCount > 0 ? ` (+ ${hiddenBlockingCount} in other sections)` : ""}`
@@ -2558,13 +2314,9 @@ const AssessmentFireRisk = ({
                         size="medium"
                         startIcon={<CheckCircle />}
                         onClick={handleSubmitAudit}
-                        disabled={isMonthlyAudit
-                            ? !monthlyContext?.canSubmit || monthlySubmitted || monthlyBusy || isSubmitting || isLoading ||
-                                (!monthlyRecovery && !canPrint)
-                            : !canPrint || isSubmitting}
+                        disabled={!canPrint || isSubmitting}
                     >
-                      {isSubmitting ? "Submitting…" : isMonthlyAudit && monthlySubmitted ? "Submitted"
-                          : isMonthlyAudit && monthlyRecovery ? "Save report and History" : "Submit audit"}
+                      {isSubmitting ? "Submitting…" : "Submit audit"}
                     </Button>
                   </span>
                                 </Tooltip>

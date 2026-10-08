@@ -39,10 +39,10 @@ test("form-specific validation disables confirm without blocking Cancel", () => 
 });
 
 test("Monthly Audit uses the same dialog shell with its own title and confirm label", () => {
-  render(<SiteCheckEarlyOpenDialog {...defaults()} title="Open Monthly Audit Early" confirmLabel="Open Audit">
+  render(<SiteCheckEarlyOpenDialog {...defaults()} title="Open Inspection Early" confirmLabel="Open Audit">
     <p>Next audit starts with: Blank answers</p>
   </SiteCheckEarlyOpenDialog>);
-  expect(screen.getByRole("dialog", { name: "Open Monthly Audit Early" })).toBeInTheDocument();
+  expect(screen.getByRole("dialog", { name: "Open Inspection Early" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Open Audit" })).toHaveClass("btn", "btn-primary");
   expect(screen.getByRole("button", { name: "Cancel" })).toHaveClass("btn", "btn-secondary");
   expect(screen.getByText("Next audit starts with: Blank answers")).toBeInTheDocument();

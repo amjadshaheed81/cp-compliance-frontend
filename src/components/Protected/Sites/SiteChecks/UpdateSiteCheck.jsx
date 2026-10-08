@@ -391,7 +391,6 @@ const SiteChecks = ({
 
     const [savingAssignees, setSavingAssignees] = useState(false);
     const [showManualOpenDialog, setShowManualOpenDialog] = useState(false);
-    const [monthlyEarlyOpenActionTarget, setMonthlyEarlyOpenActionTarget] = useState(null);
     const [plannedInspectionDate, setPlannedInspectionDate] = useState("");
     const [openingInspectionEarly, setOpeningInspectionEarly] = useState(false);
     const [latestInspectionPdfUrl, setLatestInspectionPdfUrl] = useState("");
@@ -945,12 +944,6 @@ const SiteChecks = ({
                                     )}
                                 </Grid>
                                 <Grid sm={4}>
-                                    {!embedded && siteCheck?.type === "Audit" && siteCheck?.subType === "Monthly Audit" && (
-                                        <div
-                                            ref={setMonthlyEarlyOpenActionTarget}
-                                            style={{ margin: "10px", marginTop: "32px" }}
-                                        />
-                                    )}
                                     {!embedded && canOpenInspectionEarly && (
                                         <div style={{ margin: "10px", marginTop: "32px" }}>
                                             <button
@@ -1283,7 +1276,6 @@ const SiteChecks = ({
                             <Item>
                                 <Audit
                                     embedded={embedded}
-                                    earlyOpenActionTarget={embedded ? workspaceHeaderActionTarget : monthlyEarlyOpenActionTarget}
                                     onAuditOpened={() => {
                                         setActiveDetailTab("form");
                                         return getSiteChecks();

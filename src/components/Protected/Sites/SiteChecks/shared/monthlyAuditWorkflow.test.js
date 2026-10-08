@@ -87,13 +87,14 @@ describe("Monthly Audit real site answers and existing fault choices", () => {
       response: { ...question.response, faultassets: "12,123" },
       actionChoices: { 12: { mode: "EXISTING", actionId: 50 }, 123: { mode: "NEW" } },
     };
-    const request = monthlyResponseRequest(mixed, { checkId: 408, periodToken: "period-1", requestId: retryRequestId });
+    const request = monthlyResponseRequest(mixed, { checkId: 408, periodToken: "period-1", requestId: retryRequestId, inspectionDate: "2026-10-08" });
     expect(request.actionChoices).toEqual([
       { assetId: 12, mode: "EXISTING", actionId: 50 }, { assetId: 123, mode: "NEW" },
     ]);
     expect(request.response.action).toBe("Replace lamp");
     expect(request.responseRevision).toBe(4);
     expect(request.requestId).toBe(retryRequestId);
+    expect(request.inspectionDate).toBe("2026-10-08");
     expect(request.response).not.toHaveProperty("actionId");
   });
 

@@ -220,7 +220,7 @@ export const monthlyResponseIssues = (question, actions, siteId) => {
   return issues;
 };
 
-export const monthlyResponseRequest = (question, { checkId, periodToken, files = [], requestId }) => {
+export const monthlyResponseRequest = (question, { checkId, periodToken, files = [], requestId, inspectionDate }) => {
   const response = Object.fromEntries(responseFields.map((key) => [key, question.response?.[key] ?? null]));
   response.checkId = Number(checkId);
   response.qid = question.qid;
@@ -232,6 +232,7 @@ export const monthlyResponseRequest = (question, { checkId, periodToken, files =
   }));
   return {
     periodToken,
+    inspectionDate: inspectionDate || null,
     requestId: requestId || newMonthlyAuditRequestId(),
     responseRevision: question.responseRevision || 0,
     response,
