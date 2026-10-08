@@ -263,8 +263,6 @@ const AssessmentFireRisk = ({
         blockingQuestionOrders.length - visibleBlockingOrders.length;
 
     useEffect(() => {
-        setMonthlyEarlyOpenReview(null);
-        setMonthlyEarlyOpenError("");
         getQuestions();
         if (!isMonthlyAudit && siteSelectedForGlobal?.siteId) {
             getSiteCheckAssets(siteSelectedForGlobal?.siteId);
