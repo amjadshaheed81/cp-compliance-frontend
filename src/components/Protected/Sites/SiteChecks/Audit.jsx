@@ -22,7 +22,8 @@ import {
     getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
     hydrateMonthlyQuestion, isMonthlyQuestionVisible, mayFillMonthlyAuditForTest,
     monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete,
-    monthlyResponseIssues, monthlyResponseRequest, saveMonthlyAuditResponse, splitMonthlyAssetIds,
+    monthlyResponseIssues, monthlyResponseRequest, renewOverdueMonthlyAudit,
+    saveMonthlyAuditResponse, splitMonthlyAssetIds,
 } from "./shared/monthlyAuditWorkflow";
 import { getUkLocalDate } from "./shared/siteCheckDateUtils";
 import { calculateSiteCheckDueDate, formatSiteCheckDisplayDate } from "../../../../utils/siteCheckRecurrence";
@@ -105,6 +106,7 @@ const AssessmentFireRisk = ({
     const [monthlyActions, setMonthlyActions] = useState([]);
     const [monthlyError, setMonthlyError] = useState("");
     const [inspectionDate, setInspectionDate] = useState("");
+    const [recoveryStartDate, setRecoveryStartDate] = useState(getUkLocalDate());
     const [monthlyBusy, setMonthlyBusy] = useState(false);
     const [savingQuestionId, setSavingQuestionId] = useState(null);
     const monthlyContextRef = useRef(null);
@@ -131,7 +133,7 @@ const AssessmentFireRisk = ({
         setInspectionDate((current) => {
             if (context.status !== "OPEN") return String(context.inspectionDate || "").slice(0, 10);
             if (!changedPeriod) return current || String(context.inspectionDate || "").slice(0, 10) || getUkLocalDate();
-            if (context.hasSavedResponses && context.inspectionDate) {
+            if (context.inspectionDate) {
                 return String(context.inspectionDate).slice(0, 10);
             }
             return getUkLocalDate();
@@ -263,6 +265,7 @@ const AssessmentFireRisk = ({
         blockingQuestionOrders.length - visibleBlockingOrders.length;
 
     useEffect(() => {
+        setRecoveryStartDate(getUkLocalDate());
         getQuestions();
         if (!isMonthlyAudit && siteSelectedForGlobal?.siteId) {
             getSiteCheckAssets(siteSelectedForGlobal?.siteId);
@@ -420,6 +423,22 @@ const AssessmentFireRisk = ({
             try {
                 const context = await getMonthlyAuditContext(checkId);
                 if (!context.siteId) throw new Error("The audit site could not be verified. Reload the form.");
+                // An overdue audit needs only its server-verified period identity
+                // to display the recovery action. Do not allow a legacy response,
+                // attachment or asset-load issue to hide Start New Monthly Audit.
+                // No old answers are changed or discarded by opening this page.
+                if (context.canRenewOverdue) {
+                    if (sequence !== monthlyLoadSequence.current) return null;
+                    setAuditFolderId(null);
+                    setMonthlySiteAssets([]);
+                    setheaders([]);
+                    setquest([]);
+                    setMonthlyActions([]);
+                    setrisks([0, 0, 0, 0]);
+                    applyMonthlyContext(context);
+                    setMonthlyError("");
+                    return { context, questions: [], headers: [], actions: [] };
+                }
                 setAuditFolderId(null);
                 const [lovs, definitions, saved, actions, scopedAssets] = await Promise.all([
                     get("/api/lov/SITE_CHECK_AUDIT_HEADER"),
@@ -845,8 +864,7 @@ const AssessmentFireRisk = ({
     };
 
     const handleMonthlySubmit = async () => {
-        if (!monthlyContext?.canSubmit || monthlyReadOnly || !beginMonthlyWork()) return;
-        const wasAlreadySubmitted = Boolean(monthlyContextRef.current?.submittedAt);
+        if (!monthlyContext?.canSubmit || monthlyContext?.pdfStored || monthlyReadOnly || !beginMonthlyWork()) return;
         const periodToken = monthlyContextRef.current?.periodToken;
         setIsSubmitting(true);
         try {
@@ -863,9 +881,8 @@ const AssessmentFireRisk = ({
                 );
             }
 
-            // Submit confirms the latest saved audit state, but does not close it.
-            // Persist any complete on-screen changes first so the confirmation is
-            // based on server data rather than an older browser snapshot.
+            // Save any complete on-screen changes first; the server then marks
+            // Done and stores the final PDF/History before confirming Submit.
             for (const question of quest) {
                 if (!isMonthlyQuestionVisible(question, header) || !monthlyQuestionAssets(question, auditAssets).length) continue;
                 if (question.dirty || !question.response?.responseId ||
@@ -878,15 +895,49 @@ const AssessmentFireRisk = ({
             applyMonthlyContext(submitted);
             setMonthlyError("");
             onAuditSubmitted?.();
-            toast.success(wasAlreadySubmitted
-                ? "Audit update submitted. You can continue editing until the renewal date."
-                : "Audit submitted as complete. You can continue editing until the renewal date.");
+            toast.success("Monthly Audit completed and PDF saved. Submit is now disabled until renewal.");
         } catch (error) {
             const message = monthlyAuditError(error, "The Monthly Audit could not be submitted.");
             setMonthlyError(message);
             toast.error(message);
         } finally {
             setIsSubmitting(false);
+            endMonthlyWork();
+        }
+    };
+
+    const handleMonthlyOverdueRenewal = async () => {
+        if (!monthlyContext?.canRenewOverdue || !beginMonthlyWork()) return;
+        try {
+            const today = getUkLocalDate();
+            const earliest = moment(today).subtract(1, "month").format("YYYY-MM-DD");
+            if (!recoveryStartDate || recoveryStartDate < earliest || recoveryStartDate > today) {
+                throw new Error("Choose a new Inspection Date between one calendar month ago and today.");
+            }
+            const due = calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency);
+            if (!due) throw new Error("The next Due Date could not be calculated. Reload the audit.");
+            const confirmation = await Swal.fire({
+                title: "Start New Monthly Audit?",
+                text: `The previous audit and its answers must be saved to History first. ` +
+                    `The new audit will start ${formatSiteCheckDisplayDate(recoveryStartDate)} ` +
+                    `and be due ${formatSiteCheckDisplayDate(due)}. Continue?`,
+                icon: "warning",
+                showCancelButton: true,
+                confirmButtonText: "Archive and start new audit",
+                cancelButtonText: "Cancel",
+            });
+            if (!confirmation.isConfirmed) return;
+            const oldToken = monthlyContextRef.current?.periodToken;
+            if (!oldToken) throw new Error("Reload this Monthly Audit before renewal.");
+            await renewOverdueMonthlyAudit(checkId, { periodToken: oldToken, inspectionDate: recoveryStartDate });
+            await getQuestions();
+            onAuditSubmitted?.();
+            toast.success("Previous Monthly Audit archived. New blank audit is ready.");
+        } catch (error) {
+            const message = monthlyAuditError(error, "The overdue Monthly Audit could not be renewed.");
+            setMonthlyError(message);
+            toast.error(message);
+        } finally {
             endMonthlyWork();
         }
     };
@@ -1185,7 +1236,62 @@ const AssessmentFireRisk = ({
         <>
         <Box p={3}>
             <Card>
-                {true && (
+                {isMonthlyAudit && monthlyContext?.canRenewOverdue && (
+                    <CardContent>
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                            <Typography sx={{ fontWeight: 600 }}>Monthly Audit overdue</Typography>
+                            The previous audit was due on {formatSiteCheckDisplayDate(monthlyContext.nextDueDate) || "an earlier date"}.
+                            Its saved answers and PDF must be archived and verified before a new blank audit can start.
+                            Opening this page will not reset or delete anything.
+                        </Alert>
+                        <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={5}>
+                                <TextField
+                                    label="New Inspection / Start Date"
+                                    type="date"
+                                    value={recoveryStartDate}
+                                    onChange={(event) => setRecoveryStartDate(event.target.value)}
+                                    inputProps={{
+                                        min: moment(getUkLocalDate()).subtract(1, "month").format("YYYY-MM-DD"),
+                                        max: getUkLocalDate(),
+                                    }}
+                                    InputLabelProps={{ shrink: true }}
+                                    helperText="Choose today or up to one calendar month earlier (UK date)."
+                                    disabled={monthlyBusy || isLoading}
+                                    fullWidth
+                                    required
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={4}>
+                                <TextField
+                                    label="New Next Due Date"
+                                    value={formatSiteCheckDisplayDate(
+                                        recoveryStartDate && monthlyFrequency
+                                            ? calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency)
+                                            : null) || ""}
+                                    InputProps={{ readOnly: true }}
+                                    InputLabelProps={{ shrink: true }}
+                                    helperText={`Repeat frequency: ${monthlyFrequency || "Not set"}`}
+                                    fullWidth
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={3}>
+                                <Button variant="contained" onClick={handleMonthlyOverdueRenewal}
+                                    disabled={monthlyBusy || isLoading || !recoveryStartDate}>
+                                    {monthlyBusy ? "Archiving…" : "Start New Monthly Audit"}
+                                </Button>
+                            </Grid>
+                        </Grid>
+                        {recoveryStartDate && monthlyFrequency &&
+                            calculateSiteCheckDueDate(recoveryStartDate, monthlyFrequency) === getUkLocalDate() && (
+                            <Alert severity="info" sx={{ mt: 2 }}>
+                                This backdated start makes the new audit due today. Complete it before its next renewal.
+                            </Alert>
+                        )}
+                        {monthlyError && <Alert severity="error" sx={{ mt: 2 }}>{monthlyError}</Alert>}
+                    </CardContent>
+                )}
+                {!(isMonthlyAudit && monthlyContext?.canRenewOverdue) && (
                     <CardContent>
                         {isMonthlyAudit && (
                             <Box className="dont-print" sx={{ mb: 2 }}>
@@ -1197,6 +1303,10 @@ const AssessmentFireRisk = ({
                                             label="Inspection Date"
                                             value={inspectionDate}
                                             onChange={(event) => setInspectionDate(event.target.value)}
+                                            inputProps={{
+                                                min: moment(getUkLocalDate()).subtract(1, "month").format("YYYY-MM-DD"),
+                                                max: getUkLocalDate(),
+                                            }}
                                             disabled={monthlyReadOnly}
                                             InputLabelProps={{ shrink: true }}
                                             size="small"
@@ -1232,9 +1342,9 @@ const AssessmentFireRisk = ({
                                     {savingQuestionId ? "Saving answers and Action selections…" : "Updating the audit…"}
                                 </Typography>}
                                 {monthlyContext && (
-                                    <Alert severity={monthlyContext.submittedAt ? "success" : monthlyContext.hasSavedResponses ? "info" : "success"} sx={{ mt: 1 }}>
-                                        {monthlyContext.submittedAt
-                                            ? `Monthly Audit submitted. You can continue editing until ${formatSiteCheckDisplayDate(calculatedMonthlyDue || monthlyContext.nextDueDate) || "the renewal date"}. Use Submit Update after making further changes.`
+                                    <Alert severity={monthlyContext.pdfStored ? "success" : monthlyContext.hasSavedResponses ? "info" : "success"} sx={{ mt: 1 }}>
+                                        {monthlyContext.pdfStored && monthlyContext.status === "SUBMITTED"
+                                            ? "Monthly Audit completed. Its PDF and History are saved. Submit is disabled until the next period."
                                             : monthlyContext.hasSavedResponses
                                                 ? `Editing current Monthly Audit. Changes can be made until ${formatSiteCheckDisplayDate(calculatedMonthlyDue || monthlyContext.nextDueDate) || "the renewal date"}.`
                                                 : "New Monthly Audit. Save the first answer to start this period's record."}
@@ -2352,17 +2462,17 @@ const AssessmentFireRisk = ({
                                             Complete Audit
                                         </Typography>
                                         <Typography variant="body2" color="text.secondary">
-                                            Submit when the audit is complete. It will stay editable until the renewal date.
+                                            Submit when all required questions are complete. The system marks the audit Done and stores its PDF.
                                         </Typography>
                                     </Box>
                                 )}
                                 <Tooltip
                                     title={
-                                        canPrint
+                                        isMonthlyAudit && (monthlyContext?.pdfStored || monthlyContext?.status === "SUBMITTED")
+                                            ? "This period is already completed and its PDF is saved. Submit is disabled."
+                                            : canPrint
                                             ? isMonthlyAudit
-                                                ? monthlyContext?.submittedAt
-                                                    ? "Submit the latest saved changes. The audit will remain editable until its renewal date."
-                                                    : "Submit this Monthly Audit as complete. It will remain editable until its renewal date."
+                                                ? "Mark this Monthly Audit Done and generate its PDF and History."
                                                 : "Submit audit and close this site check"
                                             : visibleBlockingOrders.length > 0
                                                 ? `Complete question(s): ${visibleBlockingOrders.join(", ")}${hiddenBlockingCount > 0 ? ` (+ ${hiddenBlockingCount} in other sections)` : ""}`
@@ -2379,12 +2489,12 @@ const AssessmentFireRisk = ({
                         startIcon={<CheckCircle />}
                         onClick={handleSubmitAudit}
                         disabled={!canPrint || isSubmitting ||
-                            (isMonthlyAudit && (monthlyReadOnly || monthlyContext?.canSubmit !== true))}
+                            (isMonthlyAudit && (monthlyReadOnly || monthlyContext?.canSubmit !== true || monthlyContext?.pdfStored))}
                     >
                       {isSubmitting
-                          ? (isMonthlyAudit && monthlyContext?.submittedAt ? "Submitting update…" : "Submitting…")
+                          ? "Submitting…"
                           : (isMonthlyAudit
-                              ? (monthlyContext?.submittedAt ? "Submit Update" : "Submit Audit")
+                              ? (monthlyContext?.pdfStored || monthlyContext?.status === "SUBMITTED" ? "Submitted" : "Submit Audit")
                               : "Submit audit")}
                     </Button>
                   </span>

@@ -100,6 +100,9 @@ export const prepareMonthlyAuditSubmission = (checkId, request) =>
 export const completeMonthlyAuditSubmission = (checkId, request) =>
   contextMutation(checkId, "/submission/complete", request);
 
+export const renewOverdueMonthlyAudit = (checkId, request) =>
+  contextMutation(checkId, "/renew-overdue", request);
+
 export const uploadMonthlyAuditPdf = async (checkId, periodToken, folderId, blob, fileName) => {
   tokenQuery(periodToken);
   const formData = new FormData();
