@@ -18,7 +18,7 @@ import { jsPDF } from "jspdf";
 import { formatLocalDateTime } from "../../../../utils/dateFormat";
 import MonthlyAuditActionChoices from "./shared/MonthlyAuditActionChoices";
 import {
-    deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
+    completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
     getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
     hydrateMonthlyQuestion, isMonthlyQuestionVisible, mayFillMonthlyAuditForTest,
     monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete,
@@ -748,11 +748,11 @@ const AssessmentFireRisk = ({
                 throw new Error("Some test answers could not be confirmed. Reload and check the audit.");
             }
             if (needsReview.length) {
-                const message = `Test answers saved for ${savedCount} questions. Existing failures were left unchanged: question(s) ${needsReview.join(", ")}. Review and save those questions before the audit renews.`;
+                const message = `Test answers saved for ${savedCount} questions. Existing failures were left unchanged: question(s) ${needsReview.join(", ")}. Review and save those questions before submitting.`;
                 setMonthlyError(message);
                 toast.info(message);
             } else {
-                toast.success("Test answers saved. You can keep editing this Monthly Audit until its renewal date.");
+                toast.success("Test answers saved. Review the audit and click Submit Audit.");
             }
         } catch (error) {
             setMonthlyError(monthlyAuditError(error));
@@ -844,8 +844,55 @@ const AssessmentFireRisk = ({
         toast.success("Assessment response saved");
     };
 
+    const handleMonthlySubmit = async () => {
+        if (!monthlyContext?.canSubmit || monthlyReadOnly || !beginMonthlyWork()) return;
+        const wasAlreadySubmitted = Boolean(monthlyContextRef.current?.submittedAt);
+        const periodToken = monthlyContextRef.current?.periodToken;
+        setIsSubmitting(true);
+        try {
+            if (!periodToken) throw new Error("Reload this Monthly Audit before submitting.");
+            if (!inspectionDate) throw new Error("Enter the actual Inspection Date before submitting.");
+            if (!calculatedMonthlyDue) throw new Error("The audit's repeat frequency could not be verified. Reload before submitting.");
+            if (!canPrint) {
+                throw new Error(
+                    visibleBlockingOrders.length > 0
+                        ? `Complete question(s): ${visibleBlockingOrders.join(", ")}${hiddenBlockingCount > 0 ? ` (+ ${hiddenBlockingCount} in other sections)` : ""}`
+                        : hiddenBlockingCount > 0
+                            ? `Complete question(s) in other sections (${hiddenBlockingCount})`
+                            : "Complete all the questions before submitting."
+                );
+            }
+
+            // Submit confirms the latest saved audit state, but does not close it.
+            // Persist any complete on-screen changes first so the confirmation is
+            // based on server data rather than an older browser snapshot.
+            for (const question of quest) {
+                if (!isMonthlyQuestionVisible(question, header) || !monthlyQuestionAssets(question, auditAssets).length) continue;
+                if (question.dirty || !question.response?.responseId ||
+                    (question.response?.faultassets && !question.actionLinks?.length)) {
+                    await persistMonthlyQuestion(question, periodToken);
+                }
+            }
+
+            const submitted = await completeMonthlyAuditSubmission(checkId, { periodToken, inspectionDate });
+            applyMonthlyContext(submitted);
+            setMonthlyError("");
+            onAuditSubmitted?.();
+            toast.success(wasAlreadySubmitted
+                ? "Audit update submitted. You can continue editing until the renewal date."
+                : "Audit submitted as complete. You can continue editing until the renewal date.");
+        } catch (error) {
+            const message = monthlyAuditError(error, "The Monthly Audit could not be submitted.");
+            setMonthlyError(message);
+            toast.error(message);
+        } finally {
+            setIsSubmitting(false);
+            endMonthlyWork();
+        }
+    };
+
     const handleSubmitAudit = async () => {
-        if (isMonthlyAudit) return;
+        if (isMonthlyAudit) return handleMonthlySubmit();
         if (!canPrint) {
             toast.error(
                 visibleBlockingOrders?.length > 0
@@ -1185,10 +1232,12 @@ const AssessmentFireRisk = ({
                                     {savingQuestionId ? "Saving answers and Action selections…" : "Updating the audit…"}
                                 </Typography>}
                                 {monthlyContext && (
-                                    <Alert severity={monthlyContext.hasSavedResponses ? "info" : "success"} sx={{ mt: 1 }}>
-                                        {monthlyContext.hasSavedResponses
-                                            ? `Editing current Monthly Audit. Changes can be made until ${formatSiteCheckDisplayDate(calculatedMonthlyDue || monthlyContext.nextDueDate) || "the renewal date"}.`
-                                            : "New Monthly Audit. Save the first answer to start this period's record."}
+                                    <Alert severity={monthlyContext.submittedAt ? "success" : monthlyContext.hasSavedResponses ? "info" : "success"} sx={{ mt: 1 }}>
+                                        {monthlyContext.submittedAt
+                                            ? `Monthly Audit submitted. You can continue editing until ${formatSiteCheckDisplayDate(calculatedMonthlyDue || monthlyContext.nextDueDate) || "the renewal date"}. Use Submit Update after making further changes.`
+                                            : monthlyContext.hasSavedResponses
+                                                ? `Editing current Monthly Audit. Changes can be made until ${formatSiteCheckDisplayDate(calculatedMonthlyDue || monthlyContext.nextDueDate) || "the renewal date"}.`
+                                                : "New Monthly Audit. Save the first answer to start this period's record."}
                                     </Alert>
                                 )}
                                 {monthlyError && <Alert severity="error" sx={{ mt: 1 }}
@@ -2282,7 +2331,7 @@ const AssessmentFireRisk = ({
                             })}
 
 
-                        {subType === "Annual Winter Audit" && (
+                        {(isMonthlyAudit || subType === "Annual Winter Audit") && (
                             <Box
                                 className="dont-print"
                                 sx={{
@@ -2291,13 +2340,30 @@ const AssessmentFireRisk = ({
                                     borderTop: 1,
                                     borderColor: "divider",
                                     display: "flex",
-                                    justifyContent: "flex-end",
+                                    justifyContent: isMonthlyAudit ? "space-between" : "flex-end",
+                                    alignItems: isMonthlyAudit ? "center" : undefined,
+                                    flexWrap: "wrap",
+                                    gap: 2,
                                 }}
                             >
+                                {isMonthlyAudit && (
+                                    <Box>
+                                        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                            Complete Audit
+                                        </Typography>
+                                        <Typography variant="body2" color="text.secondary">
+                                            Submit when the audit is complete. It will stay editable until the renewal date.
+                                        </Typography>
+                                    </Box>
+                                )}
                                 <Tooltip
                                     title={
                                         canPrint
-                                            ? "Submit audit and close this site check"
+                                            ? isMonthlyAudit
+                                                ? monthlyContext?.submittedAt
+                                                    ? "Submit the latest saved changes. The audit will remain editable until its renewal date."
+                                                    : "Submit this Monthly Audit as complete. It will remain editable until its renewal date."
+                                                : "Submit audit and close this site check"
                                             : visibleBlockingOrders.length > 0
                                                 ? `Complete question(s): ${visibleBlockingOrders.join(", ")}${hiddenBlockingCount > 0 ? ` (+ ${hiddenBlockingCount} in other sections)` : ""}`
                                                 : hiddenBlockingCount > 0
@@ -2312,9 +2378,14 @@ const AssessmentFireRisk = ({
                         size="medium"
                         startIcon={<CheckCircle />}
                         onClick={handleSubmitAudit}
-                        disabled={!canPrint || isSubmitting}
+                        disabled={!canPrint || isSubmitting ||
+                            (isMonthlyAudit && (monthlyReadOnly || monthlyContext?.canSubmit !== true))}
                     >
-                      {isSubmitting ? "Submitting…" : "Submit audit"}
+                      {isSubmitting
+                          ? (isMonthlyAudit && monthlyContext?.submittedAt ? "Submitting update…" : "Submitting…")
+                          : (isMonthlyAudit
+                              ? (monthlyContext?.submittedAt ? "Submit Update" : "Submit Audit")
+                              : "Submit audit")}
                     </Button>
                   </span>
                                 </Tooltip>
