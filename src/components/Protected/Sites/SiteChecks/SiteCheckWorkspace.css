@@ -419,8 +419,9 @@
   transform: none;
 }
 
-.site-check-workspace__delete-button:hover:not(:disabled) {
-  background: rgba(220, 53, 69, 0.82);
+.site-check-workspace__more-button[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* SweetAlert confirmation must sit above the fixed workspace (z-index 1300). */

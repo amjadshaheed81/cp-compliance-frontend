@@ -7,6 +7,8 @@ import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
 import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
 import DoneRoundedIcon from "@mui/icons-material/DoneRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
+import MoreVertRoundedIcon from "@mui/icons-material/MoreVertRounded";
+import { Menu, MenuItem, ListItemIcon, ListItemText } from "@mui/material";
 import UpdateSiteCheck from "./UpdateSiteCheck";
 import { toast } from "react-toastify";
 import {
@@ -27,6 +29,7 @@ const SiteCheckWorkspace = ({
   onDelete,
 }) => {
   const [headerActionTarget, setHeaderActionTarget] = useState(null);
+  const [actionsMenuAnchor, setActionsMenuAnchor] = useState(null);
   const [liveSiteCheckSummary, setLiveSiteCheckSummary] = useState(siteCheckSummary || null);
 
   useEffect(() => {
@@ -50,6 +53,11 @@ const SiteCheckWorkspace = ({
   useEffect(() => {
     setLiveSiteCheckSummary(siteCheckSummary || null);
   }, [checkId, siteCheckSummary]);
+
+  // Do not leave an action menu open when navigating to a different check.
+  useEffect(() => {
+    setActionsMenuAnchor(null);
+  }, [checkId]);
 
   useEffect(() => {
     let lastFailureSignature = "";
@@ -91,6 +99,11 @@ const SiteCheckWorkspace = ({
     onModeChange?.(nextMode);
   };
   const headerSummary = liveSiteCheckSummary || siteCheckSummary;
+  const closeActionsMenu = () => setActionsMenuAnchor(null);
+  const runHeaderAction = (handler) => {
+    closeActionsMenu();
+    if (headerSummary) handler?.(headerSummary);
+  };
   const titleParts = [
     headerSummary?.type,
     headerSummary?.subType,
@@ -133,6 +146,58 @@ const SiteCheckWorkspace = ({
         </div>
 
         <div className="site-check-workspace__actions">
+          {/* Keep time-sensitive inspection actions visible in the header. */}
+          <div
+            ref={setHeaderActionTarget}
+            className="site-check-workspace__context-actions"
+          />
+
+          <div className="site-check-workspace__grid-actions" aria-label="Inspection actions">
+            <button
+              type="button"
+              className="site-check-workspace__icon-button site-check-workspace__more-button"
+              onClick={(event) => setActionsMenuAnchor(event.currentTarget)}
+              disabled={!headerSummary}
+              title="More inspection actions"
+              aria-label="More inspection actions"
+              aria-haspopup="menu"
+              aria-expanded={Boolean(actionsMenuAnchor)}
+              aria-controls={actionsMenuAnchor ? "site-check-workspace-actions-menu" : undefined}
+            >
+              <MoreVertRoundedIcon fontSize="small" />
+            </button>
+            <Menu
+              id="site-check-workspace-actions-menu"
+              anchorEl={actionsMenuAnchor}
+              open={Boolean(actionsMenuAnchor)}
+              onClose={closeActionsMenu}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              MenuListProps={{ "aria-label": "Inspection actions" }}
+              PaperProps={{ sx: { minWidth: 195, borderRadius: 2 } }}
+              sx={{ zIndex: 1450 }}
+            >
+              <MenuItem onClick={() => runHeaderAction(onCopy)} disabled={!headerSummary}>
+                <ListItemIcon><ContentCopyRoundedIcon fontSize="small" /></ListItemIcon>
+                <ListItemText>Copy Site Check</ListItemText>
+              </MenuItem>
+              {headerSummary?.subType !== "Monthly Audit" && (
+                <MenuItem
+                  onClick={() => runHeaderAction(onMarkDone)}
+                  disabled={!headerSummary || headerSummary.status === "Done"}
+                >
+                  <ListItemIcon><DoneRoundedIcon fontSize="small" /></ListItemIcon>
+                  <ListItemText>Mark Done</ListItemText>
+                </MenuItem>
+              )}
+              <MenuItem onClick={() => runHeaderAction(onDelete)} disabled={!headerSummary}>
+                <ListItemIcon><DeleteOutlineRoundedIcon color="error" fontSize="small" /></ListItemIcon>
+                <ListItemText>Delete Site Check</ListItemText>
+              </MenuItem>
+            </Menu>
+          </div>
+
+          {/* The view-mode control sits directly beside Close. */}
           <button
             type="button"
             className="site-check-workspace__icon-button site-check-workspace__mode-button"
@@ -146,46 +211,6 @@ const SiteCheckWorkspace = ({
               <FullscreenRoundedIcon fontSize="small" />
             )}
           </button>
-
-          <div
-            ref={setHeaderActionTarget}
-            className="site-check-workspace__context-actions"
-          />
-
-          <div className="site-check-workspace__grid-actions" aria-label="Inspection actions">
-            <button
-              type="button"
-              className="site-check-workspace__icon-button"
-              onClick={() => onCopy?.(headerSummary)}
-              disabled={!headerSummary}
-              title="Copy this Site Check"
-              aria-label="Copy this Site Check"
-            >
-              <ContentCopyRoundedIcon fontSize="small" />
-            </button>
-            {headerSummary?.subType !== "Monthly Audit" && (
-              <button
-                type="button"
-                className="site-check-workspace__icon-button"
-                onClick={() => onMarkDone?.(headerSummary)}
-                disabled={!headerSummary || headerSummary.status === "Done"}
-                title="Mark Site Check as Done"
-                aria-label="Mark Site Check as Done"
-              >
-                <DoneRoundedIcon fontSize="small" />
-              </button>
-            )}
-            <button
-              type="button"
-              className="site-check-workspace__icon-button site-check-workspace__delete-button"
-              onClick={() => onDelete?.(headerSummary)}
-              disabled={!headerSummary}
-              title="Delete this Site Check"
-              aria-label="Delete this Site Check"
-            >
-              <DeleteOutlineRoundedIcon fontSize="small" />
-            </button>
-          </div>
 
           <button
             type="button"

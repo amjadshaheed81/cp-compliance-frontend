@@ -1,41 +1,44 @@
-# CAFM Site Check grid: Asset Information and header actions
-TEST-only frontend package — 11 October 2026
+# CAFM Site Check — compact header actions (TEST)
 
-Source baseline: frontend(3).zip (same hashes as current GitHub main for affected files at review time).
+## Baseline
+This is a small follow-up to the already reviewed TEST patch for Asset Information and right-panel header actions. The source files matched the live frontend repository main branch at review time (11 Oct 2026). Apply ONLY to the same/latest frontend source; do not overwrite newer edits without comparing them.
 
-## Changes
-- Asset ID column is now labelled Asset Information and displays Name, Floor / Room / Position and Asset ID on separate lines.
-- Local search includes asset name and location; numeric Asset ID sorting stays unchanged.
-- Existing grid columns and View/Edit, Copy, Mark Done and Delete buttons are retained.
-- Right-hand View Inspection header duplicates Copy, Mark Done and Delete beside Close (View/Edit is the already-open inspection). Mark Done is intentionally hidden for Monthly Audits, which require their own Submit/PDF flow.
-- The same existing handlers are reused. Copy closes the workspace so its existing form is visible. Delete closes it only after a successful delete.
-- Header confirm dialogs are raised above the right panel to fix the hidden SweetAlert problem.
-- No Month Audit business logic, new tests, database schema or other modules touched.
+## Change
+- Move existing Full/Split-view toggle directly next to the Close button.
+- Replace the three individual header buttons with one More (three-dot) menu: Copy Site Check, Mark Done, Delete Site Check.
+- Keep Delete at bottom to reduce accidental selection; existing confirmation and action handlers are unchanged.
+- Monthly Audit still does not show Mark Done (uses Submit for PDF/History).
+- Keep the header portal for Open Early / View PDF visible before the More menu.
+- The grid Actions column remains untouched.
+- Existing responsive rule hides the Full/Split toggle at narrower browser widths where split view is disabled.
 
-## Deployment
-Deploy Site Service first to TEST, then this frontend. Do NOT apply directly to production.
+## Changed frontend source files
+- src/components/Protected/Sites/SiteChecks/SiteCheckWorkspace.jsx
+- src/components/Protected/Sites/SiteChecks/SiteCheckWorkspace.css
 
-## Known constraint
-The existing grid Mark Done shortcut uses the generic Site Check status update handler. Monthly Audits must be finalised using their dedicated Submit/PDF workflow. The new workspace header therefore does not show Mark Done for Monthly Audits. The older grid shortcut is unchanged by this scoped UI release; do not use it to complete a Monthly Audit.
+No Site Service, Project Service, API, migrations, new helper classes or test files.
 
-## Manual TEST checks
-1. Name, location and ID display correctly for linked assets; '-' for no linked asset.
-2. Search by asset name, floor, room, position or ID, and sort numerically by ID.
-3. Grid Actions buttons remain and still function.
-4. Right-panel Copy reveals the existing Copy form after closing the panel.
-5. Right-panel Mark Done/Delete confirmations remain visible above the panel; Cancel does nothing.
-6. Delete closes panel only on success; Mark Done refreshes the status for other inspections and is absent for Monthly Audit; existing Open Early/View PDF buttons and Close work.
-7. Review the grid and panel on narrower screens.
-
-## Git
-Commit title: Show asset details in Site Check grid and duplicate inspection header actions
-Remarks:
-- Display asset name, floor/room/position and ID in the existing grid column.
-- Add name/location to grid search; retain numeric asset sorting.
-- Duplicate Copy, Mark Done and Delete beside inspection Close.
-- Keep existing grid Actions column; reuse handlers and fix confirmation layering.
-- No database changes.
+## TEST verification steps
+1. Deploy frontend to TEST only. Open a Site Check.
+2. Confirm header displays Open Early and/or View PDF when eligible, then More, Full/Split toggle, Close.
+3. Check More items: Copy, Mark Done, Delete (existing confirm dialogs and behaviour).
+4. Check a Done inspection disables Mark Done; Monthly Audit omits Mark Done entirely.
+5. Confirm the Full/Split toggle is immediately beside Close on wide screens and still switches views.
+6. Check no changes to the grid's existing Actions buttons and Asset Information column.
+7. Test keyboard navigation and narrow/mobile layout.
 
 ## Validation
-TypeScript JSX parser: 0 syntax diagnostics for changed JSX files.
-Full React build and interactive/browser tests have not been run in this environment.
+- SiteCheckWorkspace.jsx JSX syntax: PASS (TypeScript transpiler parser).
+- CSS parse: PASS (tinycss2).
+- 13 focused source checks: PASS.
+- Full React build and browser integration NOT run here; must pass in TEST deployment.
+
+## Recommended Git commit
+Title: Compact Site Check header actions into More menu
+
+Remarks:
+- Group Copy, Mark Done and Delete in one accessible More menu.
+- Move Full/Split view control beside Close.
+- Keep Open Early/View PDF visible and preserve existing handlers.
+- Preserve Monthly Audit submission safeguards and grid actions.
+- Frontend-only; no database or backend changes.
