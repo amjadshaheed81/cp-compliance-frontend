@@ -358,3 +358,35 @@
     flex-basis: 100%;
   }
 }
+
+/* Asset name, location and ID in the existing single grid column. */
+.site-check-asset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 150px;
+  max-width: 290px;
+  line-height: 1.3;
+}
+
+.site-check-asset-info__name {
+  color: #243e53;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.site-check-asset-info__location {
+  color: #526a7a;
+  font-size: 0.83rem;
+  overflow-wrap: anywhere;
+}
+
+.site-check-asset-info__location i {
+  margin-right: 2px;
+  color: #768c9b;
+}
+
+.site-check-asset-info__id {
+  color: #697d8c;
+  font-size: 0.75rem;
+}

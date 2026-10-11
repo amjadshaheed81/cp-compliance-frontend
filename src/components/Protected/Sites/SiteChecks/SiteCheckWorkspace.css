@@ -403,3 +403,40 @@
     display: none;
   }
 }
+
+/* Grid actions repeated beside Close in the inspection workspace. */
+.site-check-workspace__grid-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 7px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.site-check-workspace__icon-button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.site-check-workspace__delete-button:hover:not(:disabled) {
+  background: rgba(220, 53, 69, 0.82);
+}
+
+/* SweetAlert confirmation must sit above the fixed workspace (z-index 1300). */
+.swal2-container.site-check-workspace__confirmation {
+  z-index: 1600 !important;
+}
+
+@media (max-width: 575.98px) {
+  .site-check-workspace__grid-actions {
+    gap: 4px;
+    padding-right: 4px;
+  }
+
+  .site-check-workspace__grid-actions .site-check-workspace__icon-button {
+    width: 32px;
+    min-height: 34px;
+    border-radius: 9px;
+  }
+}

@@ -130,6 +130,8 @@ const SiteChecks = ({
   const [filteredSiteChecks, setFilteredSiteChecks] = useState([]);
   const [siteChecks, setSiteChecks] = useState([]);
   const [assetIdMap, setAssetIdMap] = useState({});
+  const [assetNameMap, setAssetNameMap] = useState({});
+  const [assetLocationMap, setAssetLocationMap] = useState({});
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -593,7 +595,9 @@ const SiteChecks = ({
   const filterSiteChecks = (
     source = [],
     filters = formData2,
-    assetMap = assetIdMap
+    assetMap = assetIdMap,
+    nameMap = assetNameMap,
+    locationMap = assetLocationMap
   ) => {
     let result = [...source];
 
@@ -632,6 +636,8 @@ const SiteChecks = ({
           sc?.status,
           sc?.repeatFrequency,
           assetId,
+          nameMap?.[sc?.checkId],
+          locationMap?.[sc?.checkId],
           leadName,
           formattedDate,
           sc?.riskScoreRed,
@@ -707,53 +713,50 @@ const SiteChecks = ({
     setCreate(true);
   };
 
-  const deleteSiteCheckCall = (action) => {
+  const deleteSiteCheckCall = (action, fromWorkspace = false) => {
+    if (!action?.checkId) return;
     Swal.fire({
       title: `Do you want to delete ${action?.type} site check?`,
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Delete",
+      // The right panel uses z-index 1300. Keep its confirmation visible.
+      ...(fromWorkspace ? { customClass: { container: "site-check-workspace__confirmation" } } : {}),
     }).then(async (result) => {
-      if (result.isConfirmed) {
-        setIsLoading(true);
+      if (!result.isConfirmed) return;
+      setIsLoading(true);
+      try {
         await del("/api/site-check/check-id/" + action.checkId);
-        getSiteChecks();
-        // if (res === "Success") {
-        //   toast.success(`${user?.name} user has been deleted successully`);
-        //   getUsers();
-        // } else {
-        //   toast.error(
-        //     `Something went wrong while deleting user. Please try again.`
-        //   );
-        // }
-      } else if (result.isDenied) {
-        toast.info(`delete action has been denied.`);
+        if (fromWorkspace) closeInspectionWorkspace();
+        await getSiteChecks({ showLoading: false });
+      } catch (error) {
+        console.error("Failed to delete Site Check:", error);
+        toast.error("Could not delete this Site Check. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     });
   };
 
-  const markAsDone = (action) => {
+  const markAsDone = (action, fromWorkspace = false) => {
+    if (!action?.checkId || action?.status === "Done") return;
     Swal.fire({
       title: `Do you want to close ${action?.type}?`,
       showDenyButton: false,
       showCancelButton: true,
       confirmButtonText: "Confirm",
+      ...(fromWorkspace ? { customClass: { container: "site-check-workspace__confirmation" } } : {}),
     }).then(async (result) => {
-      if (result.isConfirmed) {
-        setIsLoading(true);
-        action.status = "Done";
-        await put("/api/site-check/" + action.checkId, action);
-        getSiteChecks({ highlightCheckId: action.checkId });
-        // if (res === "Success") {
-        //   toast.success(`${user?.name} user has been deleted successully`);
-        //   getUsers();
-        // } else {
-        //   toast.error(
-        //     `Something went wrong while deleting user. Please try again.`
-        //   );
-        // }
-      } else if (result.isDenied) {
-        toast.info(`delete action has been denied.`);
+      if (!result.isConfirmed) return;
+      setIsLoading(true);
+      try {
+        await put("/api/site-check/" + action.checkId, { ...action, status: "Done" });
+        await getSiteChecks({ highlightCheckId: action.checkId, showLoading: false });
+      } catch (error) {
+        console.error("Failed to close Site Check:", error);
+        toast.error("Could not close this Site Check. Please try again.");
+      } finally {
+        setIsLoading(false);
       }
     });
   };
@@ -919,16 +922,20 @@ const SiteChecks = ({
     }
 
     try {
-      // The grid endpoint returns the existing Site Check row shape plus a
-      // separate Asset ID map, removing the previous per-row inspection calls.
+      // The grid returns Site Checks and their asset information in one request.
+      // Retain the original numeric Asset ID map for sorting compatibility.
       const gridData = await get(
         "/api/site-check/site/" + siteSelectedForGlobal.siteId + "/grid"
       );
 
       const siteChecks = gridData?.siteChecks || [];
       const newAssetIdMap = gridData?.assetIdMap || {};
+      const newAssetNameMap = gridData?.assetNameMap || {};
+      const newAssetLocationMap = gridData?.assetLocationMap || {};
 
       setAssetIdMap(newAssetIdMap);
+      setAssetNameMap(newAssetNameMap);
+      setAssetLocationMap(newAssetLocationMap);
 
       // Preserve the existing grid ordering:
       // 1. Checks with asset IDs (numeric ascending)
@@ -957,7 +964,9 @@ const SiteChecks = ({
       const filteredResults = filterSiteChecks(
         sortedSiteChecks,
         formData2Ref.current,
-        newAssetIdMap
+        newAssetIdMap,
+        newAssetNameMap,
+        newAssetLocationMap
       );
       setFilteredSiteChecks(filteredResults);
       setSiteChecks(sortedSiteChecks);
@@ -1455,7 +1464,7 @@ const SiteChecks = ({
                     <tr>
                       <th scope="col">{renderSortableHeader("Type", "type")}</th>
                       <th scope="col">{renderSortableHeader("Sub-Type", "subType")}</th>
-                      <th scope="col">{renderSortableHeader("Asset ID", "assetId")}</th>
+                      <th scope="col">{renderSortableHeader("Asset Information", "assetId", "Sort by Asset ID")}</th>
                       <th scope="col">{renderSortableHeader("Summary", "category")}</th>
                       <th scope="col">{renderSortableHeader("Lead", "lead")}</th>
                       <th scope="col">
@@ -1524,10 +1533,31 @@ const SiteChecks = ({
                           >
                             <th scope="col" className="site-check-row__cell--actionable">{action?.type}</th>
                             <th scope="col" className="site-check-row__cell--actionable">{action?.subType}</th>
-                            <th scope="col">
-                              {assetIdMap[action.checkId]
-                                ? parseInt(assetIdMap[action.checkId]) // Display as number to show proper ordering
-                                : '-'}
+                            <th scope="col" className="site-check-row__cell--actionable">
+                              {assetIdMap[action.checkId] ? (
+                                <div className="site-check-asset-info">
+                                  <span
+                                    className="site-check-asset-info__name"
+                                    title={assetNameMap[action.checkId] || ""}
+                                  >
+                                    {assetNameMap[action.checkId] || `Asset #${assetIdMap[action.checkId]}`}
+                                  </span>
+                                  {assetLocationMap[action.checkId] && (
+                                    <span
+                                      className="site-check-asset-info__location"
+                                      title={assetLocationMap[action.checkId]}
+                                    >
+                                      <i className="fas fa-map-marker-alt" aria-hidden="true" />{" "}
+                                      {assetLocationMap[action.checkId]}
+                                    </span>
+                                  )}
+                                  <span className="site-check-asset-info__id">
+                                    ID: {assetIdMap[action.checkId]}
+                                  </span>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
                             </th>
                             <th scope="col" className="site-check-row__cell--actionable">{action?.category}</th>
                             <th scope="col" style={{ width: "250px" }} className="site-check-row__cell--actionable">
@@ -2108,6 +2138,12 @@ const SiteChecks = ({
           displayMode={workspaceDisplayMode}
           onModeChange={setWorkspaceDisplayMode}
           onClose={closeInspectionWorkspace}
+          onCopy={(check) => {
+            copyData(check);
+            closeInspectionWorkspace();
+          }}
+          onMarkDone={(check) => markAsDone(check, true)}
+          onDelete={(check) => deleteSiteCheckCall(check, true)}
         />
       )}
     </Fragment>

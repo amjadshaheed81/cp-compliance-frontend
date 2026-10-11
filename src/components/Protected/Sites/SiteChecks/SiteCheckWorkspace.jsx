@@ -4,6 +4,9 @@ import CloseRoundedIcon from "@mui/icons-material/CloseRounded";
 import FullscreenRoundedIcon from "@mui/icons-material/FullscreenRounded";
 import VerticalSplitRoundedIcon from "@mui/icons-material/VerticalSplitRounded";
 import FactCheckRoundedIcon from "@mui/icons-material/FactCheckRounded";
+import ContentCopyRoundedIcon from "@mui/icons-material/ContentCopyRounded";
+import DoneRoundedIcon from "@mui/icons-material/DoneRounded";
+import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import UpdateSiteCheck from "./UpdateSiteCheck";
 import { toast } from "react-toastify";
 import {
@@ -19,6 +22,9 @@ const SiteCheckWorkspace = ({
   displayMode = "full",
   onModeChange,
   onClose,
+  onCopy,
+  onMarkDone,
+  onDelete,
 }) => {
   const [headerActionTarget, setHeaderActionTarget] = useState(null);
   const [liveSiteCheckSummary, setLiveSiteCheckSummary] = useState(siteCheckSummary || null);
@@ -145,6 +151,41 @@ const SiteCheckWorkspace = ({
             ref={setHeaderActionTarget}
             className="site-check-workspace__context-actions"
           />
+
+          <div className="site-check-workspace__grid-actions" aria-label="Inspection actions">
+            <button
+              type="button"
+              className="site-check-workspace__icon-button"
+              onClick={() => onCopy?.(headerSummary)}
+              disabled={!headerSummary}
+              title="Copy this Site Check"
+              aria-label="Copy this Site Check"
+            >
+              <ContentCopyRoundedIcon fontSize="small" />
+            </button>
+            {headerSummary?.subType !== "Monthly Audit" && (
+              <button
+                type="button"
+                className="site-check-workspace__icon-button"
+                onClick={() => onMarkDone?.(headerSummary)}
+                disabled={!headerSummary || headerSummary.status === "Done"}
+                title="Mark Site Check as Done"
+                aria-label="Mark Site Check as Done"
+              >
+                <DoneRoundedIcon fontSize="small" />
+              </button>
+            )}
+            <button
+              type="button"
+              className="site-check-workspace__icon-button site-check-workspace__delete-button"
+              onClick={() => onDelete?.(headerSummary)}
+              disabled={!headerSummary}
+              title="Delete this Site Check"
+              aria-label="Delete this Site Check"
+            >
+              <DeleteOutlineRoundedIcon fontSize="small" />
+            </button>
+          </div>
 
           <button
             type="button"
