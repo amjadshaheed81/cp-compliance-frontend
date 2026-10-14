@@ -2,7 +2,7 @@ import { del, get, post, postMultiPartFormData } from "../../../../../api";
 import {
   completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
   getMonthlyAuditContext, getMonthlyAuditResponses, hydrateMonthlyQuestion,
-  isMonthlyQuestionVisible, mayFillMonthlyAuditForTest, monthlyActionCandidates,
+  isMonthlyQuestionVisible, mayFillMonthlyAuditForTest, MONTHLY_AUDIT_NOTE_MAX_LENGTH, monthlyActionCandidates,
   monthlyQuestionAssets, monthlyQuestionComplete, monthlyResponseIssues,
   monthlyResponseRequest, newMonthlyAuditRequestId, openMonthlyAuditEarly, prepareMonthlyAuditSubmission,
   saveMonthlyAuditResponse, uploadMonthlyAuditPdf,
@@ -80,6 +80,25 @@ describe("Monthly Audit real site answers and existing fault choices", () => {
       "Select an existing Action or choose a new fault for asset 12.",
     ]);
     expect(monthlyResponseIssues({ ...question, actionChoices: { 12: { mode: "EXISTING", actionId: 50 } } }, actions, 296)).toEqual([]);
+  });
+
+  test("Monthly Audit note limits reject overlength text, including when no asset is failed", () => {
+    const tooLong = "x".repeat(MONTHLY_AUDIT_NOTE_MAX_LENGTH + 1);
+    const allowed = "x".repeat(MONTHLY_AUDIT_NOTE_MAX_LENGTH);
+    expect(monthlyResponseIssues({ ...question, response: { assets: "12", faultassets: "", position: tooLong } }, actions, 296))
+      .toEqual([`Observation is too long (maximum ${MONTHLY_AUDIT_NOTE_MAX_LENGTH} characters).`]);
+    expect(monthlyResponseIssues({ ...question, response: { assets: "12", faultassets: "", action: tooLong } }, actions, 296))
+      .toEqual([`Suggested Action is too long (maximum ${MONTHLY_AUDIT_NOTE_MAX_LENGTH} characters).`]);
+    expect(monthlyResponseIssues({ ...question, response: { assets: "12", faultassets: "", position: allowed, action: allowed } }, actions, 296))
+      .toEqual([]);
+  });
+
+  test("asset ID lists are not character-capped in the browser", () => {
+    const many = Array.from({ length: 50 }, (_, i) => String(100000 + i)).join(",");
+    const request = monthlyResponseRequest({ ...question, response: { assets: many, faultassets: "" } },
+      { checkId: 408, periodToken: "period-1", requestId: retryRequestId });
+    expect(request.response.assets).toBe(many);
+    expect(request.response.assets.length).toBeGreaterThan(100);
   });
 
   test("mixed failures retain one Action relationship for each asset", () => {

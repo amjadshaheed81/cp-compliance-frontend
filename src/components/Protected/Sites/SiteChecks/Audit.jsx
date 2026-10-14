@@ -22,7 +22,8 @@ import {
     getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
     hydrateMonthlyQuestion, isMonthlyQuestionVisible, mayFillMonthlyAuditForTest,
     monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete,
-    monthlyResponseIssues, monthlyResponseRequest, openMonthlyAuditEarly, renewOverdueMonthlyAudit,
+    MONTHLY_AUDIT_NOTE_MAX_LENGTH, monthlyResponseIssues, monthlyResponseRequest,
+    openMonthlyAuditEarly, renewOverdueMonthlyAudit,
     saveMonthlyAuditResponse, splitMonthlyAssetIds,
 } from "./shared/monthlyAuditWorkflow";
 import { getUkLocalDate } from "./shared/siteCheckDateUtils";
@@ -2114,7 +2115,7 @@ const AssessmentFireRisk = ({
                                                                                 />
                                                                             </Grid>
                                                                         )}
-                                                                        {faultAsset > 0 && (
+                                                                        {(faultAsset > 0 || (isMonthlyAudit && Boolean(q?.response?.position))) && (
                                                                             <Grid item xs={6}>
                                                                                 <label
                                                                                     htmlFor="position"
@@ -2127,6 +2128,7 @@ const AssessmentFireRisk = ({
                                                                                     name="position"
                                                                                     className="form-control"
                                                                                     id="position"
+                                                                                    maxLength={isMonthlyAudit ? MONTHLY_AUDIT_NOTE_MAX_LENGTH : undefined}
                                                                                     rows="4"
                                                                                     required={faultAsset > 0}
                                                                                     placeholder="Enter notes..."
@@ -2142,10 +2144,15 @@ const AssessmentFireRisk = ({
                                                                                         border: "1px solid #ccc",
                                                                                     }}
                                                                                 />
+                                                                                {isMonthlyAudit && (
+                                                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                                                        {String(q?.response?.position || "").length} / {MONTHLY_AUDIT_NOTE_MAX_LENGTH} characters
+                                                                                    </Typography>
+                                                                                )}
                                                                             </Grid>
                                                                         )}
 
-                                                                        {faultAsset > 0 && (
+                                                                        {(faultAsset > 0 || (isMonthlyAudit && Boolean(q?.response?.action))) && (
                                                                             <Grid item xs={6}>
                                                                                 <label htmlFor="action" name="action">
                                                                                     Suggested Action
@@ -2153,6 +2160,7 @@ const AssessmentFireRisk = ({
                                                                                 <textarea
                                                                                     disabled={questionReadOnly(q)}
                                                                                     name="action"
+                                                                                    maxLength={isMonthlyAudit ? MONTHLY_AUDIT_NOTE_MAX_LENGTH : undefined}
                                                                                     required={faultAsset > 0}
                                                                                     className="form-control"
                                                                                     id="action"
@@ -2170,6 +2178,11 @@ const AssessmentFireRisk = ({
                                                                                         border: "1px solid #ccc",
                                                                                     }}
                                                                                 />
+                                                                                {isMonthlyAudit && (
+                                                                                    <Typography variant="caption" color="text.secondary" display="block">
+                                                                                        {String(q?.response?.action || "").length} / {MONTHLY_AUDIT_NOTE_MAX_LENGTH} characters
+                                                                                    </Typography>
+                                                                                )}
                                                                             </Grid>
                                                                         )}
                                                                         {faultAsset > 0 && (

@@ -1,6 +1,10 @@
 import { del, get, post, postMultiPartFormData } from "../../../../../api";
 
 const periodStatuses = new Set(["OPEN", "SUBMITTING", "SUBMITTED", "ARCHIVE_REQUIRED"]);
+// Kept in sync with MonthlyAuditResponseCapacity.MAX_NOTE_CHARACTERS.
+// The database uses TEXT for both fields; the UI cap prevents unbounded user input.
+export const MONTHLY_AUDIT_NOTE_MAX_LENGTH = 4000;
+
 const responseFields = [
   "responseId", "checkId", "qid", "response", "position", "floor", "room",
   "assets", "faultassets", "consequence", "likelihood", "action", "responseDate",
@@ -202,9 +206,17 @@ export const monthlyActionCandidates = (actions, assetId, siteId) =>
       .includes(String(assetId)));
 
 export const monthlyResponseIssues = (question, actions, siteId) => {
-  const failures = splitMonthlyAssetIds(question?.response?.faultassets);
-  if (!failures.length) return [];
   const issues = [];
+  // Validate text even for a passing question: the response can retain notes
+  // from an earlier edit, and HTML maxLength alone does not reject old values.
+  if (String(question?.response?.position || "").length > MONTHLY_AUDIT_NOTE_MAX_LENGTH) {
+    issues.push(`Observation is too long (maximum ${MONTHLY_AUDIT_NOTE_MAX_LENGTH} characters).`);
+  }
+  if (String(question?.response?.action || "").length > MONTHLY_AUDIT_NOTE_MAX_LENGTH) {
+    issues.push(`Suggested Action is too long (maximum ${MONTHLY_AUDIT_NOTE_MAX_LENGTH} characters).`);
+  }
+  const failures = splitMonthlyAssetIds(question?.response?.faultassets);
+  if (!failures.length) return issues;
   if (!String(question.response?.position || "").trim() || !String(question.response?.action || "").trim()) {
     issues.push("Enter an observation and suggested action for the failed assets.");
   }
