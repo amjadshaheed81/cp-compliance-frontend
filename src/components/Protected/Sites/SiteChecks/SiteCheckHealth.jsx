@@ -160,9 +160,9 @@ const SiteCheckHealth = ({ siteSelectedForGlobal, loggedInUserData }) => {
     if (selectedMonthly) {
       return (
         <div className="alert alert-info mb-0">
-          <div className="fw-bold mb-2">Monthly Audit renewal</div>
-          <div>The current Monthly Audit stays editable until its exact Due Date.</div>
-          <div className="small mt-2">At renewal it is saved to History as Completed or Not Completed, then the working audit resets for the next period. Monthly Audit is not opened early from this page.</div>
+          <div className="fw-bold mb-2">Monthly Audit completion and renewal</div>
+          <div>Use Submit Audit in View Inspection to complete the Monthly Audit. Successful submission saves its PDF and History and locks that period.</div>
+          <div className="small mt-2">Start the next period using the Monthly Audit controls in View Inspection when they become available. For an overdue audit, that panel preserves the previous period before starting the next one. Monthly Audit is not opened early or renewed using this page's generic recovery controls.</div>
         </div>
       );
     }

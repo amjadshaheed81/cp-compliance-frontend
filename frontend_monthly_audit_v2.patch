@@ -1,0 +1,52 @@
+--- a/src/components/Protected/Sites/SiteChecks/shared/monthlyAuditWorkflow.js
++++ b/src/components/Protected/Sites/SiteChecks/shared/monthlyAuditWorkflow.js
+@@ -11,7 +11,7 @@
+   if (!Number.isSafeInteger(Number(checkId)) || Number(checkId) <= 0) {
+     throw new Error("A valid Site Check is required.");
+   }
+-  return `/api/site-check/${checkId}/monthly-audit`;
++  return `/api/site-check/${checkId}/monthly-audit-v2`;
+ };
+ 
+ const tokenQuery = (periodToken) => {
+--- a/src/components/Protected/Sites/SiteChecks/shared/monthlyAuditWorkflow.test.js
++++ b/src/components/Protected/Sites/SiteChecks/shared/monthlyAuditWorkflow.test.js
+@@ -183,14 +183,14 @@
+     post.mockResolvedValue({ data: { ...context, status: "SUBMITTING", sourceReference: "Audit-408-1" } });
+     const request = { periodToken: "period-1", inspectionDate: "2026-01-31", requestId: retryRequestId };
+     await prepareMonthlyAuditSubmission(408, request);
+-    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/submission/prepare", request);
++    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/submission/prepare", request);
+   });
+ 
+   test("PDF upload sends only the period, file and folder; server owns dates and reference", async () => {
+     postMultiPartFormData.mockResolvedValue({ data: { ...context, status: "SUBMITTING", pdfStored: true } });
+     await uploadMonthlyAuditPdf(408, "period-1", 22, new Blob(["PDF"]), "audit.pdf");
+     const [url, body] = postMultiPartFormData.mock.calls[0];
+-    expect(url).toBe("/api/site-check/408/monthly-audit/pdf");
++    expect(url).toBe("/api/site-check/408/monthly-audit-v2/pdf");
+     expect([...body.keys()].sort()).toEqual(["file", "folderId", "periodToken"]);
+     expect(body.get("file").name).toBe("audit.pdf");
+     expect(body.get("periodToken")).toBe("period-1");
+@@ -205,18 +205,18 @@
+     post.mockResolvedValue({ data: { ...context, status: "SUBMITTED", historyId: 54, pdfStored: true } });
+     const request = { periodToken: "period-1", sourceReference: "Audit-408-1" };
+     await completeMonthlyAuditSubmission(408, request);
+-    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/submission/complete", request);
++    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/submission/complete", request);
+     expect(postMultiPartFormData).not.toHaveBeenCalled();
+   });
+ 
+   test("Admin early opening uses the shared period endpoint with no email parameter", async () => {
+     post.mockResolvedValue({ data: { ...context, periodToken: "period-2" } });
+     await openMonthlyAuditEarly(408, { periodToken: "period-1" });
+-    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/open-early", { periodToken: "period-1" });
++    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/open-early", { periodToken: "period-1" });
+   });
+ 
+   test("image deletion carries the current period and response revision", async () => {
+     await deleteMonthlyAuditImage(408, 6, "period-1", 4);
+-    expect(del).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/responses/images/6?periodToken=period-1&responseRevision=4");
++    expect(del).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/responses/images/6?periodToken=period-1&responseRevision=4");
+   });
+ });

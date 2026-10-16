@@ -418,6 +418,9 @@ const CreateAsset = ({
                             onChange={(e) => {
                               const val = e.target.value;
                               setValue("category", val);
+                              setValue("subCategory", "");
+                              setValue("subCategory2", "");
+                              setValue("subCategory3", "");
                               const subCategoryData = subCategory?.filter(
                                   (itm) => itm?.attribite1 === val
                               );
@@ -450,6 +453,8 @@ const CreateAsset = ({
                             onChange={(e) => {
                               const val = e.target.value;
                               setValue("subCategory", val);
+                              setValue("subCategory2", "");
+                              setValue("subCategory3", "");
                               const subCategoryData = subCategory2?.filter(
                                   (itm) => itm?.attribite1 === val
                               );
@@ -479,6 +484,7 @@ const CreateAsset = ({
                             onChange={(e) => {
                               const val = e.target.value;
                               setValue("subCategory2", val);
+                              setValue("subCategory3", "");
                               const subCategoryData = subCategory3?.filter(
                                   (itm) => itm?.attribite1 === val
                               );

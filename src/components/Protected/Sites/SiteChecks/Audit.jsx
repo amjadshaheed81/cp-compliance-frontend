@@ -21,12 +21,16 @@ import {
     completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
     getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
     hydrateMonthlyQuestion, isMonthlyQuestionVisible, mayFillMonthlyAuditForTest,
-    monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete,
+    monthlyAuditError, monthlyQuestionAssets, monthlyQuestionComplete, monthlyInvalidSelectedAssetIds,
     MONTHLY_AUDIT_NOTE_MAX_LENGTH, monthlyResponseIssues, monthlyResponseRequest,
     openMonthlyAuditEarly, renewOverdueMonthlyAudit,
     saveMonthlyAuditResponse, splitMonthlyAssetIds,
 } from "./shared/monthlyAuditWorkflow";
 import { getUkLocalDate } from "./shared/siteCheckDateUtils";
+import {
+    monthlyAuditPrintState, monthlyAuditRiskCounts, replaceMonthlySavedResponse,
+} from "./shared/monthlyAuditDisplayState";
+import { monthlyCategoryHasParentAssets } from "./shared/monthlyAuditCategoryMatching";
 import { calculateSiteCheckDueDate, formatSiteCheckDisplayDate } from "../../../../utils/siteCheckRecurrence";
 
 import Swal from "sweetalert2";
@@ -114,6 +118,9 @@ const AssessmentFireRisk = ({
     const monthlyContextRef = useRef(null);
     const monthlyBusyRef = useRef(false);
     const monthlyLoadSequence = useRef(0);
+    // Keep confirmed answers separate from editable form values. Risk totals
+    // change only after the server confirms a save, not while typing a draft.
+    const monthlySavedResponses = useRef([]);
     const questionSaveRequests = useRef(new Map());
     const uploadedImageUrls = useRef(new WeakMap());
     const monthlyReadOnly = isMonthlyAudit &&
@@ -179,8 +186,9 @@ const AssessmentFireRisk = ({
     const getQuestionState = (q, siteAssetsList) => {
         if (isMonthlyAudit) {
             const catAsset = monthlyQuestionAssets(q, siteAssetsList);
-            const okAsset = (q.response?.assets?.split(",") || []).filter(Boolean).length;
-            const faultAsset = (q.response?.faultassets?.split(",") || []).filter(Boolean).length;
+            const eligible = new Set(catAsset.map((asset) => String(asset.assetId)));
+            const okAsset = splitMonthlyAssetIds(q.response?.assets).filter((id) => eligible.has(id)).length;
+            const faultAsset = splitMonthlyAssetIds(q.response?.faultassets).filter((id) => eligible.has(id)).length;
             return { catAsset, okAsset, faultAsset,
                 isSpecialQuestion: ["3.5.1", "8.1.1"].includes(q.order),
                 isCompleted: monthlyQuestionComplete(q, siteAssetsList) };
@@ -230,6 +238,7 @@ const AssessmentFireRisk = ({
     };
 
     const printState = useMemo(() => {
+        if (isMonthlyAudit) return monthlyAuditPrintState(quest, auditAssets, header);
         if (!quest?.length) {
             return { canPrint: false, blockingOrders: [] };
         }
@@ -450,6 +459,7 @@ const AssessmentFireRisk = ({
                     setheaders([]);
                     setquest([]);
                     setMonthlyActions([]);
+                    monthlySavedResponses.current = [];
                     setrisks([0, 0, 0, 0]);
                     applyMonthlyContext(context);
                     // The overdue action is confirmed inside this panel.
@@ -480,12 +490,8 @@ const AssessmentFireRisk = ({
                 setMonthlyActions(actions);
                 applyMonthlyContext(context);
                 setMonthlyError("");
-                const counts = [0, 0, 0, 0];
-                saved.forEach(({ response }) => {
-                    const score = Number(response?.totalRiskScore || 0);
-                    counts[score > 17 ? 0 : score > 10 ? 1 : score > 5 ? 2 : 3] += 1;
-                });
-                setrisks(counts);
+                monthlySavedResponses.current = saved;
+                setrisks(monthlyAuditRiskCounts(saved));
                 return { context, questions, headers, actions };
             } catch (error) {
                 if (sequence === monthlyLoadSequence.current) {
@@ -692,6 +698,10 @@ const AssessmentFireRisk = ({
             candidates = await getMonthlyAuditActions(checkId, periodToken);
             setMonthlyActions(candidates);
         }
+        const staleIds = monthlyInvalidSelectedAssetIds(question, monthlyQuestionAssets(question, auditAssets));
+        if (staleIds.length) {
+            throw new Error(`Question ${question.order}: Previously selected asset(s) ${staleIds.join(", ")} no longer match. Review and reselect the correct assets before saving.`);
+        }
         const issues = monthlyResponseIssues(question, candidates, monthlyContextRef.current?.siteId);
         if (issues.length) throw new Error(`Question ${question.order}: ${issues[0]}`);
         setSavingQuestionId(question.qid);
@@ -719,8 +729,12 @@ const AssessmentFireRisk = ({
         const state = await saveMonthlyAuditResponse(checkId, pending.request);
         questionSaveRequests.current.delete(cacheKey);
         const savedQuestion = hydrateMonthlyQuestion(question, state);
-        setquest((current) => current.map((q) => q.qid === question.qid ? savedQuestion : q));
+        // A late acknowledgement still belongs to the original audit. Do not
+        // paint its answer or risk totals into a different period opened meanwhile.
         if (monthlyContextRef.current?.periodToken === periodToken) {
+            setquest((current) => current.map((q) => q.qid === question.qid ? savedQuestion : q));
+            monthlySavedResponses.current = replaceMonthlySavedResponse(monthlySavedResponses.current, state);
+            setrisks(monthlyAuditRiskCounts(monthlySavedResponses.current));
             const updatedContext = {
                 ...monthlyContextRef.current,
                 hasSavedResponses: true,
@@ -1504,7 +1518,7 @@ const AssessmentFireRisk = ({
                                                 mx={0.5}
                                             >
                                                 {/* <Typography variant="body2" color="white">{risks[0]}</Typography> */}
-                                                <span className="badge bg-danger p-2 m-1 risk-span">
+                                                <span aria-label="Red risk count" className="badge bg-danger p-2 m-1 risk-span">
                         {risks[0]}
                       </span>
                                             </Box>
@@ -1519,7 +1533,7 @@ const AssessmentFireRisk = ({
                                                 mx={0.5}
                                             >
                                                 {/* <Typography variant="body2" color="white">{risks[1]}</Typography> */}
-                                                <span className="badge bg-warning p-2 m-1 risk-span">
+                                                <span aria-label="Amber risk count" className="badge bg-warning p-2 m-1 risk-span">
                         {risks[1]}
                       </span>
                                             </Box>
@@ -1534,7 +1548,7 @@ const AssessmentFireRisk = ({
                                                 mx={0.5}
                                             >
                                                 {/* <Typography variant="body2" color="white">{risks[2]}</Typography> */}
-                                                <span className="badge bg-info p-2 m-1 risk-span">
+                                                <span aria-label="Yellow risk count" className="badge bg-info p-2 m-1 risk-span">
                         {risks[2]}
                       </span>
                                             </Box>
@@ -1549,7 +1563,7 @@ const AssessmentFireRisk = ({
                                                 mx={0.5}
                                             >
                                                 {/* <Typography variant="body2" color="white">{risks[3]}</Typography> */}
-                                                <span className="badge bg-success p-2 m-1 risk-span">
+                                                <span aria-label="Green risk count" className="badge bg-success p-2 m-1 risk-span">
                         {risks[3]}
                       </span>
                                             </Box>
@@ -1622,7 +1636,9 @@ const AssessmentFireRisk = ({
                                                     item.trim()
                                                 );
 
-                                                if (assetCategory.length === 4) {
+                                                if (isMonthlyAudit) {
+                                                    catAsset = monthlyQuestionAssets(q, auditAssets);
+                                                } else if (assetCategory.length === 4) {
                                                     catAsset = auditAssets?.filter(
                                                         (s) =>
                                                             s.category?.trim() === assetCategory[0]?.trim() &&
@@ -1660,22 +1676,35 @@ const AssessmentFireRisk = ({
                                                     catAsset = auditAssets;
                                                 }
 
-                                                const faultAsset = (
-                                                    q.response?.faultassets?.split(",") ?? []
-                                                ).filter((s) => s.length > 0).length;
-                                                const okAsset = (
-                                                    q.response?.assets?.split(",") ?? []
-                                                ).filter((s) => s.length > 0).length;
+                                                // Monthly Audit eligibility matches the Java backend, while
+                                                // the original filtering for other audit types stays unchanged.
+                                                const invalidSelected = isMonthlyAudit
+                                                    ? monthlyInvalidSelectedAssetIds(q, catAsset) : [];
+                                                const needsCategoryReview = isMonthlyAudit && (
+                                                    invalidSelected.length > 0 ||
+                                                    (catAsset.length === 0 && monthlyCategoryHasParentAssets(q, auditAssets))
+                                                );
+                                                const eligibleIds = new Set((catAsset || []).map((asset) => String(asset.assetId)));
+                                                const faultAsset = (isMonthlyAudit
+                                                    ? splitMonthlyAssetIds(q.response?.faultassets).filter((id) => eligibleIds.has(id))
+                                                    : (q.response?.faultassets?.split(",") ?? []).filter((s) => s.length > 0)
+                                                ).length;
+                                                const okAsset = (isMonthlyAudit
+                                                    ? splitMonthlyAssetIds(q.response?.assets).filter((id) => eligibleIds.has(id))
+                                                    : (q.response?.assets?.split(",") ?? []).filter((s) => s.length > 0)
+                                                ).length;
 
                                                 const isSpecialQuestion = ['3.5.1', '8.1.1'].includes(q.order);
-                                                const isCompleted = isSpecialQuestion
-                                                    ? (okAsset > 0 || faultAsset > 0)  // At least one asset marked
-                                                    : (catAsset?.length - okAsset - faultAsset) === 0; // Original strict logic
+                                                const isCompleted = isMonthlyAudit
+                                                    ? monthlyQuestionComplete(q, auditAssets)
+                                                    : isSpecialQuestion
+                                                        ? (okAsset > 0 || faultAsset > 0)
+                                                        : (catAsset?.length - okAsset - faultAsset) === 0;
 
                                                 return (
                                                     <Accordion
                                                         defaultExpanded={idx === openIndex}
-                                                        disabled={catAsset?.length === 0}
+                                                        disabled={catAsset?.length === 0 && !needsCategoryReview}
                                                     >
                                                         <AccordionSummary expandIcon={<ExpandMore />}>
                                                             <Typography>
@@ -1684,6 +1713,9 @@ const AssessmentFireRisk = ({
                   <Checkbox disabled={questionReadOnly(q)} checked={q?.response?.response === "No"} onChange={(e) => setResponseCheck2(e, idx)} /> No */}
                                                             </Typography>
                                                             &nbsp;&nbsp;&nbsp;&nbsp;
+                                                            {needsCategoryReview && (
+                                                                <Chip sx={{ ml: 2 }} color="warning" label="Asset review needed" />
+                                                            )}
                                                             {catAsset?.length > 0 && (
                                                                 <Chip
                                                                     style={{ margin: "5px", marginLeft: "30px" }}
@@ -1692,9 +1724,16 @@ const AssessmentFireRisk = ({
                                                                 />
                                                             )}
                                                         </AccordionSummary>
-                                                        {catAsset?.length > 0 && (
+                                                        {(catAsset?.length > 0 || needsCategoryReview) && (
                                                             <AccordionDetails>
-                                                                <form
+                                                                {needsCategoryReview && (
+                                                                    <Alert severity="warning" sx={{ mb: 2 }}>
+                                                                        {invalidSelected.length
+                                                                            ? `Previously selected asset ID(s) ${invalidSelected.slice(0, 8).join(", ")}${invalidSelected.length > 8 ? ` (and ${invalidSelected.length - 8} more)` : ""} no longer match this question's category. Ask the site administrator to check the asset classifications, then review the selections and save this question. Saved audit history is unchanged.`
+                                                                            : "No assets match this question's exact category path, although related assets exist. Ask the site administrator to check their classifications. Do not record unrelated assets as passing."}
+                                                                    </Alert>
+                                                                )}
+                                                                {catAsset?.length > 0 && <form
                                                                     onSubmit={(e) => {
                                                                         //setOpenIndex(idx + 1);
                                                                         saveAssessmentResponse(e, idx, isCompleted);
@@ -2550,7 +2589,7 @@ const AssessmentFireRisk = ({
                         </button>
                       </a></Grid>} */}
                                                                     </Grid>
-                                                                </form>
+                                                                </form>}
                                                             </AccordionDetails>
                                                         )}
                                                     </Accordion>

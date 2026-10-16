@@ -195,11 +195,12 @@ const UpdateAsset = ({
         setSubCategory(subCategory);
         setSubCategory2(subCategory2);
         setPassiveFireMaterial(material);
-        setSubCategoryList(subCategory);
+        // Only show children of the selected parent; the old initialisation
+        // mistakenly showed every first-level option and wrote it to level two.
         const subCategoryData = subCategory?.filter(
             (itm) => itm?.attribite1 === selectedAsset?.category
         );
-        setSubCategory2List(subCategoryData);
+        setSubCategoryList(subCategoryData);
         const subCategoryData2 = subCategory2?.filter(
             (itm) => itm?.attribite1 === selectedAsset?.subCategory
         );
@@ -1319,6 +1320,14 @@ const UpdateAsset = ({
                                                         }}
                                                     >
                                                         <option value="">Select Sub Category</option>
+                                                        {selectedAsset?.subCategory &&
+                                                            watch("category") === selectedAsset?.category &&
+                                                            !(subCategoryList || []).some((itm) => itm?.lovValue === selectedAsset?.subCategory) && (
+                                                                <option value={selectedAsset.subCategory}>
+                                                                    {selectedAsset.subCategory} (Legacy category - review)
+                                                                </option>
+                                                            )}
+
                                                         {subCategoryList?.map((itm) => (
                                                             <option
                                                                 selected={
@@ -1343,6 +1352,14 @@ const UpdateAsset = ({
                                                         }}
                                                     >
                                                         <option value="">Select Sub Category 2</option>
+                                                        {selectedAsset?.subCategory2 &&
+                                                            watch("subCategory") === selectedAsset?.subCategory &&
+                                                            !(subCategory2List || []).some((itm) => itm?.lovValue === selectedAsset?.subCategory2) && (
+                                                                <option value={selectedAsset.subCategory2}>
+                                                                    {selectedAsset.subCategory2} (Legacy category - review)
+                                                                </option>
+                                                            )}
+
                                                         {subCategory2List?.map((itm) => (
                                                             <option
                                                                 selected={
@@ -1364,6 +1381,14 @@ const UpdateAsset = ({
                                                         {...register("subCategory3")}
                                                     >
                                                         <option value="">Select Sub Category 3</option>
+                                                        {selectedAsset?.subCategory3 &&
+                                                            watch("subCategory2") === selectedAsset?.subCategory2 &&
+                                                            !(subCategory3List || []).some((itm) => itm?.lovValue === selectedAsset?.subCategory3) && (
+                                                                <option value={selectedAsset.subCategory3}>
+                                                                    {selectedAsset.subCategory3} (Legacy category - review)
+                                                                </option>
+                                                            )}
+
                                                         {subCategory3List?.map((itm) => (
                                                             <option
                                                                 selected={

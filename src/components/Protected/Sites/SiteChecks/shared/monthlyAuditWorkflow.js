@@ -1,4 +1,5 @@
 import { del, get, post, postMultiPartFormData } from "../../../../../api";
+import { matchesMonthlyCategory } from "./monthlyAuditCategoryMatching";
 
 const periodStatuses = new Set(["OPEN", "SUBMITTING", "SUBMITTED", "ARCHIVE_REQUIRED"]);
 // Kept in sync with MonthlyAuditResponseCapacity.MAX_NOTE_CHARACTERS.
@@ -15,7 +16,7 @@ const root = (checkId) => {
   if (!Number.isSafeInteger(Number(checkId)) || Number(checkId) <= 0) {
     throw new Error("A valid Site Check is required.");
   }
-  return `/api/site-check/${checkId}/monthly-audit`;
+  return `/api/site-check/${checkId}/monthly-audit-v2`;
 };
 
 const tokenQuery = (periodToken) => {
@@ -130,29 +131,18 @@ export const deleteMonthlyAuditImage = (checkId, imageId, periodToken, revision)
 export const splitMonthlyAssetIds = (value) =>
   [...new Set(String(value || "").split(",").map((id) => id.trim()).filter(Boolean))];
 
-// This is the existing Monthly Audit applicability rule, shared by the form,
-// its completion check and Test Fill. It does not invent questions or assets.
-export const monthlyQuestionAssets = (question, assets = []) => {
-  const category = (question?.assetCategory?.split(",") || []).map((part) => part.trim());
-  const list = Array.isArray(assets) ? assets : [];
-  const trim = (value) => String(value || "").trim();
-  if (category.length === 4) {
-    return list.filter((asset) => trim(asset.category) === category[0] &&
-      trim(asset.subCategory) === category[1] &&
-      [category[2], category[3]].includes(trim(asset.subCategory2)));
-  }
-  if (category.length === 3) {
-    return list.filter((asset) => trim(asset.category) === category[0] &&
-      trim(asset.subCategory) === category[1] && trim(asset.subCategory2) === category[2]);
-  }
-  if (category.length === 2) {
-    // Preserve the source's exact category comparison for this branch.
-    return list.filter((asset) => asset.category === category[0] && trim(asset.subCategory) === category[1]);
-  }
-  if (category.length === 1 && category[0]) {
-    return list.filter((asset) => trim(asset.category) === category[0]);
-  }
-  return list;
+// All Monthly Audit entry points use this single matcher: the dropdown, Test Fill,
+// print/completion and saved-answer reconciliation.
+export const monthlyQuestionAssets = (question, assets = []) =>
+  (Array.isArray(assets) ? assets : []).filter((asset) => matchesMonthlyCategory(question, asset));
+
+// Report stale selected IDs without modifying historical/current saved answers.
+export const monthlyInvalidSelectedAssetIds = (question, eligibleAssets = []) => {
+  const eligible = new Set((eligibleAssets || []).map((asset) => String(asset.assetId)));
+  return [...new Set([
+    ...splitMonthlyAssetIds(question?.response?.assets),
+    ...splitMonthlyAssetIds(question?.response?.faultassets),
+  ])].filter((id) => !eligible.has(id));
 };
 
 export const isMonthlyQuestionVisible = (question, headers) =>
@@ -164,6 +154,9 @@ export const monthlyQuestionComplete = (question, assets) => {
   const okIds = splitMonthlyAssetIds(question?.response?.assets);
   const failedIds = splitMonthlyAssetIds(question?.response?.faultassets);
   const selected = new Set([...okIds, ...failedIds]);
+  // A category update can make previously saved assets ineligible. They must
+  // be reviewed; a zero-match question with saved selections is NOT complete.
+  if (monthlyInvalidSelectedAssetIds(question, applicable).length) return false;
   if (!applicable.length) return true;
   const applicableIds = new Set(applicable.map((asset) => String(asset.assetId)));
   if (failedIds.some((id) => okIds.includes(id)) || [...selected].some((id) => !applicableIds.has(id))) return false;

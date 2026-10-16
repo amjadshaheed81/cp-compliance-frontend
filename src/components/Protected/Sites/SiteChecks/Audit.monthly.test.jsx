@@ -4,7 +4,7 @@ import "@testing-library/jest-dom";
 import Audit from "./Audit";
 import { get } from "../../../../api";
 import {
-  getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses, saveMonthlyAuditResponse,
+  completeMonthlyAuditSubmission, getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses, saveMonthlyAuditResponse,
 } from "./shared/monthlyAuditWorkflow";
 
 jest.mock("react-redux", () => ({ connect: () => (component) => component }));
@@ -20,7 +20,7 @@ jest.mock("react-toastify", () => ({ toast: { success: jest.fn(), error: jest.fn
 jest.mock("./shared/monthlyAuditWorkflow", () => ({
   ...jest.requireActual("./shared/monthlyAuditWorkflow"),
   getMonthlyAuditContext: jest.fn(), getMonthlyAuditResponses: jest.fn(), getMonthlyAuditActions: jest.fn(async () => []),
-  saveMonthlyAuditResponse: jest.fn(),
+  saveMonthlyAuditResponse: jest.fn(), completeMonthlyAuditSubmission: jest.fn(),
 }));
 jest.mock("jspdf", () => ({ jsPDF: jest.fn(() => ({
   setFontSize: jest.fn(), setFont: jest.fn(), splitTextToSize: (text) => [String(text)],
@@ -34,7 +34,7 @@ const baseContext = {
   siteName: "Test Site", hasSavedResponses: false,
   checkHeader: { checkId: 408, siteId: 296, type: "Audit", subType: "Monthly Audit", category: "Verified category",
     leadUserID: 56, assistantUserID: 57, repeatFrequency: "Monthly", startDate: "2026-10-08T00:00:00", dueDate: "2026-11-08T00:00:00" },
-  canEdit: true, canSubmit: false, canOpenEarly: false, canTestFill: true,
+  canEdit: true, canSubmit: true, canOpenEarly: false, canTestFill: true,
   carryForwardEnabled: false, nextCarryForwardEnabled: false, pdfStored: false,
 };
 const definition = { qid: 7, order: "1.1.1", question: "Inspect the lights", assetCategory: "Lighting" };
@@ -63,6 +63,9 @@ beforeEach(() => {
     if (url === "/api/document/site/296/parent/folders") return { parentFolders: [] };
     throw new Error(`Unexpected GET ${url}`);
   });
+  completeMonthlyAuditSubmission.mockResolvedValue({ ...baseContext, status: "SUBMITTED",
+    inspectionDate: "2026-10-08T00:00:00", canEdit: false, canSubmit: false,
+    hasSavedResponses: true, pdfStored: true });
   getMonthlyAuditActions.mockResolvedValue([]);
   getMonthlyAuditContext.mockImplementation(async () => ({ ...currentContext }));
   getMonthlyAuditResponses.mockImplementation(async () => states.map((state) => ({ ...state, response: { ...state.response } })));
@@ -78,17 +81,18 @@ beforeEach(() => {
 
 afterEach(() => errorSpy.mockRestore());
 
-test("new Monthly Audit stays editable with no Submit or Open Early controls", async () => {
+test("new Monthly Audit shows Submit but keeps it disabled until answers are complete", async () => {
   render(<Audit {...baseProps} />);
   expect(await screen.findByText("New Monthly Audit. Save the first answer to start this period's record.")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /Submit audit/i })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: /Open Early/i })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Submit audit/i })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: /Start next audit/i })).not.toBeInTheDocument();
 });
 
 test("first saved answer records Inspection Date and changes the banner to editing current audit", async () => {
   render(<Audit {...baseProps} />);
   const inspection = await screen.findByLabelText("Inspection Date");
   fireEvent.change(inspection, { target: { value: "2026-10-08" } });
+  expect(screen.getByLabelText("Green risk count")).toHaveTextContent("0");
   fireEvent.click(await screen.findByRole("button", { name: "Fill test answers" }));
 
   await waitFor(() => expect(saveMonthlyAuditResponse).toHaveBeenCalledTimes(1));
@@ -96,6 +100,9 @@ test("first saved answer records Inspection Date and changes the banner to editi
     periodToken: "period-1", inspectionDate: "2026-10-08",
   }));
   expect(await screen.findByText(/Editing current Monthly Audit\. Changes can be made until/i)).toBeInTheDocument();
+  await waitFor(() => expect(screen.getByLabelText("Green risk count")).toHaveTextContent("1"));
+  expect(screen.getByLabelText("Red risk count")).toHaveTextContent("0");
+  await waitFor(() => expect(screen.getByRole("button", { name: /Submit audit/i })).toBeEnabled());
 });
 
 test("existing saved Monthly Audit reopens with its stored Inspection Date", async () => {
@@ -107,4 +114,29 @@ test("existing saved Monthly Audit reopens with its stored Inspection Date", asy
   const inspection = await screen.findByLabelText("Inspection Date");
   await waitFor(() => expect(inspection).toHaveValue("2026-10-03"));
   expect(screen.getByText(/Editing current Monthly Audit\. Changes can be made until/i)).toBeInTheDocument();
+});
+
+
+test("Submit uses the shared completion request and displays the confirmed saved PDF state", async () => {
+  render(<Audit {...baseProps} />);
+  fireEvent.change(await screen.findByLabelText("Inspection Date"), { target: { value: "2026-10-08" } });
+  fireEvent.click(await screen.findByRole("button", { name: "Fill test answers" }));
+  const submit = screen.getByRole("button", { name: /Submit audit/i });
+  await waitFor(() => expect(submit).toBeEnabled());
+  fireEvent.click(submit);
+  await waitFor(() => expect(completeMonthlyAuditSubmission).toHaveBeenCalledWith(408, {
+    periodToken: "period-1", inspectionDate: "2026-10-08",
+  }));
+  expect(await screen.findByRole("button", { name: "Submitted" })).toBeDisabled();
+  expect(screen.getByText(/Monthly Audit completed. Its PDF and History are saved/)).toBeInTheDocument();
+  expect(saveMonthlyAuditResponse).toHaveBeenCalledTimes(1);
+});
+
+test("a failed answer save does not increment the saved risk totals", async () => {
+  saveMonthlyAuditResponse.mockRejectedValueOnce(new Error("Save did not complete"));
+  render(<Audit {...baseProps} />);
+  fireEvent.click(await screen.findByRole("button", { name: "Fill test answers" }));
+  expect(await screen.findByText("Save did not complete")).toBeInTheDocument();
+  expect(screen.getByLabelText("Green risk count")).toHaveTextContent("0");
+  expect(screen.getByLabelText("Red risk count")).toHaveTextContent("0");
 });

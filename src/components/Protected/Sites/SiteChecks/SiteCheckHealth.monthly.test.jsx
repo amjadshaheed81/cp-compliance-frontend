@@ -13,7 +13,7 @@ jest.mock("../../../../api", () => ({ get: jest.fn(), post: jest.fn(), del: jest
 jest.mock("react-toastify", () => ({ toast: { error: jest.fn(), success: jest.fn() } }));
 
 const props = { siteSelectedForGlobal: { siteId: 296, siteName: "Test Site" }, loggedInUserData: { role: "Admin" } };
-const issue = { checkId: 408, type: "Audit", subType: "Monthly Audit", status: "Open", repeatFrequency: "Monthly",
+const issue = { checkId: 408, type: "Audit", subType: "Monthly Audit", status: "Done", repeatFrequency: "Monthly",
   startDate: "2026-10-08", dueDate: "2026-11-08", recommendedAction: "REVIEW_ONLY", problems: ["OVERDUE_BUT_DONE"] };
 
 beforeEach(() => {
@@ -21,11 +21,12 @@ beforeEach(() => {
   get.mockResolvedValue([issue]);
 });
 
-test("Monthly Audit health review explains exact due-date renewal and offers no recovery button", async () => {
+test("Monthly Audit health review explains Submit and directs renewal to View Inspection", async () => {
   render(<SiteCheckHealth {...props} />);
   fireEvent.click(await screen.findByRole("button", { name: "Review" }));
-  expect(await screen.findByText(/stays editable until its exact Due Date/i)).toBeInTheDocument();
-  expect(screen.getByText(/saved to History as Completed or Not Completed/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Use Submit Audit in View Inspection/i)).toBeInTheDocument();
+  expect(screen.getByText(/saves its PDF and History and locks that period/i)).toBeInTheDocument();
+  expect(screen.getByText(/preserves the previous period before starting the next one/i)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Reopen Now|Open Missed Cycle|Correct Due Date/i })).not.toBeInTheDocument();
   expect(post).not.toHaveBeenCalled();
 });

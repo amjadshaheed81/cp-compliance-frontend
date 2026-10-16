@@ -3,7 +3,7 @@ import {
   completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
   getMonthlyAuditContext, getMonthlyAuditResponses, hydrateMonthlyQuestion,
   isMonthlyQuestionVisible, mayFillMonthlyAuditForTest, MONTHLY_AUDIT_NOTE_MAX_LENGTH, monthlyActionCandidates,
-  monthlyQuestionAssets, monthlyQuestionComplete, monthlyResponseIssues,
+  monthlyQuestionAssets, monthlyQuestionComplete, monthlyInvalidSelectedAssetIds, monthlyResponseIssues,
   monthlyResponseRequest, newMonthlyAuditRequestId, openMonthlyAuditEarly, prepareMonthlyAuditSubmission,
   saveMonthlyAuditResponse, uploadMonthlyAuditPdf,
 } from "./monthlyAuditWorkflow";
@@ -202,14 +202,14 @@ describe("Monthly Audit period and submission API guards", () => {
     post.mockResolvedValue({ data: { ...context, status: "SUBMITTING", sourceReference: "Audit-408-1" } });
     const request = { periodToken: "period-1", inspectionDate: "2026-01-31", requestId: retryRequestId };
     await prepareMonthlyAuditSubmission(408, request);
-    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/submission/prepare", request);
+    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/submission/prepare", request);
   });
 
   test("PDF upload sends only the period, file and folder; server owns dates and reference", async () => {
     postMultiPartFormData.mockResolvedValue({ data: { ...context, status: "SUBMITTING", pdfStored: true } });
     await uploadMonthlyAuditPdf(408, "period-1", 22, new Blob(["PDF"]), "audit.pdf");
     const [url, body] = postMultiPartFormData.mock.calls[0];
-    expect(url).toBe("/api/site-check/408/monthly-audit/pdf");
+    expect(url).toBe("/api/site-check/408/monthly-audit-v2/pdf");
     expect([...body.keys()].sort()).toEqual(["file", "folderId", "periodToken"]);
     expect(body.get("file").name).toBe("audit.pdf");
     expect(body.get("periodToken")).toBe("period-1");
@@ -224,18 +224,83 @@ describe("Monthly Audit period and submission API guards", () => {
     post.mockResolvedValue({ data: { ...context, status: "SUBMITTED", historyId: 54, pdfStored: true } });
     const request = { periodToken: "period-1", sourceReference: "Audit-408-1" };
     await completeMonthlyAuditSubmission(408, request);
-    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/submission/complete", request);
+    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/submission/complete", request);
     expect(postMultiPartFormData).not.toHaveBeenCalled();
   });
 
   test("Admin early opening uses the shared period endpoint with no email parameter", async () => {
     post.mockResolvedValue({ data: { ...context, periodToken: "period-2" } });
     await openMonthlyAuditEarly(408, { periodToken: "period-1" });
-    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/open-early", { periodToken: "period-1" });
+    expect(post).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/open-early", { periodToken: "period-1" });
   });
 
   test("image deletion carries the current period and response revision", async () => {
     await deleteMonthlyAuditImage(408, 6, "period-1", 4);
-    expect(del).toHaveBeenCalledWith("/api/site-check/408/monthly-audit/responses/images/6?periodToken=period-1&responseRevision=4");
+    expect(del).toHaveBeenCalledWith("/api/site-check/408/monthly-audit-v2/responses/images/6?periodToken=period-1&responseRevision=4");
+  });
+});
+
+
+describe("Monthly Audit category corrections (other questions unchanged)", () => {
+  const holdOpen = { order: "8.1.2", assetCategory: "Electrical,Access Controls,Internal Access Controls,Door Hold Open Device" };
+  const breakGlass = { order: "8.1.1", assetCategory: "Electrical,Access Controls,Internal Access Controls,Green Break Glass (Emergency Door Release)" };
+  const toilets = { order: "9.1.1", assetCategory: "Mechanical,Sanitary,Toilet/Urinal" };
+  const access = (id, last, name = "Device") => ({
+    assetId: id, assetName: name, category: "Electrical", subCategory: "Access Controls",
+    subCategory2: "Internal Access Controls", subCategory3: last,
+  });
+  const wc = (id, third, fourth = "") => ({
+    assetId: id, category: "Mechanical", subCategory: "Sanitary", subCategory2: third, subCategory3: fourth,
+  });
+
+  test("8.1.2 requires the fourth category and excludes green break glass and blank fourth level", () => {
+    const siteAssets = [
+      access(38475, "Green Break Glass (Emergency Door Release)"),
+      access(100941, "", "Green Break Glass Unit"),
+      access(101034, "Door Hold Open Device"),
+      { assetId: 101035, category: "Electrical", subCategory: "Fire Alarm", subCategory2: "Door Hold Open Device" },
+    ];
+    expect(monthlyQuestionAssets(holdOpen, siteAssets).map(({ assetId }) => assetId)).toEqual([101034]);
+    expect(monthlyQuestionAssets(breakGlass, siteAssets).map(({ assetId }) => assetId))
+      .toEqual([38475, 100941, 101034]); // existing legacy fourth-value OR rule is deliberately unchanged
+  });
+
+  test("9.1.1 includes both historic and current WC/urinal categories, but not sinks", () => {
+    const siteAssets = [wc(38303, "Toilet/Urinal", "Urinal"), wc(42341, "Toilet/Urinal", "Toilet"),
+      wc(42348, "Toilet / 6 Litre Toilet"), wc(38302, "Toilet / 9 Litre Toilet"),
+      wc(43001, "Sink"), wc(3100, "Outlet", "Tap")];
+    expect(monthlyQuestionAssets(toilets, siteAssets).map(({ assetId }) => assetId))
+      .toEqual([38303, 42341, 42348, 38302]);
+    const partial = { ...toilets, response: { assets: "38303,42341", faultassets: "" } };
+    expect(monthlyQuestionComplete(partial, siteAssets)).toBe(false);
+    expect(monthlyQuestionComplete({ ...toilets, response: { assets: "38303,42341,42348,38302" } }, siteAssets)).toBe(true);
+  });
+
+  test("previously saved break glass answers stay unchanged but cannot count as completed", () => {
+    const saved = { ...holdOpen, response: { assets: "38475,38478", faultassets: "" } };
+    const list = [access(38475, "Green Break Glass (Emergency Door Release)"), access(38478, "")];
+    expect(monthlyQuestionAssets(saved, list)).toEqual([]);
+    expect(monthlyInvalidSelectedAssetIds(saved, [])).toEqual(["38475", "38478"]);
+    expect(monthlyQuestionComplete(saved, list)).toBe(false);
+    expect(saved.response.assets).toBe("38475,38478");
+    expect(monthlyQuestionComplete({ ...holdOpen, response: {} }, list)).toBe(true);
+  });
+
+  test("existing unrelated shower and 2/3-part rules do not change", () => {
+    const shower = { order: "6.1", assetCategory: "Mechanical,Water Services,Outlet,Shower" };
+    const fixtures = [
+      { assetId: 1, category: "Mechanical", subCategory: "Water Services", subCategory2: "Outlet" },
+      { assetId: 2, category: "Mechanical", subCategory: "Water Services", subCategory2: "Shower" },
+      { assetId: 3, category: "Mechanical", subCategory: "Water Services", subCategory2: "Outlet / Tap" },
+    ];
+    expect(monthlyQuestionAssets(shower, fixtures).map((asset) => asset.assetId)).toEqual([1, 2]);
+    expect(monthlyQuestionAssets({ order: "X", assetCategory: "Mechanical,Water Services,Outlet" }, fixtures).map((asset) => asset.assetId)).toEqual([1]);
+    expect(monthlyQuestionAssets({ order: "X", assetCategory: "Mechanical,Water Services" }, fixtures).map((asset) => asset.assetId)).toEqual([1, 2, 3]);
+  });
+
+  test("explicit paths support future question configuration without hardcoding another question", () => {
+    const a = access(1, "Door Hold Open Device");
+    expect(monthlyQuestionAssets({ order: "20.1", assetCategory: "exact:Electrical,Access Controls,Internal Access Controls,Door Hold Open Device" }, [a])).toEqual([a]);
+    expect(monthlyQuestionAssets({ order: "20.1", assetCategory: "Mechanical,Sanitary,Urinal|Electrical,Access Controls,Internal Access Controls,Door Hold Open Device" }, [a])).toEqual([a]);
   });
 });
