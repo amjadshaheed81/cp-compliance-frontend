@@ -23,7 +23,6 @@ import { InputError } from "../../common/InputError";
 import { Validation } from "../../../Constant/Validation";
 import { ROLE } from "../../../Constant/Role";
 import { get } from "../../../api";
-import { MenuProps } from "./AddUser";
 import Tooltip from "@mui/material/Tooltip";
 
 // Site Selection Dialog Component (same as in AddUser)
