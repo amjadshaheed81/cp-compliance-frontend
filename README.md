@@ -1,44 +1,43 @@
-# CAFM Site Check — compact header actions (TEST)
+# CAFM frontend security patch — corrected PowerShell 5.1 script (19 October 2026)
 
-## Baseline
-This is a small follow-up to the already reviewed TEST patch for Asset Information and right-panel header actions. The source files matched the live frontend repository main branch at review time (11 Oct 2026). Apply ONLY to the same/latest frontend source; do not overwrite newer edits without comparing them.
+Based on the newer, verified `frontend(20261019-174630).zip`. **No Azure deployment is performed.**
 
-## Change
-- Move existing Full/Split-view toggle directly next to the Close button.
-- Replace the three individual header buttons with one More (three-dot) menu: Copy Site Check, Mark Done, Delete Site Check.
-- Keep Delete at bottom to reduce accidental selection; existing confirmation and action handlers are unchanged.
-- Monthly Audit still does not show Mark Done (uses Submit for PDF/History).
-- Keep the header portal for Open Early / View PDF visible before the More menu.
-- The grid Actions column remains untouched.
-- Existing responsive rule hides the Full/Split toggle at narrower browser widths where split view is disabled.
+## Why the previous script failed
 
-## Changed frontend source files
-- src/components/Protected/Sites/SiteChecks/SiteCheckWorkspace.jsx
-- src/components/Protected/Sites/SiteChecks/SiteCheckWorkspace.css
+Windows PowerShell 5.1's `ConvertFrom-Json` cannot parse the legal empty-string property name in npm v3's `package-lock.json` (`packages[""]`). The previous script stopped at line 18 before its backup or update. This replacement reads the lockfile with Node.js, not PowerShell JSON parsing.
 
-No Site Service, Project Service, API, migrations, new helper classes or test files.
+## Important: check whether the previous ZIP overwrote your files
 
-## TEST verification steps
-1. Deploy frontend to TEST only. Open a Site Check.
-2. Confirm header displays Open Early and/or View PDF when eligible, then More, Full/Split toggle, Close.
-3. Check More items: Copy, Mark Done, Delete (existing confirm dialogs and behaviour).
-4. Check a Done inspection disables Mark Done; Monthly Audit omits Mark Done entirely.
-5. Confirm the Full/Split toggle is immediately beside Close on wide screens and still switches views.
-6. Check no changes to the grid's existing Actions buttons and Asset Information column.
-7. Test keyboard navigation and narrow/mobile layout.
+You ran the original script from inside `C:\Data\cp-compliance\git-clean\frontend`. If you extracted the previous patch's `package.json` or `src\setupProxy.js` directly over the repository files, those files **might already have been changed during extraction**. The new script recognises only the exact reviewed original and patched files, and stops if anything else has changed.
 
-## Validation
-- SiteCheckWorkspace.jsx JSX syntax: PASS (TypeScript transpiler parser).
-- CSS parse: PASS (tinycss2).
-- 13 focused source checks: PASS.
-- Full React build and browser integration NOT run here; must pass in TEST deployment.
+Inspect Git status first:
 
-## Recommended Git commit
-Title: Compact Site Check header actions into More menu
+```powershell
+cd 'C:\Data\cp-compliance\git-clean\frontend'
+git status --short -- package.json package-lock.json src/setupProxy.js
+```
 
-Remarks:
-- Group Copy, Mark Done and Delete in one accessible More menu.
-- Move Full/Split view control beside Close.
-- Keep Open Early/View PDF visible and preserve existing handlers.
-- Preserve Monthly Audit submission safeguards and grid actions.
-- Frontend-only; no database or backend changes.
+## Run fixed script
+
+1. Extract **this ZIP outside** your frontend repository, for example `C:\Users\<you>\Desktop\CAFM-Frontend-Fix`.
+2. In a normal PowerShell window with Node.js and npm installed, run:
+
+```powershell
+& "$HOME\Desktop\CAFM-Frontend-Fix\Apply-Frontend-Security-Update-Fixed.ps1" -FrontendRoot "C:\Data\cp-compliance\git-clean\frontend"
+```
+
+You may see the Windows 'run once' warning for downloaded scripts. Review the script and use your organisation's approved execution method. **Do not overwrite the frontend when extracting this package**; do not loosen system-wide script execution policy.
+
+The script validates SHA-256 fingerprints, checks the original or partially patched state, backs up 3 files, updates Axios with npm (lockfile metadata only), verifies the versions, and restores the backups if npm fails. The patch sends local `/api` requests to Site Service at localhost:8080; production routes are unchanged by this step.
+
+## Validate after success
+
+```powershell
+cd 'C:\Data\cp-compliance\git-clean\frontend'
+npm.cmd ci --ignore-scripts --no-audit --no-fund
+npm.cmd ls axios
+.\node_modules\.bin\react-scripts.cmd build
+npm.cmd audit --omit=dev --audit-level=moderate
+```
+
+Build validation only: the `react-scripts` direct invocation avoids the project's `prebuild` version increment. If a build/test step fails, retain its output and do not deploy. The security report includes additional findings not cleared solely by Axios.
