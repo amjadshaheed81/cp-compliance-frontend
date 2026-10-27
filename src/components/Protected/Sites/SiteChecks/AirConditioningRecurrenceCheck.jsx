@@ -8,6 +8,7 @@ import { Autocomplete, TextField, Card, CardContent, Typography, Table, TableBod
 import { formatDate } from "../../../../utils/dateFormat";
 import moment from "moment";
 import pdfTemplate from './pdf/airConditionRecurrencCheck.pdf';
+import { resolveSiteCheckPdfTarget } from "./shared/resolveSiteCheckPdfTarget";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
@@ -812,60 +813,6 @@ const AirConditioningRecurrenceCheck = ({
         }
     };
 
-    const getHighestFileVersion = async (folderId, fileName) => {
-        try {
-            const siteId = authoritativeSiteId;
-            if (!siteId) {
-                console.warn('No site ID available for file version check');
-                return 1;
-            }
-
-            // Use the provided get function
-            const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-            const files = response?.document?.files || [];
-
-            if (files.length > 0) {
-                const baseName = fileName.split('.')[0];
-                const matchingFiles = files.filter(file =>
-                    file.name && file.name.startsWith(baseName)
-                );
-
-                if (matchingFiles.length > 0) {
-                    const versions = matchingFiles.map(f => f.fileVersion || 1);
-                    const maxVersion = Math.max(...versions);
-                    return maxVersion + 1;
-                }
-            }
-            return 1;
-        } catch (error) {
-            console.error('Error checking file versions:', error);
-            return 1;
-        }
-    };
-
-    const checkFileExists = async (folderId, fileName) => {
-        try {
-            const siteId = authoritativeSiteId;
-            if (!siteId || !folderId) return { exists: false, file: null };
-
-            // Use the provided get function
-            const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-            const files = response?.document?.files || [];
-            const baseName = fileName.split('.')[0];
-            const existingFile = files.find(file =>
-                file.name && file.name.startsWith(baseName)
-            );
-
-            return {
-                exists: !!existingFile,
-                file: existingFile || null
-            };
-        } catch (error) {
-            console.error('Error checking file existence:', error);
-            return { exists: false, file: null };
-        }
-    };
-
     const dateFormat = (date) => {
         return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
     }
@@ -895,18 +842,26 @@ const AirConditioningRecurrenceCheck = ({
                 throw new Error('Could not determine target folder for PDF upload');
             }
 
-            const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+            const resolvedPdf = await resolveSiteCheckPdfTarget({
+                fetchJson: get,
+                siteId: authoritativeSiteId,
+                checkId: parsedCheckId,
+                assetId: Number(selectedAsset?.assetId),
+                fileName,
+                folderId: targetFolderId,
+            });
             const uploadFormData = new FormData();
 
-            if (exists && existingFile) {
+            if (resolvedPdf.exists) {
                 uploadFormData.append('file', pdfFile);
                 const documentRequestString = {
-                    folderId: targetFolderId,
+                    folderId: resolvedPdf.folderId,
                     files: [{
-                        id: existingFile.id,
+                        id: resolvedPdf.fileId,
                         name: fileName,
                         originalFileName: fileName,
-                        fileVersion: existingFile.fileVersion + 1,
+                        fileVersion: resolvedPdf.fileVersion + 1,
+                        assetId: Number(selectedAsset?.assetId),
                         siteId: authoritativeSiteId || 0,
                         issueDate: toJavaLocalDateTime(signedDateOverride || formData.signedDate),
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
@@ -935,16 +890,17 @@ const AirConditioningRecurrenceCheck = ({
                 }
             } else {
                 uploadFormData.append('files', pdfFile);
-                const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+                const fileVersion = 1;
 
                 const documentRequestString = {
                     folderId: targetFolderId,
                     files: [{
-                        name: fileName.split('.')[0],
+                        name: fileName.replace(/\.pdf$/i, ''),
                         issueDate: toJavaLocalDateTime(signedDateOverride || formData.signedDate),
                         expiryDate: toJavaLocalDateTime(calculateExpiryDate(signedDateOverride || formData.signedDate, siteCheckDetails?.repeatFrequency)),
                         note: 'Air Conditioning F-Gas Report',
                         fileVersion: fileVersion,
+                        assetId: Number(selectedAsset?.assetId),
                         siteId: authoritativeSiteId || 0,
                         originalFileName: fileName,
                         uploaderUserId: loggedInUserData?.id || 0,
@@ -975,6 +931,7 @@ const AirConditioningRecurrenceCheck = ({
             throw new Error('Upload failed: document API did not confirm storage');
         } catch (error) {
             console.error('Error uploading PDF:', error);
+            toast.error(error?.response?.data?.detail || error?.response?.data?.message || error?.message || "PDF upload failed");
             return { stored: false, sourceReference: null };
         } finally {
             setIsUploading(false);

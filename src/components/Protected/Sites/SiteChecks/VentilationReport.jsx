@@ -18,6 +18,7 @@ import axios from 'axios';
 import pdfTemplate from './pdf/VentilationTemplate.pdf';
 import RiskScoreCard from "./RiskScoreCard";
 import moment from "moment";
+import { resolveSiteCheckPdfTarget } from "./shared/resolveSiteCheckPdfTarget";
 import SiteCheckEngineerSelector from "./shared/SiteCheckEngineerSelector";
 import SiteCheckEngineerSignature from "./shared/SiteCheckEngineerSignature";
 import useSiteCheckEngineers from "./shared/useSiteCheckEngineers";
@@ -602,33 +603,6 @@ const VentilationReport = ({
     }
   };
 
-  const getHighestFileVersion = async (folderId, fileName) => {
-    try {
-      const siteId = authoritativeSiteId;
-      if (!siteId) return 1;
-
-      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-      const files = response?.document?.files || [];
-
-      if (files.length > 0) {
-        const baseName = fileName.split('.')[0];
-        const matchingFiles = files.filter(file =>
-            file.name && file.name.startsWith(baseName)
-        );
-
-        if (matchingFiles.length > 0) {
-          const versions = matchingFiles.map(f => f.fileVersion || 1);
-          const maxVersion = Math.max(...versions);
-          return maxVersion + 1;
-        }
-      }
-      return 1;
-    } catch (error) {
-      console.error('Error checking file versions:', error);
-      return 1;
-    }
-  };
-
   const handleAssetSelect = (event, newValue) => {
     setFormData((prev) => ({
       ...prev,
@@ -642,28 +616,6 @@ const VentilationReport = ({
         delete next.asset;
         return next;
       });
-  };
-
-  const checkFileExists = async (folderId, fileName) => {
-    try {
-      const siteId = authoritativeSiteId;
-      if (!siteId || !folderId) return { exists: false, file: null };
-
-      const response = await get(`/api/document/parent/${folderId}/folders?siteId=${siteId}`);
-      const files = response?.document?.files || [];
-      const baseName = fileName.split('.')[0];
-      const existingFile = files.find(file =>
-          file.name && file.name.startsWith(baseName)
-      );
-
-      return {
-        exists: !!existingFile,
-        file: existingFile || null
-      };
-    } catch (error) {
-      console.error('Error checking file existence:', error);
-      return { exists: false, file: null };
-    }
   };
 
   const dateFormat = (date) => {
@@ -690,18 +642,26 @@ const VentilationReport = ({
         throw new Error('Could not determine target folder for PDF upload');
       }
 
-      const { exists, file: existingFile } = await checkFileExists(targetFolderId, fileName);
+      const resolvedPdf = await resolveSiteCheckPdfTarget({
+        fetchJson: get,
+        siteId: authoritativeSiteId,
+        checkId: parsedCheckId,
+        assetId: Number(formData.selectedAsset?.assetId || formData.assetId),
+        fileName,
+        folderId: targetFolderId,
+      });
       const uploadFormData = new FormData();
 
-      if (exists && existingFile) {
+      if (resolvedPdf.exists) {
         uploadFormData.append('file', pdfFile);
         const documentRequestString = {
-          folderId: targetFolderId,
+          folderId: resolvedPdf.folderId,
           files: [{
-            id: existingFile.id,
+            id: resolvedPdf.fileId,
             name: fileName,
             originalFileName: fileName,
-            fileVersion: existingFile.fileVersion + 1,
+            fileVersion: resolvedPdf.fileVersion + 1,
+            assetId: Number(formData.selectedAsset?.assetId || formData.assetId),
             siteId: authoritativeSiteId || 0,
             issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
@@ -729,16 +689,17 @@ const VentilationReport = ({
         }
       } else {
         uploadFormData.append('files', pdfFile);
-        const fileVersion = await getHighestFileVersion(targetFolderId, fileName);
+        const fileVersion = 1;
 
         const documentRequestString = {
           folderId: targetFolderId,
           files: [{
-            name: fileName.split('.')[0],
+            name: fileName.replace(/\.pdf$/i, ''),
             issueDate: toJavaLocalDateTime(inspectionDateOverride || formData.inspectionDate),
             expiryDate: toJavaLocalDateTime(calculateExpiryDate(inspectionDateOverride || formData.inspectionDate, inspectionDetails?.repeatFrequency)),
               note: 'Ventilation System Certificate',
             fileVersion: fileVersion,
+            assetId: Number(formData.selectedAsset?.assetId || formData.assetId),
             siteId: authoritativeSiteId || 0,
             originalFileName: fileName,
             uploaderUserId: loggedInUserData?.id || 0,
@@ -767,6 +728,7 @@ const VentilationReport = ({
       throw new Error('Upload failed: the document API did not confirm storage');
     } catch (error) {
       console.error('Error uploading PDF:', error);
+      toast.error(error?.response?.data?.detail || error?.response?.data?.message || error?.message || "PDF upload failed");
       return { stored: false, sourceReference: null };
     } finally {
       setIsUploading(false);
