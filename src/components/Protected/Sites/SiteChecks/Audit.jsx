@@ -17,6 +17,7 @@ import "slick-carousel/slick/slick-theme.css";
 import { jsPDF } from "jspdf";
 import { formatLocalDateTime } from "../../../../utils/dateFormat";
 import MonthlyAuditActionChoices from "./shared/MonthlyAuditActionChoices";
+import MonthlyAuditHistoricalEntry from "./shared/MonthlyAuditHistoricalEntry";
 import {
     completeMonthlyAuditSubmission, deleteMonthlyAuditImage, fillMonthlyQuestionForTest,
     getMonthlyAuditActions, getMonthlyAuditContext, getMonthlyAuditResponses,
@@ -1303,6 +1304,7 @@ const AssessmentFireRisk = ({
         <>
         <Box p={3}>
             <Card>
+                {isMonthlyAudit && <MonthlyAuditHistoricalEntry checkId={checkId} onSaved={onAuditSubmitted} />}
                 {isMonthlyAudit && monthlyContext?.canRenewOverdue && (
                     <CardContent sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
                         <Box sx={{ maxWidth: 760, mx: "auto" }} role="region" aria-label="Overdue Monthly Audit">

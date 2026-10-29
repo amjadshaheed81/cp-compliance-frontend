@@ -17,6 +17,8 @@ const sourceLabel = (source) => {
             return "Submitted Site Check";
         case "SCHEDULED_ROLLOVER":
             return "Monthly Audit Renewal";
+        case "HISTORICAL_BACKFILL":
+            return "Retrospective Monthly Audit";
         case "LEGACY_SITE_DOCUMENT":
             return "Existing Site Document";
         case "LEGACY_MONTHLY_AUDIT_PDF_RECORD":
