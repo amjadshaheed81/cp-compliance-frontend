@@ -22,6 +22,10 @@ import { getSiteAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { blueGrey } from "@mui/material/colors";
 import { ROLE } from "../../../../Constant/Role";
 import SortableOrderControl from "../../../common/SortableOrderControl";
+import {
+  selectLatestSavedWaterOutlets,
+  downloadWaterTemperaturePdf,
+} from "./shared/waterTemperaturePdf";
 
 const ADMIN_EDITABLE_FIELDS = [
   "outletType",
@@ -71,6 +75,7 @@ const SurveyWaterTemperatureMonitoring = ({
   const [completed, setCompleted] = useState(false);
   const [alldata, setalldata] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [sortOrderDirty, setSortOrderDirty] = useState(false);
   const [draggedRowIndex, setDraggedRowIndex] = useState(null);
   const [savedOutletBaseline, setSavedOutletBaseline] = useState({});
@@ -152,7 +157,7 @@ const SurveyWaterTemperatureMonitoring = ({
 
       setalldata(data);
       //data = data.reverse();
-      data = removeduplciate(data);
+      data = selectLatestSavedWaterOutlets(data);
       setFormData(data);
       setSavedOutletBaseline(buildSavedOutletBaseline(data));
     } else {
@@ -163,32 +168,40 @@ const SurveyWaterTemperatureMonitoring = ({
     setIsLoading(false);
   };
 
-  const removeduplciate = (array) => {
-
-    const latestRecordsMap = {};
-
-    array.forEach(item => {
-      if (!latestRecordsMap[item.assetId] || new Date(item.r1Date) > new Date(latestRecordsMap[item.assetId].r1Date)) {
-        latestRecordsMap[item.assetId] = item;
+  const downloadLatestPdf = async () => {
+    if (isDownloadingPdf || !checkId) return;
+    setIsDownloadingPdf(true);
+    try {
+      // Never use the editable form state: it can contain unsaved changes.
+      // Re-fetch all persisted readings and bypass cached GET responses.
+      const savedRows = await get(
+        `/api/site-check/water-outlet-temp/${checkId}?pdfRefresh=${Date.now()}`
+      );
+      if (!Array.isArray(savedRows)) {
+        throw new Error("Invalid Water Temperature response.");
       }
-    });
-
-    const latestRecords = Object.values(latestRecordsMap);
-
-    latestRecords.sort((a, b) =>  Number(a.sortOrder) - Number(b.sortOrder));
-    return  latestRecords;
-
-    const seen = new Map();
-
-    return array.filter((item) => {
-      const key = `${item.assetId}-${item.outletType}-${item.temperature}-${item.normalRunTime}-${item.floor}-${item.room}`;
-      //check for date
-      if (!seen.has(key)) {
-        seen.set(key, true);
-        return true;
+      if (!savedRows.some((row) => row?.assetId)) {
+        toast.info("No saved water temperature outlets to download.");
+        return;
       }
-      return false;
-    });
+      if (hasUnsavedAdminChanges) {
+        toast.info("PDF includes saved data only. Unsaved changes are not included.");
+      }
+
+      downloadWaterTemperaturePdf({
+        records: savedRows,
+        siteName: siteSelectedForGlobal?.name || siteSelectedForGlobal?.siteName || "Site",
+        siteId: siteSelectedForGlobal?.siteId,
+        checkId,
+        siteAssets,
+        siteLayout,
+      });
+    } catch (error) {
+      console.error("Could not generate Water Temperature PDF", error);
+      toast.error("Could not download the Water Temperature PDF. Please try again.");
+    } finally {
+      setIsDownloadingPdf(false);
+    }
   };
 
   const isDuplicate = (newItem) => {
@@ -1077,7 +1090,23 @@ const SurveyWaterTemperatureMonitoring = ({
                 />
               </Typography>
             </Grid>
-            <Grid sm={4}></Grid>
+            <Grid sm={4}>
+              <button
+                  type="button"
+                  disabled={isDownloadingPdf || isLoading || !checkId}
+                  title="Download a fresh PDF of all latest saved water temperature readings"
+                  style={{
+                    minWidth: "150px",
+                    marginBottom: "20px",
+                    margin: "10px",
+                    float: "right",
+                  }}
+                  className="btn btn-outline-primary"
+                  onClick={downloadLatestPdf}
+              >
+                {isDownloadingPdf ? "Preparing PDF..." : "Download PDF"}
+              </button>
+            </Grid>
             <Grid sm={4}>
               <button
                   type="button"
