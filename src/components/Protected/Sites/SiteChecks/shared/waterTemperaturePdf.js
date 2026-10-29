@@ -2,8 +2,8 @@ import { jsPDF } from "jspdf";
 
 /**
  * Match the Water Temperature grid: one latest saved row for each asset,
- * ordered by the persisted outlet sort order. A separate PDF download
- * always starts from a fresh GET, not from unsaved React form state.
+ * ordered by persisted outlet sort order. Each download uses a fresh GET,
+ * never unsaved form state.
  */
 export const selectLatestSavedWaterOutlets = (records = []) => {
   if (!Array.isArray(records)) {
@@ -35,16 +35,20 @@ const valueText = (value) => {
   return String(value);
 };
 
-const formatTestDate = (value) => {
-  if (!value) return "-";
-  // Backend LocalDateTime values are date-only for report purposes;
-  // do not shift them between browser and server timezones.
+const readingValueText = (value) => {
+  if (value === undefined || value === null || value === "" || value === "null") return "";
+  return String(value); // 0 is a valid reading.
+};
+
+const formatReadingDate = (value) => {
+  if (!value) return "N/A";
+  // Match the grid's DD-MM-YYYY format. Backend LocalDateTime values are
+  // date-only for this report; do not shift dates between timezones.
   const isoDate = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoDate) return `${isoDate[3]}/${isoDate[2]}/${isoDate[1]}`;
+  if (isoDate) return `${isoDate[3]}-${isoDate[2]}-${isoDate[1]}`;
   const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime())
-    ? "-"
-    : parsed.toLocaleDateString("en-GB", { timeZone: "Europe/London" });
+  if (Number.isNaN(parsed.getTime())) return "N/A";
+  return parsed.toLocaleDateString("en-GB", { timeZone: "Europe/London" }).replace(/\//g, "-");
 };
 
 const resolveLocation = (value, siteLayout = []) => {
@@ -53,7 +57,11 @@ const resolveLocation = (value, siteLayout = []) => {
   return valueText(node?.nodeName || value);
 };
 
-/** Build the exact columns shown in the current (latest-per-asset) grid. */
+/**
+ * The PDF has the same NINE data columns as the grid. The three readings,
+ * including their displayed dates, are stacked in one READINGS cell.
+ * The grid's final action-buttons column is deliberately not printed.
+ */
 export const buildWaterTemperaturePdfRows = (records, siteAssets = [], siteLayout = []) => {
   const assetsById = new Map(siteAssets.map((asset) => [String(asset.assetId), asset]));
   return selectLatestSavedWaterOutlets(records).map((row) => {
@@ -66,6 +74,8 @@ export const buildWaterTemperaturePdfRows = (records, siteAssets = [], siteLayou
       return (row.temperature === "Hot" && Number(reading) < 50) ||
         (row.temperature === "Cold" && Number(reading) > 20);
     };
+    const testDate = formatReadingDate(row.r1Date);
+    const readings = [row.reading1, row.reading2, row.reading3];
     return {
       cells: [
         valueText(row.sortOrder),
@@ -76,31 +86,27 @@ export const buildWaterTemperaturePdfRows = (records, siteAssets = [], siteLayou
         valueText(row.usageFrequency),
         resolveLocation(row.floor, siteLayout),
         resolveLocation(row.room, siteLayout),
-        formatTestDate(row.r1Date),
-        valueText(row.reading1),
-        valueText(row.reading2),
-        valueText(row.reading3),
       ],
-      alertColumns: [9, 10, 11].filter((index) =>
-        isAlert([row.reading1, row.reading2, row.reading3][index - 9])
+      readings: readings.map((reading, index) =>
+        `${["1st", "2nd", "3rd"][index]} : ${readingValueText(reading)} ${testDate === "N/A" ? "N/A" : `(${testDate})`}`
       ),
+      alertReadings: readings.map(isAlert),
     };
   });
 };
 
+// A4 landscape, 10 mm margins: 297 - 20 = 277 mm total.
+// Width proportions follow the grid rather than the old 12-column report.
 const TABLE_COLUMNS = [
-  { label: "Order", width: 11 },
-  { label: "Asset", width: 53 },
-  { label: "Outlet type", width: 27 },
-  { label: "Hot / Cold", width: 18 },
-  { label: "Norm run time", width: 23 },
-  { label: "Usage", width: 22 },
-  { label: "Floor", width: 25 },
-  { label: "Room", width: 39 },
-  { label: "Test date", width: 22 },
-  { label: "30s (C)", width: 13 },
-  { label: "60s (C)", width: 12 },
-  { label: "120s (C)", width: 12 },
+  { label: "ORDER", width: 12 },
+  { label: "ASSET", width: 51 },
+  { label: "OUTLET TYPE", width: 22 },
+  { label: "TEMPERATURE", width: 24 },
+  { label: "NORM RUN TIME", width: 27 },
+  { label: "USAGE FREQUENCY", width: 24 },
+  { label: "FLOOR", width: 23 },
+  { label: "ROOM", width: 49 },
+  { label: "READINGS", width: 45 },
 ];
 
 const createReportFileName = (siteName, checkId, generatedAt) => {
@@ -117,7 +123,7 @@ const createReportFileName = (siteName, checkId, generatedAt) => {
 };
 
 /**
- * Create an A4 landscape PDF directly in the browser.
+ * Generate the grid-style A4 landscape PDF on demand in the browser.
  * No POST, PUT, document-storage request or inspection state update occurs.
  */
 export const downloadWaterTemperaturePdf = ({
@@ -138,10 +144,11 @@ export const downloadWaterTemperaturePdf = ({
   const margin = 10;
   const footerY = pageHeight - 7;
   const bottomLimit = footerY - 6;
-  const headingHeight = 10;
-  const cellPadding = 1.5;
-  const lineHeight = 3.15;
   const tableStart = 43;
+  const headingHeight = 12;
+  const cellPadding = 1.5;
+  const lineHeight = 3.45;
+  const readingGap = 0.6;
   const printedAt = generatedAt.toLocaleString("en-GB", {
     timeZone: "Europe/London", day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit", hour12: false,
@@ -169,16 +176,20 @@ export const downloadWaterTemperaturePdf = ({
     pdf.setFontSize(8);
     pdf.text(`Latest saved reading for ${rows.length} outlet(s). Unsaved form edits are not included.`, margin, 38);
 
-    pdf.setFillColor(40, 66, 89);
+    // Use the same vivid blue table header as the on-screen grid.
+    pdf.setFillColor(58, 78, 210);
     pdf.rect(margin, tableStart, pageWidth - 2 * margin, headingHeight, "F");
-    pdf.setTextColor(255, 255, 255);
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(7.1);
+    pdf.setFontSize(7.6);
+    pdf.setDrawColor(218, 225, 231);
+    pdf.setLineWidth(0.15);
     let x = margin;
-    TABLE_COLUMNS.forEach((column) => {
-      const wrapped = pdf.splitTextToSize(column.label, column.width - 2 * cellPadding);
-      pdf.text(wrapped, x + cellPadding, tableStart + 3.7);
+    TABLE_COLUMNS.forEach((column, index) => {
+      pdf.setTextColor(255, 255, 255);
+      const lines = pdf.splitTextToSize(column.label, column.width - 2 * cellPadding);
+      lines.forEach((line, lineIndex) => pdf.text(line, x + cellPadding, tableStart + 4 + lineIndex * 3.6));
       x += column.width;
+      if (index < TABLE_COLUMNS.length - 1) pdf.line(x, tableStart, x, tableStart + headingHeight);
     });
     return tableStart + headingHeight;
   };
@@ -186,27 +197,47 @@ export const downloadWaterTemperaturePdf = ({
   let y = drawHeading();
   rows.forEach((row, rowIndex) => {
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(7.1);
+    pdf.setFontSize(7.5);
     const wrappedCells = row.cells.map((value, index) =>
       pdf.splitTextToSize(String(value), TABLE_COLUMNS[index].width - 2 * cellPadding)
     );
-    const rowHeight = Math.max(7, ...wrappedCells.map((lines) => lines.length * lineHeight + 3));
+    const readingLines = row.readings.map((reading) =>
+      pdf.splitTextToSize(reading, TABLE_COLUMNS[8].width - 2 * cellPadding)
+    );
+    const readingLineCount = readingLines.reduce((total, lines) => total + lines.length, 0);
+    const rowHeight = Math.max(
+      15,
+      ...wrappedCells.map((lines) => 2 * cellPadding + lines.length * lineHeight),
+      2 * cellPadding + readingLineCount * lineHeight + readingGap * 2
+    );
 
     if (y + rowHeight > bottomLimit) {
       pdf.addPage();
       y = drawHeading();
     }
 
-    pdf.setFillColor(...(rowIndex % 2 === 0 ? [246, 249, 251] : [255, 255, 255]));
+    pdf.setFillColor(...(rowIndex % 2 === 0 ? [248, 250, 252] : [255, 255, 255]));
     pdf.rect(margin, y, pageWidth - 2 * margin, rowHeight, "F");
     pdf.setDrawColor(218, 225, 231);
     pdf.setLineWidth(0.15);
     pdf.line(margin, y + rowHeight, pageWidth - margin, y + rowHeight);
     let x = margin;
     wrappedCells.forEach((lines, index) => {
-      pdf.setTextColor(...(row.alertColumns.includes(index) ? [185, 37, 42] : [34, 46, 57]));
-      pdf.text(lines, x + cellPadding, y + 3.75);
+      pdf.setTextColor(34, 46, 57);
+      lines.forEach((line, lineIndex) =>
+        pdf.text(line, x + cellPadding, y + 3.8 + lineIndex * lineHeight)
+      );
       x += TABLE_COLUMNS[index].width;
+      pdf.line(x, y, x, y + rowHeight);
+    });
+    let readingY = y + 3.8;
+    readingLines.forEach((lines, index) => {
+      pdf.setTextColor(...(row.alertReadings[index] ? [185, 37, 42] : [34, 46, 57]));
+      lines.forEach((line) => {
+        pdf.text(line, x + cellPadding, readingY);
+        readingY += lineHeight;
+      });
+      readingY += readingGap;
     });
     y += rowHeight;
   });
