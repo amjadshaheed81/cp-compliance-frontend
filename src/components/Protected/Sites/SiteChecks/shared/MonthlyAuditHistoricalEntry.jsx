@@ -196,7 +196,7 @@ export default function MonthlyAuditHistoricalEntry({ checkId, onSaved }) {
       <Typography variant="body2" sx={{ my: 1 }}>
         Create missing months without changing the live audit. Already recorded months, including Not Completed, cannot be recreated.
       </Typography>
-      {access.isSuperAdmin && (
+      {(access.canManageBackfill === true || access.isSuperAdmin === true) && (
         <>
           <Button variant="outlined" onClick={() => setExpanded((current) => !current)} disabled={loading}>
             {expanded ? "Hide missing months" : "Create Missing Monthly Audit"}
