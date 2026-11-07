@@ -17,6 +17,7 @@ import {
   resetCustomerSession,
 } from "../../utils/sessionContext";
 import "./PlatformCustomers.css";
+import PlatformSites from "./PlatformSites";
 
 function selectionError(error) {
   switch (error?.response?.status) {
@@ -182,7 +183,7 @@ export default function PlatformCustomers() {
         <div className="platform-customers-heading">
           <div>
             <h1>Customers</h1>
-            <p>Select a customer to view its account details.</p>
+            <p>Select a customer to view its account details and sites.</p>
           </div>
           <button type="button" className="btn btn-outline-primary" onClick={() => loadSession()} disabled={busy}>
             Refresh
@@ -215,6 +216,16 @@ export default function PlatformCustomers() {
                 </dl>
               ) : <p className="platform-customers-empty-selection">Choose an available customer below.</p>}
             </section>
+
+            {selected && !busy && (
+              <PlatformSites
+                key={`${session.user.id}:${session.selectedLicenseId}`}
+                selectedLicenseId={session.selectedLicenseId}
+                customerName={selected.companyName || "selected customer"}
+                onSessionExpired={expireSession}
+                onContextChanged={loadSession}
+              />
+            )}
 
             <section className="platform-customers-list" aria-labelledby="customer-list-title">
               <div className="platform-customers-list-heading">
