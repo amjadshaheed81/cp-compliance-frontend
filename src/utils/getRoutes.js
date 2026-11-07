@@ -42,6 +42,7 @@ import ViewAsset from "../components/Protected/Sites/Assets/ViewAsset";
 import EditProfile from "../components/Protected/Users/EditProfile";
 import Notifications from "../components/Protected/Notifications";
 import Reports from "../components/Protected/Reports";
+import PlatformCustomers from "../components/Platform/PlatformCustomers";
 
 export const getRoutes = () => {
   const tabs = [
@@ -80,6 +81,10 @@ export const getRoutes = () => {
     {
       path: "/login",
       element: <LoginForm />,
+    },
+    {
+      path: "/platform",
+      element: <PlatformCustomers />,
     },
     {
       path: "/forgot-password",

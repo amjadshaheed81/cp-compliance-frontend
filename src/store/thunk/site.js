@@ -91,6 +91,13 @@ import { ROLE } from "../../Constant/Role";
 import { saveState } from "../localStorage";
 import { CPCOM_STATE_STORE } from "../../Constant/Session";
 import { requestForToken } from '../../firebase';
+import { logoutSession } from "../../api/platform";
+import {
+  announceSessionChange,
+  isPlatformUser,
+  reloadTo,
+  resetCustomerSession,
+} from "../../utils/sessionContext";
 
 export const addSite = (formData, goTo) => {
   return async (dispatch) => {
@@ -1460,6 +1467,7 @@ const getLoginErrorMessage = (error) => {
 
 export const loginUser = (formData) => {
   return async (dispatch) => {
+    resetCustomerSession(dispatch);
     try {
       const body = {
         email: formData?.email,
@@ -1476,6 +1484,17 @@ export const loginUser = (formData) => {
         const message = "Please enter valid email and password.";
         toast.error(message);
         return { success: false, message };
+      }
+
+      if (isPlatformUser(user)) {
+        if (user.licenseId != null) {
+          const message = "The platform account could not be loaded. Please contact your administrator.";
+          toast.error(message);
+          return { success: false, message };
+        }
+        dispatch({ type: USER_LOGIN, payload: user });
+        announceSessionChange();
+        return { success: true, redirectTo: "/platform", reload: true };
       }
 
       // New backend returns the already-loaded safe licence summary in the login response.
@@ -1499,13 +1518,14 @@ export const loginUser = (formData) => {
         type: USER_LOGIN,
         payload: user,
       });
+      announceSessionChange();
 
       toast.success("Successfully logged in.");
 
       // Fire-and-forget: Firebase/service-worker/browser issues cannot block login.
       void syncNotificationTokenInBackground();
 
-      return { success: true };
+      return { success: true, redirectTo: "/dashboard" };
     } catch (error) {
       const message = getLoginErrorMessage(error);
       toast.error(message);
@@ -1514,15 +1534,19 @@ export const loginUser = (formData) => {
   };
 };
 
-export const logoutUser = (goTo) => {
+export const logoutUser = () => {
   return async (dispatch) => {
-    dispatch({
-      type: USER_LOGOUT,
-      payload: {},
-    });
-    localStorage.clear();
+    try {
+      await logoutSession();
+    } catch {
+      toast.error("Unable to sign out. Please check your connection and try again.");
+      return { success: false };
+    }
+    resetCustomerSession(dispatch);
+    announceSessionChange();
     toast.success("Successfully logged out.");
-    goTo("/login");
+    reloadTo("/login");
+    return { success: true };
   };
 };
 

@@ -1,0 +1,253 @@
+.platform-customers-page {
+  min-height: 100vh;
+  background: #f3f6f8;
+  color: #223648;
+}
+
+.platform-customers-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px max(24px, calc((100vw - 1160px) / 2));
+  border-bottom: 1px solid #dde5eb;
+  background: white;
+}
+
+.platform-customers-brand {
+  font-size: 1.2rem;
+  font-weight: 750;
+  color: #153d58;
+  white-space: nowrap;
+}
+
+.platform-customers-brand span {
+  margin-left: 18px;
+  padding-left: 18px;
+  border-left: 1px solid #d5dee5;
+  color: #647684;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.platform-customers-account,
+.platform-customers-heading,
+.platform-customers-selection-heading,
+.platform-customers-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.platform-customers-account {
+  font-size: 0.9rem;
+}
+
+.platform-customers-main {
+  max-width: 1208px;
+  margin: 0 auto;
+  padding: 42px 24px 60px;
+}
+
+.platform-customers-heading {
+  margin-bottom: 28px;
+}
+
+.platform-customers-heading h1 {
+  margin: 0 0 8px;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.platform-customers-heading p,
+.platform-customers-list-heading p {
+  margin: 0;
+  color: #657787;
+}
+
+.platform-customers-selection,
+.platform-customers-list {
+  margin-bottom: 28px;
+  border: 1px solid #d8e3eb;
+  border-radius: 12px;
+  background: white;
+  overflow: hidden;
+}
+
+.platform-customers-selection {
+  padding: 25px 28px;
+  border-top: 4px solid #176c9e;
+}
+
+.platform-customers-selection h2,
+.platform-customers-list h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 650;
+}
+
+.platform-customers-eyebrow {
+  margin: 0 0 8px;
+  color: #176c9e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.platform-customers-empty-selection {
+  margin: 12px 0 0;
+  color: #657787;
+}
+
+.platform-customers-details {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1.3fr;
+  gap: 20px;
+  margin: 25px 0 0;
+  padding-top: 20px;
+  border-top: 1px solid #e5ebf0;
+}
+
+.platform-customers-details dt {
+  margin-bottom: 6px;
+  color: #657787;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.platform-customers-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.platform-customers-list-heading {
+  padding: 24px 28px;
+}
+
+.platform-customers-list-heading p {
+  margin-top: 7px;
+  font-size: 0.88rem;
+}
+
+.platform-customers-search {
+  width: 280px;
+  max-width: 100%;
+}
+
+.platform-customers-search span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.platform-customers-list .table-responsive {
+  position: relative;
+}
+
+.platform-customers-table {
+  margin: 0;
+  vertical-align: middle;
+}
+
+.platform-customers-table th,
+.platform-customers-table td {
+  padding: 18px 28px;
+  border-color: #e6edf2;
+}
+
+.platform-customers-table thead {
+  background: #f7f9fb;
+  color: #657787;
+  font-size: 0.8rem;
+}
+
+.platform-customers-table tbody th {
+  min-width: 210px;
+  font-weight: 400;
+}
+
+.platform-customers-address {
+  display: block;
+  margin-top: 5px;
+  color: #657787;
+  font-size: 0.86rem;
+}
+
+.platform-customers-status {
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.platform-customers-status.is-available {
+  background: #eaf5ef;
+  color: #286448;
+}
+
+.platform-customers-status.is-unavailable {
+  background: #eef0f2;
+  color: #697781;
+}
+
+.platform-customers-action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.platform-customers-current-row {
+  background: #f0f7fc;
+}
+
+.platform-customers-loading,
+.platform-customers-table .platform-customers-empty-list {
+  padding: 40px 24px;
+  text-align: center;
+  color: #657787;
+}
+
+.platform-customers-page .btn-primary {
+  background-color: #176c9e;
+  border-color: #176c9e;
+}
+
+.platform-customers-page .btn-outline-secondary:disabled {
+  color: #223648;
+  background-color: #eef3f6;
+  border-color: #cdd8e1;
+  opacity: 1;
+}
+
+@media (max-width: 700px) {
+  .platform-customers-header,
+  .platform-customers-main {
+    padding: 20px 16px;
+  }
+  .platform-customers-brand span,
+  .platform-customers-account > span {
+    display: none;
+  }
+  .platform-customers-list-heading,
+  .platform-customers-selection-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .platform-customers-list-heading,
+  .platform-customers-selection {
+    padding: 22px;
+  }
+  .platform-customers-search {
+    width: 100%;
+  }
+  .platform-customers-details {
+    grid-template-columns: 1fr 1fr;
+  }
+  .platform-customers-table th,
+  .platform-customers-table td {
+    padding: 15px 20px;
+  }
+}

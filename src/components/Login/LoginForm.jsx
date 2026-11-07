@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { loginUser } from "../../store/thunk/site";
 import CircularProgress from "@mui/material/CircularProgress";
 import BuildNumber from "../common/BuildNumber/BuildNumber";
+import { reloadTo } from "../../utils/sessionContext";
 
 const LoginForm = ({ login, loginUser }) => {
   const navigate = useNavigate();
@@ -38,12 +39,15 @@ const LoginForm = ({ login, loginUser }) => {
 
     setLoginError("");
     setLoading(true);
-    localStorage.clear();
 
     try {
       const result = await loginUser(payload);
       if (result?.success) {
-        goTo("/dashboard");
+        if (result.reload) {
+          reloadTo(result.redirectTo);
+        } else {
+          goTo(result.redirectTo || "/dashboard");
+        }
         return;
       }
       setLoginError(result?.message || "Unable to sign in. Please try again.");
