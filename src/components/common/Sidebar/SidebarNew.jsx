@@ -10,7 +10,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import unite from "./../../../images/unite.png";
+import { useActiveBrand } from "../../../branding";
 import HomeIcon from "@mui/icons-material/Home";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import GridViewIcon from "@mui/icons-material/GridView";
@@ -40,45 +40,49 @@ import { filterMenuItems, filterSiteMenuItems } from "../../../Constant/Menu";
 import { setSideBarView, updateSite } from "../../../store/thunk/site";
 import CloseIcon from "@mui/icons-material/Close";
 import BuildNumber from "../BuildNumber/BuildNumber";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { changePlatformCustomer, getPlatformWorkspace, platformWorkspacePathNeedsSite } from "../../../utils/platformWorkspace";
+import { combinedMenu } from "../../../Constant/Menu";
 
-const drawerWidth = 240;
+const drawerWidth = 220;
 
 const iconComponents = [
-  <HomeIcon style={{ color: "white" }} />,
-  <AccountCircleIcon style={{ color: "white" }} />,
-  <GridViewIcon style={{ color: "white" }} />,
-  <SignalCellularAltIcon style={{ color: "white" }} />,
-  <PeopleAltIcon style={{ color: "white" }} />,
-  <NotificationsIcon style={{ color: "white" }} />,
-  <ElectricBoltIcon style={{ color: "white" }} />,
+  <HomeIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <AccountCircleIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <GridViewIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <SignalCellularAltIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <PeopleAltIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <NotificationsIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <ElectricBoltIcon style={{ color: "var(--brand-sidebar-text)" }} />,
 ];
 const siteIconComponents = [
-  <AddIcon style={{ color: "white" }} />,
-  <BusinessIcon style={{ color: "white" }} />,
-  <FolderIcon style={{ color: "white" }} />,
-  <DescriptionIcon style={{ color: "white" }} />,
-  <BuildIcon style={{ color: "white" }} />,
-  <BackupTableIcon style={{ color: "white" }} />,
-  <BeenhereIcon style={{ color: "white" }} />,
-  <ChecklistIcon style={{ color: "white" }} />,
-  // <SearchIcon style={{ color: "white" }} />,
-  <EnergySavingsLeafIcon style={{ color: "white" }} />,
-  <CalendarMonthIcon style={{ color: "white" }} />,
+  <AddIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <BusinessIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <FolderIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <DescriptionIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <BuildIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <BackupTableIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <BeenhereIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <ChecklistIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  // <SearchIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <EnergySavingsLeafIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <CalendarMonthIcon style={{ color: "var(--brand-sidebar-text)" }} />,
 ];
 const adminIconComponents = [
-  <AdminPanelSettingsIcon style={{ color: "white" }} />,
-  <FeaturedPlayListIcon style={{ color: "white" }} />,
-  <AccountBalanceIcon style={{ color: "white" }} />,
-  <FolderSharedIcon style={{ color: "white" }} />,
+  <AdminPanelSettingsIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <FeaturedPlayListIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <AccountBalanceIcon style={{ color: "var(--brand-sidebar-text)" }} />,
+  <FolderSharedIcon style={{ color: "var(--brand-sidebar-text)" }} />,
   
 ];
 
 
 const superAdminIconComponents = [
-  <AssignmentIndIcon style={{ color: "white" }} />,
+  <AssignmentIndIcon style={{ color: "var(--brand-sidebar-text)" }} />,
 ];
 
 const openedMixin = (theme) => ({
+  width: drawerWidth,
   marginTop: "0px !important",
   transition: theme.transitions.create("width", {
     easing: theme.transitions.easing.sharp,
@@ -143,11 +147,6 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-const getImage = () => {
-  const license = JSON.parse(localStorage.getItem('license'));
- return license?.logo;
-}
-
 const menuRoutes = {
   Dashboard: "/dashboard",
   Portfolio: "/sites",
@@ -170,6 +169,7 @@ const menuRoutes = {
   "Edit Profile": "/edit-profile",
   Reports: "/reports",
   "Onboard Client": "/onboard-client",
+  "Client List": "/platform",
 };
 
 const getMenuRoute = (text, siteId) => {
@@ -180,12 +180,34 @@ const getMenuRoute = (text, siteId) => {
   return menuRoutes[text] || "/dashboard";
 };
 
-const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpen, siteSelectedForGlobal }) => {
+const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpen, siteSelectedForGlobal, workspaceAvailable }) => {
   const theme = useTheme();
+  const brand = useActiveBrand();
+  const platform = isPlatformUser(loggedInUserData);
+  const workspace = getPlatformWorkspace();
+  const hasWorkspace = !platform || (workspaceAvailable ?? Boolean(workspace));
+  // Platform site identity comes only from the verified selected workspace.
+  const currentSite = platform ? (hasWorkspace ? workspace?.selectedSite : null) : siteSelectedForGlobal;
+  const role = platform ? ROLE.ADMIN : loggedInUserData?.role;
+  // Platform administrators manage every module for the selected client.
+  // Until its first site exists, keep client administration and Create Site available.
+  const platformMenu = platform && hasWorkspace ? combinedMenu.filter((item) =>
+    workspace?.selectedSite || !platformWorkspacePathNeedsSite(getMenuRoute(item.label).split("?")[0])
+  ) : [];
+  const generalMenu = !hasWorkspace ? [] : platform
+    ? platformMenu.filter((item) => item.type === "General").map((item) => item.label)
+    : filterMenuItems(role);
+  const siteMenu = !hasWorkspace ? [] : platform
+    ? platformMenu.filter((item) => item.type === "Site").map((item) => item.label)
+    : filterSiteMenuItems(role);
 
   const handleMenuClick = (text) => {
-    if (text === "Site Details" && siteSelectedForGlobal) {
-      updateSite({ ...siteSelectedForGlobal });
+    if (text === "Client List") {
+      changePlatformCustomer();
+      return;
+    }
+    if (text === "Site Details" && currentSite) {
+      updateSite({ ...currentSite });
     }
   };
   const sideBarOpenClose = (status) => {
@@ -197,55 +219,58 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
   };
 
   return (
-    <Box sx={{ display: "flex", marginTop: "0px !important" }}>
+    <Box className="cafm-navigation-shell" data-navigation-open={isSideBarOpen ? "true" : "false"} sx={{ display: "flex", marginTop: "0px !important" }}>
       <CssBaseline />
       <Drawer
-        sx={{ backgroundColor: "black !important" }}
+        sx={{ backgroundColor: "var(--brand-sidebar-background)" }}
         variant="permanent"
         open={isSideBarOpen}
         onMouseEnter={() => sideBarOpenClose(true)}
         onMouseLeave={() => sideBarOpenClose(false)}
-        className="sidebar"
+        className="sidebar cafm-sidebar"
       >
-        <List sx={{ backgroundColor: "black" }}>
-          <li style={{ textAlign: "center" }}>
+        <List sx={{ backgroundColor: "var(--brand-sidebar-background)" }}>
+          <li className="cafm-sidebar-brand" title={brand.name}>
             <img
-              src={getImage()}
+              src={isSideBarOpen ? brand.sidebarLogo : brand.icon}
               height={50}
-              width={140}
+              width={isSideBarOpen ? 170 : 34}
               className="img img-responsive"
-              alt="side logo"
+              alt={`${brand.name} logo`}
             />
-            <CloseIcon
-              className="grid-icon"
-              onClick={() => setSideBarView(false)}
+            {isSideBarOpen && <button type="button" aria-label="Collapse navigation" onClick={() => setSideBarView(false)}>
+              <CloseIcon />
+            </button>}
+          </li>
+          {isSideBarOpen && (
+            <BuildNumber
+              label="Build No"
+              sx={{
+                color: "var(--brand-sidebar-text)",
+                backgroundColor: "var(--brand-sidebar-background)",
+                padding: "0 0.5rem 0.6rem",
+                marginTop: "-0.15rem",
+              }}
             />
-          </li>
-          <li className="m-0 mt-2">
-            {/* <img
-              src={userImg}
-              height={40}
-              width={40}
-              className="img img-responsive"
-              alt="side logo"
-            /> */}
-            {isSideBarOpen && (
-              <>
-                <span className="text-white p-2 fs-6">
-                  {loggedInUserData?.name}
-                </span>
-                <p className="text-white p-2 fs-6">
-                  Role: {loggedInUserData?.role}
-                </p>
-              </>
-            )}
-          </li>
-          <p style={{ color: "#f5f5f5", fontSize: 'smaller' }}>General</p>
-          {filterMenuItems(loggedInUserData?.role)?.map((text, index) => (
+          )}
+          {platform && (
+            <ListItem disablePadding sx={{ display: "block" }}>
+              <ListItemButton component={NavLink} to="/platform" onClick={() => handleMenuClick("Client List")}
+                sx={{ minHeight: 48, justifyContent: isSideBarOpen ? "initial" : "center", px: 2.5,
+                  "&.active": { backgroundColor: "rgba(255, 255, 255, 0.16)" } }}>
+                <ListItemIcon sx={{ minWidth: 0, mr: isSideBarOpen ? 3 : "auto", justifyContent: "center" }}>
+                  <BusinessIcon style={{ color: "var(--brand-sidebar-text)" }} />
+                </ListItemIcon>
+                <ListItemText primary="Client List" sx={{ opacity: isSideBarOpen ? 1 : 0, color: "var(--brand-sidebar-text)" }} />
+              </ListItemButton>
+            </ListItem>
+          )}
+          {generalMenu.length > 0 && <p style={{ color: "var(--brand-sidebar-text)", fontSize: 'smaller' }}>General</p>}
+          {generalMenu?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 component={NavLink}
-                to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                to={getMenuRoute(text, currentSite?.siteId)}
                 onClick={() => handleMenuClick(text)}
                 sx={{
                   minHeight: 48,
@@ -263,26 +288,26 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                     justifyContent: "center",
                   }}
                 >
-                  {iconComponents[index]}
+                  {iconComponents[combinedMenu.filter((item) => item.type === "General").findIndex((item) => item.label === text)]}
                 </ListItemIcon>
                 <ListItemText
                   primary={text}
-                  sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
+                  sx={{ opacity: isSideBarOpen ? 1 : 0, color: "var(--brand-sidebar-text)" }}
                 />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
         {/* <Divider /> */}
-        <p style={{ color: "#f5f5f5", fontSize: "smaller" }} className="bg-black m-0">
+        {siteMenu.length > 0 && <p style={{ color: "var(--brand-sidebar-text)", fontSize: "smaller" }} className="cafm-sidebar-section m-0">
           Site {isSideBarOpen ? "Actions": ""}
-        </p>
-        <List sx={{ backgroundColor: "black" }}>
-          {filterSiteMenuItems(loggedInUserData?.role)?.map((text, index) => (
+        </p>}
+        <List sx={{ backgroundColor: "var(--brand-sidebar-background)" }}>
+          {siteMenu?.map((text, index) => (
             <ListItem key={text} disablePadding sx={{ display: "block" }}>
               <ListItemButton
                 component={NavLink}
-                to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                to={getMenuRoute(text, currentSite?.siteId)}
                 onClick={() => handleMenuClick(text)}
                 sx={{
                   minHeight: 48,
@@ -300,27 +325,27 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                     justifyContent: "center",
                   }}
                 >
-                  {siteIconComponents[index]}
+                  {siteIconComponents[combinedMenu.filter((item) => item.type === "Site").findIndex((item) => item.label === text)]}
                 </ListItemIcon>
                 <ListItemText
                   primary={text}
-                  sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
+                  sx={{ opacity: isSideBarOpen ? 1 : 0, color: "var(--brand-sidebar-text)" }}
                 />
               </ListItemButton>
             </ListItem>
           ))}
         </List>
-        {loggedInUserData?.role === ROLE.ADMIN && (
+        {hasWorkspace && role === ROLE.ADMIN && (
           <>
-            <p style={{ color: "white", fontSize: "smaller" }} className="bg-black m-0">
+            <p style={{ color: "var(--brand-sidebar-text)", fontSize: "smaller" }} className="cafm-sidebar-section m-0">
               Admin
             </p>
-            <List sx={{ backgroundColor: "black" }}>
+            <List sx={{ backgroundColor: "var(--brand-sidebar-background)" }}>
               {["Categories", "Dropdowns", "Company", "Folders"].map((text, index) => (
                 <ListItem key={text} disablePadding sx={{ display: "block" }}>
                   <ListItemButton
                     component={NavLink}
-                    to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                    to={getMenuRoute(text, currentSite?.siteId)}
                     onClick={() => handleMenuClick(text)}
                     sx={{
                       minHeight: 48,
@@ -342,7 +367,7 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                     </ListItemIcon>
                     <ListItemText
                       primary={text}
-                      sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
+                      sx={{ opacity: isSideBarOpen ? 1 : 0, color: "var(--brand-sidebar-text)" }}
                     />
                   </ListItemButton>
                 </ListItem>
@@ -351,17 +376,17 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
           </>
         )}
 
-{loggedInUserData?.superAdmin === true && (
+        {(platform || loggedInUserData?.superAdmin === true) && (
           <>
-            <p style={{ color: "white", fontSize: "smaller" }} className="bg-black m-0">
+            <p style={{ color: "var(--brand-sidebar-text)", fontSize: "smaller" }} className="cafm-sidebar-section m-0">
               Super Admin
             </p>
-            <List sx={{ backgroundColor: "black" }}>
+            <List sx={{ backgroundColor: "var(--brand-sidebar-background)" }}>
               {["Onboard Client"].map((text, index) => (
                 <ListItem key={text} disablePadding sx={{ display: "block" }}>
                   <ListItemButton
                     component={NavLink}
-                    to={getMenuRoute(text, siteSelectedForGlobal?.siteId)}
+                    to={getMenuRoute(text, currentSite?.siteId)}
                     onClick={() => handleMenuClick(text)}
                     sx={{
                       minHeight: 48,
@@ -383,7 +408,7 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
                     </ListItemIcon>
                     <ListItemText
                       primary={text}
-                      sx={{ opacity: isSideBarOpen ? 1 : 0, color: "white" }}
+                      sx={{ opacity: isSideBarOpen ? 1 : 0, color: "var(--brand-sidebar-text)" }}
                     />
                   </ListItemButton>
                 </ListItem>
@@ -392,14 +417,10 @@ const SidebarNew = ({ updateSite, loggedInUserData, setSideBarView, isSideBarOpe
           </>
         )}
         {isSideBarOpen && (
-          <BuildNumber
-            sx={{
-              color: "white",
-              backgroundColor: "black",
-              padding: "0.75rem 0.5rem 1rem",
-              marginTop: "auto",
-            }}
-          />
+          <div className="cafm-sidebar-user" aria-label="Signed in user">
+            <strong>{loggedInUserData?.name || "User"}</strong>
+            <span>{platform ? "Platform Admin" : loggedInUserData?.role || ""}</span>
+          </div>
         )}
       </Drawer>
     </Box>

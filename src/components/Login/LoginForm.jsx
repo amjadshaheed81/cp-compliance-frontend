@@ -4,18 +4,18 @@ import { connect } from "react-redux";
 import { Box } from "@mui/material";
 import { login } from "../../store/thunks";
 import "./Login.css";
-import logoImage from "../../images/login-left.png";
-import logo from "../../images/logo.png";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { Validation } from "../../Constant/Validation";
 import { InputError } from "../common/InputError";
 import { useForm } from "react-hook-form";
 import { loginUser } from "../../store/thunk/site";
 import CircularProgress from "@mui/material/CircularProgress";
 import BuildNumber from "../common/BuildNumber/BuildNumber";
-import { reloadTo } from "../../utils/sessionContext";
+import { isPlatformUser, reloadTo } from "../../utils/sessionContext";
+import { useActiveBrand } from "../../branding";
 
-const LoginForm = ({ login, loginUser }) => {
+const LoginForm = ({ login, loginUser, loggedInUserData }) => {
+  const brand = useActiveBrand();
   const navigate = useNavigate();
   const [isLoading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -56,24 +56,28 @@ const LoginForm = ({ login, loginUser }) => {
     }
   };
 
+  if (loggedInUserData?.id && isPlatformUser(loggedInUserData) && !isLoading) {
+    return <Navigate to="/platform/continue" replace />;
+  }
+
   return (
     <Fragment>
-      <div className="container-fluid container-fluid-login">
+      <div className="container-fluid container-fluid-login cafm-auth-page cafm-login-page">
         <div className="row">
           <div className="col-md-6 left-panel text-center">
-            <img src={logoImage} alt="login left panel logo" />
+            <img src={brand.loginIllustration} alt="" />
           </div>
           <div className="col-md-6 right-panel bg-white">
             <form onSubmit={handleSubmit(handleLoginSubmit)}>
               <div className="text-center mb-4">
-                <img src={logo} alt="main cpc portal logo" />
+                <img src={brand.logo} className="cafm-auth-logo" alt={`${brand.name} logo`} />
               </div>
               <h2 className="mb-2">
-                Sign In to Unite <br />
-                Property Management Suite
+                {brand.loginHeading} <br />
+                {brand.loginSubtitle}
               </h2>
               <div className="form-group mt-2">
-                <label for="email">Email</label>
+                <label htmlFor="email">Email</label>
                 <input
                   type="text"
                   autoComplete="off"
@@ -105,7 +109,7 @@ const LoginForm = ({ login, loginUser }) => {
                 )}
               </div>
               <div className="form-group mt-2">
-                <label for="password">Password</label>
+                <label htmlFor="password">Password</label>
                 <input
                   type="password"
                   className="form-control"
@@ -186,4 +190,4 @@ const LoginForm = ({ login, loginUser }) => {
   );
 };
 
-export default connect(null, { login, loginUser })(LoginForm);
+export default connect((state) => ({ loggedInUserData: state.site?.loggedInUserData }), { login, loginUser })(LoginForm);

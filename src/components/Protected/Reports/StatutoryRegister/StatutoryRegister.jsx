@@ -7,6 +7,7 @@ import TotalAction from "./TotalAction";
 import TotalRequirements from "./TotalRequirements";
 import { showLoader, hideLoader } from "js-loader-fn";
 import { toast } from "react-toastify";
+import { workingLicenseId } from "../../../../utils/platformWorkspace";
 
 const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +57,7 @@ const StatutoryRegister = ({ siteSelectedForGlobal, loggedInUserData }) => {
       });
       setIsLoading(true);
       const licenseId =
-        siteSelectedForGlobal?.licenseId || loggedInUserData?.licenseId;
+        workingLicenseId(loggedInUserData) || siteSelectedForGlobal?.licenseId;
       const getStatutoryDocuments = await get(
         `/api/document/statutoryRegister/all?licenseId=${licenseId}`
       );

@@ -1,3 +1,4 @@
+import { fetchWorkspaceResource } from "../../../../api/workspace";
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -51,7 +52,7 @@ const getPhotoDisplayUrl = (url, token) => {
 
 const fetchPdfTemplate = async () => {
     try {
-        const response = await fetch(pdfTemplate);
+        const response = await fetchWorkspaceResource(pdfTemplate);
         if (!response.ok) {
             throw new Error('Failed to load PDF template: ' + response.statusText);
         }
@@ -936,7 +937,7 @@ const FireDamper = ({
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0);
                             const pngDataUrl = canvas.toDataURL('image/png');
-                            const pngResponse = await fetch(pngDataUrl);
+                            const pngResponse = await fetchWorkspaceResource(pngDataUrl);
                             const pngBytes = await pngResponse.arrayBuffer();
                             return await pdfDoc.embedPng(pngBytes);
                         } catch (finalError) {
@@ -1006,7 +1007,7 @@ const FireDamper = ({
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 10000);
                     try {
-                        const imageResponse = await fetch(`${cleanUrl}?${token}`, {
+                        const imageResponse = await fetchWorkspaceResource(`${cleanUrl}?${token}`, {
                             signal: controller.signal,
                             mode: 'cors',
                             credentials: 'omit',

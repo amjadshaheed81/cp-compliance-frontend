@@ -1,0 +1,9 @@
+.cafm-postcode-controls { display: flex; gap: .5rem; align-items: stretch; }
+.cafm-postcode-controls input { min-width: 0; }
+.cafm-postcode-controls button { white-space: nowrap; }
+.cafm-postcode-lookup small { display: block; margin-top: .35rem; color: #526172; }
+.cafm-postcode-message { margin: .5rem 0; font-size: .875rem; }
+.cafm-address-results { list-style: none; padding: 0; margin: .5rem 0; max-height: 15rem; overflow-y: auto; border: 1px solid #d5dde5; border-radius: .35rem; }
+.cafm-address-results li + li { border-top: 1px solid #e6ebf0; }
+.cafm-address-results button { width: 100%; border: 0; background: white; padding: .65rem; text-align: left; color: #243446; }
+.cafm-address-results button:hover, .cafm-address-results button:focus-visible { background: #f1f5fa; }

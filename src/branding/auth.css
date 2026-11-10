@@ -1,0 +1,75 @@
+/* Shared two-panel sign-in layout, scoped so it cannot resize business-page grids. */
+.cafm-auth-page {
+  min-height: 100vh;
+  padding: 0;
+  background: #ffffff;
+}
+
+.cafm-auth-page > .row {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.cafm-auth-page .left-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  color: #ffffff;
+  background-color: var(--brand-login-background, #14354c);
+}
+
+.cafm-auth-page .left-panel img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  max-height: 70vh;
+  object-fit: contain;
+}
+
+.cafm-auth-page .right-panel {
+  position: relative;
+  padding: 8%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cafm-auth-page .right-panel form {
+  width: 100%;
+  max-width: 480px;
+}
+
+.cafm-auth-page .cafm-auth-logo {
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.cafm-auth-page h2 {
+  color: #212b36;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.cafm-auth-page label {
+  font-weight: 500;
+}
+
+.cafm-auth-page .back-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+@media (max-width: 767.98px) {
+  .cafm-auth-page .left-panel {
+    min-height: 190px;
+    padding: 24px;
+  }
+  .cafm-auth-page .left-panel img {
+    max-height: 180px;
+  }
+  .cafm-auth-page .right-panel {
+    padding: 48px 24px;
+  }
+}

@@ -3,8 +3,8 @@ import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Header from "../../../common/Header/Header";
+import SidebarNew from "../../../common/Sidebar/SidebarNew";
 
 function TabPanel(props) {
   const { children, value, index, ...other } = props;
@@ -34,21 +34,10 @@ export default function SiteTabs({ tabs, isCreateSite }) {
   };
   return (
     <>
-      <Header />
-      <div className="container-fluid pad-side" style={{paddingTop: "10rem"}}>
-        <div style={{ marginTop: "-10rem" }}>
-          {isCreateSite ? (
-            <BreadCrumHeader
-              header={"Create New Site"}
-              page={"New Site"}
-            />
-          ) : (
-            <BreadCrumHeader
-              header={"View & Update Site"}
-              page={"New Site"}
-            />
-          )}
-        </div>
+      <SidebarNew />
+      <div className="content">
+        <Header />
+        <div className="container-fluid" style={{ paddingTop: "8px", paddingBottom: "16px" }}>
         <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
           <Tabs
           className="row"
@@ -71,6 +60,7 @@ export default function SiteTabs({ tabs, isCreateSite }) {
             {Component}
           </TabPanel>
         ))}
+        </div>
       </div>
     </>
   );

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Core CAFM">
+  <rect width="64" height="64" rx="16" fill="#176c9e"/>
+  <path d="M43 18H23v28h20M23 32h17" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

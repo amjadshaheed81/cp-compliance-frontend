@@ -8,6 +8,8 @@ import { TextField, Button, Grid, Paper, IconButton } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { get, post, del, put } from "../../../api";
+import { workingLicenseId } from "../../../utils/platformWorkspace";
+import { isPlatformUser } from "../../../utils/sessionContext";
 import { useNavigate, useParams } from "react-router-dom";
 
 
@@ -58,7 +60,9 @@ const AdminCategoriesAdd = ({ loggedInUserData }) => {
     event.preventDefault();
     let licenseId = undefined;
     const isadmin = loggedInUserData?.superAdmin ;
-    if(!isadmin) {
+    if (isPlatformUser(loggedInUserData)) {
+      licenseId = workingLicenseId(loggedInUserData);
+    } else if(!isadmin) {
       const license = JSON.parse(localStorage.getItem('license'));
       licenseId = license?.licenseId
     }

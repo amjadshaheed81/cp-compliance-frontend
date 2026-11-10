@@ -3,6 +3,8 @@ import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import moment from "moment";
 import { ROLE } from "../../../../Constant/Role";
+import { isPlatformUser } from "../../../../utils/sessionContext";
+import { getPlatformWorkspace } from "../../../../utils/platformWorkspace";
 import Header from "../../../common/Header/Header";
 import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import Pagination from "../../../common/Pagination/Pagination";
@@ -49,8 +51,19 @@ const SITE_CHECK_TEST_LAUNCHER_EMAIL = "amjad.shaheed81@gmail.com";
 const SITE_CHECK_GRID_STATE_KEY_PREFIX = "cafm.siteChecks.gridState";
 const SITE_CHECK_PAGE_SIZE_KEY = "cafm.siteChecks.pageSize";
 
-const getSiteCheckGridStateKey = (siteId) =>
-  `${SITE_CHECK_GRID_STATE_KEY_PREFIX}.${siteId}`;
+// Saved filters belong to the signed-in account AND selected customer.
+// A site-only key could restore a CLIENT user's filters in a PLATFORM session,
+// making a full grid look empty even when the API returns its records.
+const getSiteCheckGridStateKey = (siteId, userId, clientId, platform) => {
+  const id = (value) => Number.isSafeInteger(Number(value)) && Number(value) > 0
+    ? String(value) : "none";
+  if (!siteId) return null;
+  return `${SITE_CHECK_GRID_STATE_KEY_PREFIX}.${platform ? "platform" : "client"}.${id(userId)}.${id(clientId)}.${id(siteId)}`;
+};
+
+const EMPTY_GRID_FILTERS = {
+  searchField: "", type: "", subType: "", category: "", status: "",
+};
 
 const readStoredPageSize = () => {
   try {
@@ -65,23 +78,20 @@ const readStoredPageSize = () => {
   }
 };
 
-const readStoredGridState = (siteId) => {
-  if (!siteId) return null;
+const readStoredGridState = (storageKey) => {
+  if (!storageKey) return null;
   try {
-    const value = window.sessionStorage.getItem(getSiteCheckGridStateKey(siteId));
+    const value = window.sessionStorage.getItem(storageKey);
     return value ? JSON.parse(value) : null;
   } catch {
     return null;
   }
 };
 
-const writeStoredGridState = (siteId, state) => {
-  if (!siteId) return;
+const writeStoredGridState = (storageKey, state) => {
+  if (!storageKey) return;
   try {
-    window.sessionStorage.setItem(
-      getSiteCheckGridStateKey(siteId),
-      JSON.stringify(state)
-    );
+    window.sessionStorage.setItem(storageKey, JSON.stringify(state));
   } catch {
     // Grid state persistence is a usability enhancement only.
   }
@@ -168,8 +178,11 @@ const SiteChecks = ({
   managerListRef.current = managerList;
 
   const canUseSiteCheckTestLauncher =
-    String(loggedInUserData?.email || "").trim().toLowerCase() ===
-    SITE_CHECK_TEST_LAUNCHER_EMAIL;
+    process.env.NODE_ENV !== "production" &&
+    ((isPlatformUser(loggedInUserData) &&
+      loggedInUserData?.role === ROLE.ADMIN && loggedInUserData?.superAdmin === true) ||
+      String(loggedInUserData?.email || "").trim().toLowerCase() ===
+      SITE_CHECK_TEST_LAUNCHER_EMAIL);
 
   const [pageSize, setPageSize] = useState(readStoredPageSize);
   const [currentPage, setCurrentPage] = useState(1);
@@ -392,30 +405,33 @@ const SiteChecks = ({
   const formData2Ref = useRef(formData2);
   formData2Ref.current = formData2;
   const selectedSiteId = siteSelectedForGlobal?.siteId;
+  const isPlatformSession = isPlatformUser(loggedInUserData);
+  const workingClientId = isPlatformSession
+    ? getPlatformWorkspace()?.selectedLicenseId
+    : loggedInUserData?.licenseId;
+  const selectedGridStateKey = getSiteCheckGridStateKey(
+    selectedSiteId, loggedInUserData?.id, workingClientId, isPlatformSession
+  );
 
   useEffect(() => {
-    const previousSiteId = previousGridSiteIdRef.current;
+    const previousKey = previousGridSiteIdRef.current;
     const previousState = latestGridStateRef.current;
-    if (
-      previousSiteId &&
-      previousState?.siteId &&
-      String(previousState.siteId) === String(previousSiteId)
-    ) {
-      writeStoredGridState(previousSiteId, {
+    if (previousKey && previousState?.storageKey === previousKey) {
+      writeStoredGridState(previousKey, {
         ...previousState,
         scrollY: getSiteCheckScrollPosition() || lastKnownScrollYRef.current || 0,
       });
     }
 
-    previousGridSiteIdRef.current = selectedSiteId || null;
+    previousGridSiteIdRef.current = selectedGridStateKey;
 
-    if (!selectedSiteId) {
+    if (!selectedGridStateKey) {
       setGridStateReadySiteId(null);
       return;
     }
 
     setGridStateReadySiteId(null);
-    const storedState = readStoredGridState(selectedSiteId);
+    const storedState = readStoredGridState(selectedGridStateKey);
 
     setCurrentPage(Math.max(1, Number(storedState?.currentPage) || 1));
     setLastSelectedCheckId(storedState?.lastSelectedCheckId || null);
@@ -426,14 +442,14 @@ const SiteChecks = ({
         : { key: null, direction: "asc" }
     );
     const restoredFilters = {
-      ...formData2Ref.current,
+      ...EMPTY_GRID_FILTERS,
       ...(storedState?.filters || {}),
     };
     formData2Ref.current = restoredFilters;
     setFormData2(restoredFilters);
     pendingRestoreScrollRef.current = Number(storedState?.scrollY) || 0;
-    setGridStateReadySiteId(String(selectedSiteId));
-  }, [selectedSiteId]);
+    setGridStateReadySiteId(selectedGridStateKey);
+  }, [selectedGridStateKey]);
 
   useEffect(() => {
     const root = document.getElementById("root");
@@ -453,14 +469,15 @@ const SiteChecks = ({
 
   useEffect(() => {
     if (
-      !selectedSiteId ||
-      gridStateReadySiteId !== String(selectedSiteId)
+      !selectedGridStateKey ||
+      gridStateReadySiteId !== selectedGridStateKey
     ) {
       return;
     }
 
     const state = {
       siteId: selectedSiteId,
+      storageKey: selectedGridStateKey,
       currentPage,
       pageSize,
       sortConfig,
@@ -470,9 +487,10 @@ const SiteChecks = ({
     };
 
     latestGridStateRef.current = state;
-    writeStoredGridState(selectedSiteId, state);
+    writeStoredGridState(selectedGridStateKey, state);
   }, [
     selectedSiteId,
+    selectedGridStateKey,
     gridStateReadySiteId,
     currentPage,
     pageSize,
@@ -484,8 +502,8 @@ const SiteChecks = ({
   useEffect(() => {
     return () => {
       const state = latestGridStateRef.current;
-      if (!state?.siteId) return;
-      writeStoredGridState(state.siteId, {
+      if (!state?.storageKey) return;
+      writeStoredGridState(state.storageKey, {
         ...state,
         scrollY: getSiteCheckScrollPosition() || lastKnownScrollYRef.current || 0,
       });
@@ -657,6 +675,16 @@ const SiteChecks = ({
 
   const searchSiteCheck = () => {
     setFilteredSiteChecks(filterSiteChecks(siteChecks, formData2));
+  };
+
+  const hasActiveGridFilters = Object.values(formData2 || {}).some((value) =>
+    String(value ?? "").trim().length > 0
+  );
+
+  const clearGridFilters = () => {
+    formData2Ref.current = { ...EMPTY_GRID_FILTERS };
+    setFormData2({ ...EMPTY_GRID_FILTERS });
+    setCurrentPage(1);
   };
 
   const handleSort = (key) => {
@@ -1027,6 +1055,7 @@ const SiteChecks = ({
     if (selectedSiteId) {
       const state = {
         siteId: selectedSiteId,
+        storageKey: selectedGridStateKey,
         currentPage,
         pageSize,
         filters: formData2,
@@ -1034,7 +1063,7 @@ const SiteChecks = ({
         scrollY,
       };
       latestGridStateRef.current = state;
-      writeStoredGridState(selectedSiteId, state);
+      writeStoredGridState(selectedGridStateKey, state);
     }
 
     if (!SITE_CHECK_WORKSPACE_ENABLED) {
@@ -1121,7 +1150,7 @@ const SiteChecks = ({
     if (
       inspectionCheckId ||
       isLoading ||
-      gridStateReadySiteId !== String(selectedSiteId) ||
+      gridStateReadySiteId !== selectedGridStateKey ||
       pendingRestoreScrollRef.current === null
     ) {
       return;
@@ -1141,6 +1170,7 @@ const SiteChecks = ({
     currentPage,
     gridStateReadySiteId,
     selectedSiteId,
+    selectedGridStateKey,
   ]);
 
   useEffect(() => {
@@ -1272,14 +1302,22 @@ const SiteChecks = ({
       <div className="content">
         <Header
           pageContext={
-            !create
+            create
               ? {
+                  icon: "site-checks",
+                  breadcrumbs: [
+                    { label: "Dashboard", path: "/dashboard" },
+                    { label: "Site Checks", path: "/site-checks" },
+                    { label: copyMode ? "Copy" : "New" },
+                  ],
+                }
+              : {
+                  icon: "site-checks",
                   parentLabel: "Dashboard",
                   parentPath: "/dashboard",
-                  label: "Site Inspection",
+                  label: "Site Checks",
                   recordCount: filteredSiteChecks.length,
                 }
-              : null
           }
         />
         <div className="container-fluid">
@@ -1410,6 +1448,20 @@ const SiteChecks = ({
                                 <span>Scheduler Logs</span>
                               </button>
                             )}
+                            {loggedInUserData?.role === ROLE.ADMIN && (
+                              <button
+                                type="button"
+                                className="site-check-more-menu__item"
+                                onClick={(event) => {
+                                  const menu = event.currentTarget.closest("details");
+                                  if (menu) menu.open = false;
+                                  goTo("/site-check-health");
+                                }}
+                              >
+                                <i className="fas fa-heartbeat" aria-hidden="true" />
+                                <span>Site Check Health</span>
+                              </button>
+                            )}
                             {canUseSiteCheckTestLauncher && (
                               <SiteCheckTestLauncher
                                 siteSelectedForGlobal={siteSelectedForGlobal}
@@ -1482,7 +1534,15 @@ const SiteChecks = ({
                   <tbody>
                     {!isLoading && filteredSiteChecks?.length === 0 && (
                       <tr>
-                        <td>No result found!!</td>
+                        <td colSpan={9}>
+                          {siteChecks.length > 0 && hasActiveGridFilters ? (
+                            <div className="d-flex align-items-center gap-2 flex-wrap">
+                              <span>{siteChecks.length} Site Checks loaded, but none match the current filters.</span>
+                              <button type="button" className="btn btn-outline-secondary btn-sm"
+                                onClick={clearGridFilters}>Clear filters</button>
+                            </div>
+                          ) : "No Site Checks found for the selected site."}
+                        </td>
                       </tr>
                     )}
                     {isLoading && (

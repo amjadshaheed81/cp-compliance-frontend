@@ -92,37 +92,48 @@ import { saveState } from "../localStorage";
 import { CPCOM_STATE_STORE } from "../../Constant/Session";
 import { requestForToken } from '../../firebase';
 import { logoutSession } from "../../api/platform";
+import { searchAddresses, addressLookupMessage } from "../../api/addressLookup";
 import {
   announceSessionChange,
   isPlatformUser,
   reloadTo,
   resetCustomerSession,
 } from "../../utils/sessionContext";
+import { getPlatformWorkspace, invalidatePlatformWorkspace, rememberPlatformSite, selectPlatformWorkspaceSite } from "../../utils/platformWorkspace";
 
 export const addSite = (formData, goTo) => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
+    let saved = false;
     try {
-      const url = "/api/site/site";
-      const userData = await post(url, formData);
-      dispatch({
-        type: ADD_SITE_SUCCESS,
-        payload: userData,
-      });
-      toast.success("Site has been added successully.");
-      setTimeout(() => {
-        goTo("/update-site");
-      }, 1000);
-    } catch (error) {
-      if(error?.response?.data?.message === "License limit reached") {
-        toast.error("You have reached your limit for adding site under your license.")
+      const userData = await post("/api/site/site", formData);
+      saved = true;
+      dispatch({ type: ADD_SITE_SUCCESS, payload: userData });
+      if (isPlatformUser(getState()?.site?.loggedInUserData)) {
+        const workspace = getPlatformWorkspace();
+        const siteId = userData?.data?.siteId;
+        if (!workspace || !Number.isSafeInteger(siteId) || siteId <= 0) {
+          invalidatePlatformWorkspace();
+          reloadTo("/platform/continue");
+          return { success: true };
+        }
+        rememberPlatformSite(workspace.user.id, workspace.selectedLicenseId, siteId);
+        invalidatePlatformWorkspace();
+        reloadTo(`/update-site?siteId=${siteId}&isViewMode=edit`);
       } else {
-      toast.error("Something went wrong while adding site. Please try again.");
-      dispatch({
-        type: ADD_SITE_FAILURE,
-        payload: "",
-      });
-    }
-    }
+        toast.success("Site has been added successfully.");
+        goTo("/update-site");
+      }
+      return { success: true };
+    } catch (error) {
+      if (saved) return { success: true, message: "Site created. Open Portfolio to continue." };
+      const detail = error?.response?.data?.message;
+      const message = detail === "License limit reached"
+        ? "You have reached this client's site limit. Update its configuration before adding another site."
+        : "The site could not be saved. Your details have been kept; please try again.";
+      toast.error(message);
+      dispatch({ type: ADD_SITE_FAILURE, payload: message });
+      return { success: false, message };
+    } finally { dispatch({ type: SET_SITE_LOADER, payload: false }); }
   };
 };
 
@@ -393,71 +404,19 @@ export const deleteSiteImage = (id) => {
     }
   };
 };
-export const handleOnPostCodeSearch = (e) => {
-  // basicDetailsForm.setValue("postcode", e?.target?.value, {
-  //   shouldValidate: true,
-  // });
-  return async (dispatch) => {
-    try {
-      // const url = `https://api.getaddress.io/autocomplete/l1w?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`
-      const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
-      // const url = `https://maps.googleapis.com/maps/api/geocode/json?components=postal_code:EC1A 1BB|country:UK&key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo`;
-      // const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json
-      // ?input=${e?.target?.value}
-      // &types=geocode
-      // &key=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all`;
-      // const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?API_KEY=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all=true`;
-      const response = await get(url);
-      const res = [];
-      response?.suggestions?.forEach((itm) => {
-        res.push({
-          id: itm?.id,
-          name: `${itm?.address}`,
-          url: `${itm?.url}`,
-        });
-      });
-      dispatch({
-        type: GET_ADDRESS_ON_POST_CODE_SUCCESS,
-        payload: res,
-      });
-    } catch (error) {
-      toast.error("Please enter a valid post code.");
-      dispatch({
-        type: GET_ADDRESS_ON_POST_CODE_FAILURE,
-        payload: "",
-      });
-    }
-  };
+export const handleOnPostCodeSearch = (event) => async (dispatch) => {
+  try {
+    const response = await searchAddresses(event?.target?.value);
+    const suggestions = (response?.suggestions || []).map((item) => ({ ...item, name: item.label }));
+    dispatch({ type: GET_ADDRESS_ON_POST_CODE_SUCCESS, payload: suggestions });
+    return suggestions;
+  } catch (error) {
+    dispatch({ type: GET_ADDRESS_ON_POST_CODE_SUCCESS, payload: [] });
+    dispatch({ type: GET_ADDRESS_ON_POST_CODE_FAILURE, payload: addressLookupMessage(error) });
+    return [];
+  }
 };
 
-// export const handleOnPostCodeSelect = async (e) => {
-//   // basicDetailsForm.setValue("postcode", e?.target?.value, {
-//   //   shouldValidate: true,
-//   // });
-//   return async (dispatch) => {
-//     try {
-//       const url = `https://api.getaddress.io/autocomplete/${e?.target?.value}?API_KEY=AIzaSyCszO_QrjGQ_w8ouOXQinr5yvVasIOqHoo&all=true`;
-//       const response = await get(url);
-//       const res = [];
-//       response?.suggestions?.forEach((itm) => {
-//         res.push({
-//           id: itm?.id,
-//           name: `${itm?.address}`,
-//           url: `${itm?.url}`,
-//         });
-//       });
-//       dispatch({
-//         type: GET_ADDRESS_ON_POST_CODE_SUCCESS,
-//         payload: res,
-//       });
-//     } catch (error) {
-//       dispatch({
-//         type: GET_ADDRESS_ON_POST_CODE_FAILURE,
-//         payload: "Please enter a valid post code.",
-//       });
-//     }
-//   };
-// };
 export const saveSiteBuildingData = (siteId, formData) => {
   const data = {
     ...formData,
@@ -965,7 +924,8 @@ export const uploadFloorPlan = (formData, siteId) => {
 export const getDocumentsRootFolder = (id, isAdmin) => {
   return async (dispatch) => {
     try {
-      const url = isAdmin ?  `/api/document/site/${id}/parent/admin-folders` : `/api/document/site/${id}/parent/folders`;
+      const url = isAdmin && getPlatformWorkspace() ? "/api/platform/workspace/document/admin/folders"
+        : isAdmin ? `/api/document/site/${id}/parent/admin-folders` : `/api/document/site/${id}/parent/folders`;
       const folderList = await get(url);
       dispatch({
         type: GET_DOCUMENTS_ROOT_FOLDER,
@@ -1073,8 +1033,12 @@ export const createDocumentFolder = (formData, folderId) => {
 };
 
 export const selectGlobalSite = (site) => {
-  return async (dispatch) => {
+  return async (dispatch, getState) => {
     try {
+      if (isPlatformUser(getState()?.site?.loggedInUserData)) {
+        selectPlatformWorkspaceSite(site);
+        return;
+      }
       dispatch({
         type: SELECT_GLOBAL_SITE,
         payload: site,
@@ -1494,7 +1458,7 @@ export const loginUser = (formData) => {
         }
         dispatch({ type: USER_LOGIN, payload: user });
         announceSessionChange();
-        return { success: true, redirectTo: "/platform", reload: true };
+        return { success: true, redirectTo: "/platform/continue", reload: true };
       }
 
       // New backend returns the already-loaded safe licence summary in the login response.

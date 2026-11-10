@@ -1,11 +1,11 @@
 {
-  "buildNumber": "2026.18.1.27",
+  "buildNumber": "2026.18.1.28",
   "year": 2026,
   "framework": "React",
   "frameworkVersion": "18.2.0",
   "frameworkMajor": 18,
   "applicationMajor": 1,
-  "build": 27,
-  "environment": "production",
-  "generatedAtUtc": "2026-10-30T16:00:20.854Z"
+  "build": 28,
+  "environment": "development",
+  "generatedAtUtc": "2026-11-09T14:30:14.232Z"
 }

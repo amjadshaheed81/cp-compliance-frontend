@@ -18,6 +18,7 @@ import BreadCrumHeader from "../../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { get, post } from "../../../../api";
 import { ROLE } from "../../../../Constant/Role";
+import { isPlatformUser } from "../../../../utils/sessionContext";
 
 const JOB_LABELS = {
   SITE_CHECK_DUE_NOTIFICATION_JOB: "Due Notifications",
@@ -87,12 +88,22 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
   const [manualSchedulerRunning, setManualSchedulerRunning] = useState(false);
 
   const isAdmin = loggedInUserData?.role === ROLE.ADMIN;
+  const isPlatformAdmin = isPlatformUser(loggedInUserData);
+  const logEndpoint = isPlatformAdmin
+    ? "/api/platform/admin/jobs/scheduler/site-check?limit=200"
+    : "/api/admin/jobs/scheduler/site-check?limit=200";
+  const statusEndpoint = isPlatformAdmin
+    ? "/api/platform/admin/site-check/scheduler/manual-run/status"
+    : "/api/site-check/admin/scheduler/manual-run/status";
+  const manualRunEndpoint = isPlatformAdmin
+    ? "/api/platform/admin/site-check/scheduler/manual-run/"
+    : "/api/site-check/admin/scheduler/manual-run/";
 
   const loadLogs = async () => {
     if (!isAdmin) return;
     setIsLoading(true);
     try {
-      const data = await get("/api/admin/jobs/scheduler/site-check?limit=200");
+      const data = await get(logEndpoint);
       setLogs(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Failed to load Site Check scheduler logs", error);
@@ -109,9 +120,7 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
     }
 
     try {
-      const status = await get(
-        "/api/site-check/admin/scheduler/manual-run/status"
-      );
+      const status = await get(statusEndpoint);
       setManualSchedulerConfig(status);
     } catch (error) {
       // If the endpoint is unavailable, keep the manual-run control hidden.
@@ -156,10 +165,22 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
       return;
     }
 
+    if (isPlatformAdmin) {
+      const globalConfirmation = await Swal.fire({
+        icon: "warning",
+        title: "Confirm GLOBAL scheduler run",
+        text: "This executes the selected job across ALL CAFM customers, not only the selected client. Notifications may be sent.",
+        showCancelButton: true,
+        confirmButtonText: "Run across all customers",
+        confirmButtonColor: "#b45309",
+      });
+      if (!globalConfirmation.isConfirmed) return;
+    }
+
     setManualSchedulerRunning(true);
     try {
       const response = await post(
-        `/api/site-check/admin/scheduler/manual-run/${result.value}`,
+        `${manualRunEndpoint}${result.value}`,
         {}
       );
       toast.success(
@@ -250,7 +271,9 @@ const SiteCheckSchedulerLogs = ({ loggedInUserData }) => {
             <div>
               <h5 className="mb-1">Site Check Scheduler Logs</h5>
               <div className="text-muted small">
-                Latest scheduler run logs and per-Site-Check changes from the job execution audit table.
+                {isPlatformAdmin
+                  ? "GLOBAL scheduler logs across all CAFM customers (not limited to the selected client)."
+                  : "Latest scheduler run logs and per-Site-Check changes from the job execution audit table."}
               </div>
             </div>
             <div className="d-flex flex-wrap gap-2">

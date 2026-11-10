@@ -43,6 +43,7 @@ import EditProfile from "../components/Protected/Users/EditProfile";
 import Notifications from "../components/Protected/Notifications";
 import Reports from "../components/Protected/Reports";
 import PlatformCustomers from "../components/Platform/PlatformCustomers";
+import PlatformEntry from "../components/Platform/PlatformEntry";
 
 export const getRoutes = () => {
   const tabs = [
@@ -83,6 +84,10 @@ export const getRoutes = () => {
       element: <LoginForm />,
     },
     {
+      path: "/platform/continue",
+      element: <PlatformEntry />,
+    },
+    {
       path: "/platform",
       element: <PlatformCustomers />,
     },
@@ -100,7 +105,7 @@ export const getRoutes = () => {
     },
     {
       path: "/add-site",
-      element: <Tabs tabs={tabs} isCreateSite={true} />,
+      element: <AddSite />,
       allowedRoles: [ROLE.ADMIN], // only admin can access this route
     },
     {

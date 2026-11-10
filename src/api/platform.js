@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // Platform errors are handled by the workspace, without the legacy 403 logout redirect.
-async function request(method, url, data, { signal } = {}) {
+async function request(method, url, data, { signal, headers } = {}) {
   return axios.request({
     baseURL: window.location.origin,
     method,
@@ -10,12 +10,17 @@ async function request(method, url, data, { signal } = {}) {
     signal,
     timeout: 15000,
     withCredentials: true,
-    headers: { Accept: "application/json" },
+    headers: { Accept: "application/json", ...headers },
   });
 }
 
-export async function getPlatformSession() {
-  return (await request("GET", "/api/platform/session")).data;
+export async function getPlatformSession({ signal } = {}) {
+  return (await request("GET", "/api/platform/session", undefined, { signal })).data;
+}
+
+export async function getPlatformWorkspaceContext(licenseId, { signal } = {}) {
+  return (await request("GET", "/api/platform/workspace/context", undefined,
+    { signal, headers: { "X-CAFM-Client-Id": String(licenseId) } })).data;
 }
 
 export async function getPlatformClients() {

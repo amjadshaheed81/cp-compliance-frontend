@@ -1,0 +1,177 @@
+/* Shared controls consume brand values; client-specific values live in content/<brand>/css. */
+html[data-brand] {
+  --bs-primary: var(--brand-primary);
+  --bs-primary-rgb: var(--brand-primary-rgb);
+  --bs-link-color: var(--brand-primary);
+  --bs-link-hover-color: var(--brand-primary-hover);
+}
+
+html[data-brand] body {
+  background-color: var(--brand-page-background);
+}
+
+html[data-brand] a:not(.btn):not(.markerLink) {
+  color: var(--brand-primary) !important;
+}
+
+html[data-brand] .btn-primary {
+  --bs-btn-color: #ffffff;
+  --bs-btn-bg: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--brand-primary-hover);
+  --bs-btn-hover-border-color: var(--brand-primary-hover);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: var(--brand-primary-hover);
+  --bs-btn-active-border-color: var(--brand-primary-hover);
+  --bs-btn-disabled-color: #ffffff;
+  --bs-btn-disabled-bg: var(--brand-primary);
+  --bs-btn-disabled-border-color: var(--brand-primary);
+  --bs-btn-focus-shadow-rgb: var(--brand-primary-rgb);
+  color: #ffffff !important;
+}
+
+html[data-brand] .btn-outline-primary {
+  --bs-btn-color: var(--brand-primary);
+  --bs-btn-border-color: var(--brand-primary);
+  --bs-btn-hover-color: #ffffff;
+  --bs-btn-hover-bg: var(--brand-primary);
+  --bs-btn-hover-border-color: var(--brand-primary);
+  --bs-btn-active-color: #ffffff;
+  --bs-btn-active-bg: var(--brand-primary);
+  --bs-btn-active-border-color: var(--brand-primary);
+  --bs-btn-disabled-color: var(--brand-primary);
+  --bs-btn-disabled-border-color: var(--brand-primary);
+  --bs-btn-focus-shadow-rgb: var(--brand-primary-rgb);
+  color: var(--bs-btn-color) !important;
+}
+
+html[data-brand] .btn-outline-primary:hover,
+html[data-brand] .btn-outline-primary:active,
+html[data-brand] .btn-outline-primary.active {
+  color: #ffffff !important;
+}
+
+html[data-brand] .cafm-sidebar,
+html[data-brand] .cafm-sidebar .MuiDrawer-paper,
+html[data-brand] .cafm-sidebar .cafm-sidebar-section {
+  background-color: var(--brand-sidebar-background);
+  color: var(--brand-sidebar-text);
+}
+
+html[data-brand] .cafm-sidebar .MuiListItemButton-root {
+  color: var(--brand-sidebar-text) !important;
+}
+
+html[data-brand] .cafm-sidebar .MuiListItemText-root,
+html[data-brand] .cafm-sidebar .MuiListItemText-primary {
+  color: var(--brand-sidebar-text) !important;
+  transition: none;
+}
+
+/* Reserve the same space as the drawer so opening navigation never hides
+   a heading, field label or save control on desktop pages. */
+@media (min-width: 768px) {
+  html[data-brand] .cafm-navigation-shell ~ .content {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding-left: 49px;
+  }
+
+  html[data-brand] .cafm-navigation-shell[data-navigation-open="true"] ~ .content {
+    padding-left: 220px;
+  }
+}
+
+.cafm-sidebar-brand {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 6px 8px;
+}
+
+.cafm-sidebar-brand img {
+  display: block;
+  max-width: 100%;
+  height: 50px;
+  object-fit: contain;
+}
+
+.cafm-sidebar-brand button {
+  border: 0;
+  background: transparent;
+  color: var(--brand-sidebar-text);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+
+
+/* Compact navigation shell: brand/build at the top, account identity at the bottom. */
+html[data-brand] .cafm-sidebar .MuiListItemButton-root {
+  min-height: 40px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+html[data-brand] .cafm-sidebar .MuiListItemIcon-root {
+  margin-right: 14px;
+}
+
+html[data-brand] .cafm-sidebar .MuiListItemText-primary {
+  font-size: 0.86rem;
+}
+
+.cafm-sidebar-brand {
+  padding-top: 8px;
+  padding-bottom: 3px;
+}
+
+.cafm-sidebar-user {
+  margin-top: auto;
+  margin-left: 12px;
+  margin-right: 12px;
+  margin-bottom: 16px;
+  padding: 12px 10px 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
+  color: var(--brand-sidebar-text);
+  white-space: normal;
+}
+
+.cafm-sidebar-user strong,
+.cafm-sidebar-user span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cafm-sidebar-user strong {
+  font-size: 0.92rem;
+  margin-bottom: 5px;
+}
+
+.cafm-sidebar-user span {
+  font-size: 0.78rem;
+  opacity: 0.78;
+}
+
+html[data-brand] .cafm-sidebar .MuiDrawer-paper {
+  display: flex;
+  flex-direction: column;
+}
+
+html[data-brand] .cafm-sidebar .MuiList-root {
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+html[data-brand] .cafm-sidebar .cafm-sidebar-section,
+html[data-brand] .cafm-sidebar p {
+  margin-top: 5px !important;
+  margin-bottom: 2px !important;
+  padding-left: 12px;
+}

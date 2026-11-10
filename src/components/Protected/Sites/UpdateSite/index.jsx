@@ -1,3 +1,4 @@
+import PostcodeLookup from "../../../common/PostcodeLookup/PostcodeLookup";
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
@@ -7,7 +8,6 @@ import {
   updateSiteImage,
   deleteSiteImage,
   getSiteById,
-  handleOnPostCodeSearch,
   getSiteDetailsById,
   setLoader,
 } from "../../../../store/thunk/site";
@@ -18,28 +18,24 @@ import userDefault from "../../../../images/user-default.png";
 import GoogleMap from "./GoogleMap";
 import LocalDetails from "./LocalDetails";
 import KeyContacts from "./KeyContacts";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import { get } from "../../../../api";
 import BusinessIcon from "@mui/icons-material/Business";
 import { toast } from "react-toastify";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
+import { getPlatformWorkspace } from "../../../../utils/platformWorkspace";
 
 const UpdateSite = ({
-  getAddresOnPostCodeSuccess,
   getSiteById,
   updateSite,
   updateSiteDetail,
   updateSiteImage,
   updateSiteImageSuccess,
   deleteSiteImage,
-  handleOnPostCodeSearch,
   getSiteDetailsById,
   setLoader,
   loggedInUserData,
 }) => {
-  const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
   const navigate = useNavigate();
   const defaultValues = {
     address1: "",
@@ -70,6 +66,10 @@ const UpdateSite = ({
   const isViewMode = updateSite?.isViewMode;
   useEffect(() => {
     setLoader(true);
+    if (loggedInUserData?.accountScope === "PLATFORM") {
+      getSiteDetailsById(paramSiteId || getPlatformWorkspace()?.selectedSite?.siteId, paramViewMode === "view");
+      return;
+    }
     if (updateSite?.siteId) {
       getSiteDetailsById(updateSite?.siteId, isViewMode);
     } else {
@@ -79,43 +79,8 @@ const UpdateSite = ({
   useEffect(() => {
     if (updateSite) {
       reset(updateSite);
-      if(!updateSite?.longitude && !updateSite?.latitude && updateSite?.postCode) {
-        fetchCoordinates();
-      }
     }
-  }, [updateSite]);
-  const fetchCoordinates = async (postcode) => {
-    const apiKey = "pdSw7G1TEk6kghR1DNzddQ41182";  // Replace with your actual API key
-    const url = `https://api.getaddress.io/find/${updateSite?.postCode}?api-key=${apiKey}&expand=true`;
-  
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error("Failed to fetch data");
-      }
-  
-      const data = await response.json();
-      // Assuming 'latitude' and 'longitude' are in the response under the coordinates
-      const { latitude, longitude } = data || {};
-  
-      if (latitude && longitude) {
-        setValue("latitude", latitude);
-        setValue("longitude", longitude);
-        setValue(
-          "mapViewUrl",
-          `http://maps.google.com/maps?q=${latitude},${longitude}`
-        );
-        setValue(
-          "streetViewUrl",
-          `http://maps.google.com/maps?q=${latitude},${longitude}`
-        );
-      } else {
-        console.log("Coordinates not found for the provided postcode.");
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    }
-  };
+  }, [updateSite, reset]);
   const submitSite = (data) => {
     setLoader(true);
     updateSiteDetail(data);
@@ -160,43 +125,9 @@ const UpdateSite = ({
       }
     }
   };
-  const handleOnSearch = async (event) => {
-    setValue("latitude", "");
-    setValue("longitude", "");
-    setShowPostCodeSearch(true);
-    handleOnPostCodeSearch(event);
-  };
-  const handleOnSelect = async (data) => {
-    setLoader(true);
-    try {
-      const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
-      const response = await get(url);
-      setValue("postCode", response?.postcode, { shouldValidate: true });
-      setValue("address1", response?.line_1);
-      setValue("address2", response?.line_2, { shouldValidate: true });
-      setValue("city", response?.town_or_city, { shouldValidate: true });
-      setValue("area", response?.county);
-      setValue("latitude", response?.latitude);
-      setValue("longitude", response?.longitude);
-      setValue("country", response?.country);
-      setValue(
-        "mapViewUrl",
-        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
-      );
-      setValue(
-        "streetViewUrl",
-        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
-      );
-
-      setShowPostCodeSearch(false);
-      setLoader(false);
-    } catch (e) {
-      console.log("error while loading postcode");
-    }
-  };
   return (
     <Fragment>
-      <SidebarNew />
+
       <div className="">
         {/* <Header /> */}
         <div className="container-fluid">
@@ -343,47 +274,7 @@ autoComplete="off"
                     </div>
                     <div className="col-md-6">
                       <div className="mb-3">
-                        <label for="postCode" className="form-label">
-                          Post Code
-                        </label>
-                        <input
-                          type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          name="postCode"
-                          className="form-control"
-                          id="postCode"
-                          disabled={isViewMode}
-                          {...register("postCode", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} your city post code`,
-                            },
-                          })}
-                          onChange={handleOnSearch}
-                        />
-                        <ul
-                          className="postCodeSearchResult postCodeSearchResultSite"
-                          style={{
-                            display: showPostCodeSearch ? "block" : "none",
-                          }}
-                        >
-                          {getAddresOnPostCodeSuccess?.map((itm) => (
-                            <li
-                              onClick={() => handleOnSelect(itm)}
-                              key={itm?.id}
-                            >
-                              {itm?.name}
-                            </li>
-                          ))}
-                        </ul>
-                        {errors?.postCode && (
-                          <InputError
-                            message={errors?.postCode?.message}
-                            key={errors?.postCode?.message}
-                          />
-                        )}
+                        <PostcodeLookup register={register} getValues={getValues} setValue={setValue} error={errors?.postCode} disabled={isViewMode} />
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -571,7 +462,6 @@ export default connect(mapStateToProps, {
   updateSiteImage,
   deleteSiteImage,
   getSiteById,
-  handleOnPostCodeSearch,
   getSiteDetailsById,
   setLoader,
 })(UpdateSite);

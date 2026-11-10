@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { connect } from "react-redux";
 import styled from "@emotion/styled";
 import { useForm } from "react-hook-form";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import UpdateFloor from "./UpdateFloor";
 import FloorMap from "./FloorMap";
 import {
@@ -235,7 +234,7 @@ const SiteChart = ({
 
   return (
     <>
-      <SidebarNew />
+
       {showModal && (
         <UpdateSiteLayout
           selectedNode={selectedNode}

@@ -1,4 +1,5 @@
-import React, { useState, Fragment, useEffect } from "react";
+import PostcodeLookup from "../../../common/PostcodeLookup/PostcodeLookup";
+import React, { useState, Fragment, useEffect, useRef } from "react";
 import { connect } from "react-redux";
 import { useForm } from "react-hook-form";
 import FileUploadOutlinedIcon from "@mui/icons-material/FileUploadOutlined";
@@ -8,7 +9,6 @@ import {
   updateSiteImage,
   updateSite,
   getSites,
-  handleOnPostCodeSearch,
   setLoader,
 } from "../../../../store/thunk/site";
 import { InputError } from "../../../common/InputError";
@@ -16,8 +16,10 @@ import "./AddSite.css";
 import { Validation } from "../../../../Constant/Validation";
 import userDefault from "../../../../images/user-default.png";
 import SidebarNew from "../../../common/Sidebar/SidebarNew";
-import { get } from "../../../../api";
 import GoogleMap from "../UpdateSite/GoogleMap";
+import Header from "../../../common/Header/Header";
+import { getPlatformWorkspace } from "../../../../utils/platformWorkspace";
+import { isPlatformUser } from "../../../../utils/sessionContext";
 import BusinessIcon from "@mui/icons-material/Business";
 import { SiteArea } from "../../../../Constant/SiteArea";
 import { toast } from "react-toastify";
@@ -26,18 +28,22 @@ const AddSite = ({
   updateSite,
   updateSiteImage,
   addSite,
-  handleOnPostCodeSearch,
-  getAddresOnPostCodeSuccess,
   setLoader,
   loggedInUserData,
+  getSites,
   sites
 }) => {
 
   useEffect(() => {
-    getSites(loggedInUserData);
-  }, []);
+    if (!isPlatformUser(loggedInUserData)) getSites(loggedInUserData);
+  }, [getSites, loggedInUserData?.id]);
   const navigate = useNavigate();
-  const [showPostCodeSearch, setShowPostCodeSearch] = useState(false);
+  const workspace = getPlatformWorkspace();
+  const platform = isPlatformUser(loggedInUserData);
+  const firstSite = platform && workspace?.sites?.length === 0;
+  const [saveMessage, setSaveMessage] = useState("");
+  const [created, setCreated] = useState(false);
+  const saveInFlight = useRef(false);
   const goTo = (link) => {
     navigate(link);
   };
@@ -56,7 +62,7 @@ const AddSite = ({
     register,
     handleSubmit,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
     getValues,
     setValue,
     watch,
@@ -64,61 +70,45 @@ const AddSite = ({
     defaultValues,
   });
   const values = watch();
-  const submitSite = (data) => {
-    const license = JSON.parse(localStorage.getItem('license'));
-    if(sites.length >= Number(license.allowedSites)) {
-      toast.error("You have reached your limit for adding site under your license.")
+  const submitSite = async (data) => {
+    if (created || saveInFlight.current) return;
+    let license = workspace?.selectedClient;
+    if (!platform) { try { license = JSON.parse(localStorage.getItem("license") || "null"); } catch { license = null; } }
+    if (!license?.licenseId) { setSaveMessage("Choose a client before creating a site."); return; }
+    const count = platform ? workspace.sites.length : (sites || []).length;
+    if (license.allowedSites != null && count >= Number(license.allowedSites)) {
+      setSaveMessage(platform ? "This client's site allowance has been reached. Update its configuration in Client List to add a site." : "Your site allowance has been reached. Contact your platform administrator to increase it.");
       return;
     }
+    setSaveMessage("");
+    saveInFlight.current = true;
     setLoader(true);
-    data.licenseId = license?.licenseId
-    
-    addSite(data, goTo);
-    reset(defaultValues);
+    try {
+      const result = await addSite({ ...data, licenseId: license.licenseId }, goTo);
+      if (result?.success) { setCreated(true); setSaveMessage(result.message || "Site created. Opening the site…"); }
+      else setSaveMessage(result?.message || "The site could not be saved. Your details have been kept.");
+    } catch {
+      setSaveMessage("The site could not be saved. Your details have been kept; please retry.");
+    } finally {
+      saveInFlight.current = false;
+      setLoader(false);
+    }
+
   };
   const handleFileSelect = async (event) => {
     setLoader(true);
     let siteId = updateSite?.siteId;
     updateSiteImage(event, siteId);
   };
-  const handleOnSearch = async (event) => {
-    setValue("latitude", "");
-    setValue("longitude", "");
-    setShowPostCodeSearch(true);
-    handleOnPostCodeSearch(event);
-  };
-  const handleOnSelect = async (data) => {
-    try {
-      const url = `https://api.getaddress.io${data?.url}?api-key=pdSw7G1TEk6kghR1DNzddQ41182&all=true`;
-      const response = await get(url);
-      setValue("postCode", response?.postcode, { shouldValidate: true });
-      setValue("address2", response?.line_2);
-      setValue("address1", response?.line_1, { shouldValidate: true });
-      setValue("city", response?.town_or_city, { shouldValidate: true });
-      setValue("area", response?.county);
-      setValue("latitude", response?.latitude);
-      setValue("longitude", response?.longitude);
-      setValue("country", response?.country);
-      setValue(
-        "mapViewUrl",
-        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
-      );
-      setValue(
-        "streetViewUrl",
-        `http://maps.google.com/maps?q=${response?.latitude},${response?.longitude}`
-      );
-
-      setShowPostCodeSearch(false);
-    } catch (e) {
-      console.log("error while loading postcode");
-    }
-  };
   return (
     <Fragment>
       <SidebarNew />
-      <div className="content">
-        {/* <Header /> */}
-        <div className="container-fluid">
+      <div className="content cafm-site-create">
+        <Header pageContext={firstSite ? { icon: "sites", breadcrumbs: [ { label: "Dashboard", path: "/dashboard" }, { label: "Create First Site" } ] } : undefined} />
+        <main className="container-fluid cafm-site-create-main">
+          
+          {platform && <p>{workspace?.selectedClient?.companyName} — {firstSite ? "Add the first site to open this client's workspace." : "Add a site to this client."}</p>}
+          {saveMessage && <div role="alert" className={created ? "alert alert-success" : "alert alert-warning"}>{saveMessage}</div>}
           {/* row start*/}
           <div className="row p-2">
             <div className="col-md-8">
@@ -262,47 +252,7 @@ autoComplete="off"
                     </div>
                     <div className="col-md-6">
                       <div className="mb-3">
-                        <label for="postCode" className="form-label">
-                          Post Code
-                        </label>
-                        <input
-                          type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                          name="postCode"
-                          className="form-control"
-                          id="postCode"
-                          placeholder="Search Post Code"
-                          {...register("postCode", {
-                            required: {
-                              value: true,
-                              message: `${Validation.REQUIRED} your city post code`,
-                            },
-                          })}
-                          onChange={handleOnSearch}
-                        />
-                        <ul
-                          className="postCodeSearchResult postCodeSearchResultSite"
-                          style={{
-                            display: showPostCodeSearch ? "block" : "none",
-                          }}
-                        >
-                          {getAddresOnPostCodeSuccess?.map((itm) => (
-                            <li
-                              onClick={() => handleOnSelect(itm)}
-                              key={itm?.id}
-                            >
-                              {itm?.name}
-                            </li>
-                          ))}
-                        </ul>
-                        {errors?.postCode && (
-                          <InputError
-                            message={errors?.postCode?.message}
-                            key={errors?.postCode?.message}
-                          />
-                        )}
+                        <PostcodeLookup register={register} getValues={getValues} setValue={setValue} error={errors?.postCode} />
                       </div>
                     </div>
                     <div className="col-md-6">
@@ -361,7 +311,7 @@ autoComplete="off"
                           type="button"
                           className="btn btn-light mb-3 mr-4"
                           onClick={() => {
-                            navigate("/sites")
+                            navigate(firstSite ? "/platform" : "/sites")
                           }}
                         >
                           Cancel
@@ -369,9 +319,10 @@ autoComplete="off"
                         &nbsp; &nbsp;
                         <button
                           type="submit"
+                          disabled={isSubmitting || created}
                           className="btn btn-primary mb-3 mr-4"
                         >
-                          Save
+                          {isSubmitting ? "Saving…" : "Save site"}
                         </button>
                       </div>
                     </div>
@@ -389,7 +340,7 @@ autoComplete="off"
               )}
             </div>
           </div>
-        </div>
+        </main>
       </div>
     </Fragment>
   );
@@ -405,6 +356,5 @@ export default connect(mapStateToProps, {
   addSite,
   updateSiteImage,
   getSites,
-  handleOnPostCodeSearch,
   setLoader,
 })(AddSite);

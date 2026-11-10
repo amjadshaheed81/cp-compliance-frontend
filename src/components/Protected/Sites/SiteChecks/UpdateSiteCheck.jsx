@@ -678,6 +678,9 @@ const SiteChecks = ({
         //   el.classList.add('no-print');
         // });
         const element = printRef.current;
+        // Restore the legacy print title during html2pdf capture without
+        // duplicating it on normal application pages.
+        element?.classList.add("cafm-exporting-pdf");
         const options = {
             margin: 1,
             filename: "document.pdf",
@@ -693,6 +696,7 @@ const SiteChecks = ({
             .set(options)
             .save()
             .then(() => {
+                element?.classList.remove("cafm-exporting-pdf");
                 document
                     .querySelectorAll(".navbar, .sidebar, button, .dont-print ")
                     .forEach((el) => {
@@ -706,6 +710,9 @@ const SiteChecks = ({
                     summary.click();
                     //}
                 });
+            }, () => {
+                element?.classList.remove("cafm-exporting-pdf");
+                toast.error("Unable to export the inspection PDF.");
             });
     };
 
@@ -750,19 +757,19 @@ const SiteChecks = ({
                 ref={printRef}
                 style={{ backgroundColor: "#f8f9fa" }}
             >
-                {!embedded && <Header />}
+                {!embedded && <Header pageContext={{
+                    icon: "site-checks",
+                    breadcrumbs: [
+                        { label: "Dashboard", path: "/dashboard" },
+                        { label: "Site Checks", path: "/site-checks" },
+                        { label: "Inspection" },
+                    ],
+                    detail: [siteCheck?.type, siteCheck?.subType, siteCheck?.category].filter(Boolean).join(" · "),
+                    status: siteCheck?.status,
+                }} />}
                 <div className={embedded ? "" : "container-fluid"}>
                     {!embedded && (
-                        <BreadCrumHeader
-                            header={`Site Check ${siteCheck?.type ? "- (" : ""}${
-                                siteCheck?.type ?? ""
-                            } ${siteCheck?.type ? "-" : ""} ${siteCheck?.subType ?? ""} ${
-                                siteCheck?.type ? "-" : ""
-                            } ${siteCheck?.category ?? ""}${siteCheck?.type ? ")" : ""}`}
-                            page={"Site Inspection"}
-                            chipColor={siteCheck?.status === "Done" ? "success" : "warning"}
-                            chipLabel={siteCheck?.status}
-                        />
+                        <BreadCrumHeader header={`Site Check - ${[siteCheck?.type, siteCheck?.subType, siteCheck?.category].filter(Boolean).join(" - ")}`} chipLabel={siteCheck?.status} />
                     )}
                     <Stack spacing={2}>
                         <Item>

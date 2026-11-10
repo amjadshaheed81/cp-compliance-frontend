@@ -19,6 +19,8 @@ import Header from "../../common/Header/Header";
 import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import { isAdminLogin } from "../../../utils/isManagerAdminLogin";
 import "./EditProfile.css";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { useNavigate } from "react-router-dom";
 
 const EditProfile = ({
   sites,
@@ -29,9 +31,11 @@ const EditProfile = ({
   setLoggedInUser,
   siteSelectedForGlobal
 }) => {
+  const navigate = useNavigate();
+  const isPlatformIdentity = isPlatformUser(loggedInUserData);
 
   const [sasToken, setSasToken] = useState();
-  const isAdmin = isAdminLogin(loggedInUserData);
+  const isAdmin = isAdminLogin(loggedInUserData) && !isPlatformUser(loggedInUserData);
   const [isLoading, setIsLoading] = useState(false);
   const [companies, setcompanies] = useState([]);
   const [selectedCompany, setSelectedCompany] = useState();
@@ -311,6 +315,30 @@ const EditProfile = ({
                     </div>
                   </div>
                 </section>
+
+                {isPlatformIdentity && (
+                  <section className="profile-section">
+                    <div className="profile-section-heading">
+                      <h5 className="profile-section-title">Administration</h5>
+                      <p className="profile-section-description">
+                        PLATFORM Super Admin — full administration rights within the selected client.
+                        Your platform role and account scope cannot be changed from your own profile.
+                      </p>
+                    </div>
+                    <div className="profile-grid">
+                      <div className="form-group">
+                        <label>Role</label>
+                        <input className="form-control profile-readonly" value="Super Admin" readOnly />
+                      </div>
+                      <div className="form-group">
+                        <label>Account scope</label>
+                        <input className="form-control profile-readonly" value="PLATFORM" readOnly />
+                      </div>
+                    </div>
+                    <button type="button" className="btn btn-outline-primary mt-2"
+                      onClick={() => navigate("/user-management")}>Manage selected client's users</button>
+                  </section>
+                )}
 
                 {isAdmin && (
                   <Fragment>

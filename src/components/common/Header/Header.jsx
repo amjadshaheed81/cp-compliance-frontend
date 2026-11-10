@@ -8,10 +8,14 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import { connect } from "react-redux";
 import BackDrop from "../Loader/BackDrop";
 import { logoutUser, setSideBarView, getSiteAssets} from "../../../store/thunk/site";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import PageHeaderTrail from "./PageHeaderTrail";
+import { mergePageHeaderContext } from "../../../utils/pageHeaderContext";
 import SearchSite from "../../Protected/Dashboard/SearchSite";
 import { Popover, List, ListItem, ListItemText } from "@mui/material";
 import { get } from "../../../api";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { getPlatformDisplayClient, getPlatformWorkspace, WORKSPACE_CHANGED_EVENT } from "../../../utils/platformWorkspace";
 const Header = ({
   siteSelectedForGlobal,
   isLoading,
@@ -21,19 +25,34 @@ const Header = ({
   loggedInUserData,
   getSiteAssets,
   pageContext,
+  platformClient,
+  workspaceAvailable,
 }) => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [notification, setNotification] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPageContext = mergePageHeaderContext(location.pathname, pageContext);
+  const [displayClient, setDisplayClient] = useState(getPlatformDisplayClient);
+  const platform = isPlatformUser(loggedInUserData);
+  const headerClient = platformClient === undefined ? displayClient : platformClient;
+  const canUseSite = !platform || (workspaceAvailable ?? Boolean(getPlatformWorkspace()));
+
+  useEffect(() => {
+    const refresh = () => setDisplayClient(getPlatformDisplayClient());
+    window.addEventListener(WORKSPACE_CHANGED_EVENT, refresh);
+    return () => window.removeEventListener(WORKSPACE_CHANGED_EVENT, refresh);
+  }, []);
 
   useEffect(() => {
 
-    if(siteSelectedForGlobal?.siteId) {
+    if(canUseSite && siteSelectedForGlobal?.siteId) {
       getSiteAssets(siteSelectedForGlobal?.siteId);
       getNotifications();
+    } else {
+      setNotification([]);
     }
-    
-  }, [siteSelectedForGlobal]);
+  }, [siteSelectedForGlobal, canUseSite]);
 
   const getNotifications = async () => {
     if (loggedInUserData?.id) {
@@ -70,37 +89,12 @@ const Header = ({
     >
       <BackDrop isLoading={isLoading} />
       <Toolbar className="app-header-toolbar">
-        {pageContext ? (
-          <div className="app-header-page-context dont-print">
-            <div className="app-header-page-context__breadcrumb">
-              <button
-                type="button"
-                className="app-header-page-context__link"
-                onClick={() => navigate(pageContext.parentPath || "/dashboard")}
-              >
-                {pageContext.parentLabel || "Dashboard"}
-              </button>
-              <span className="app-header-page-context__separator" aria-hidden="true">
-                /
-              </span>
-              <span className="app-header-page-context__current">
-                {pageContext.label}
-              </span>
-            </div>
-
-            {Number.isFinite(Number(pageContext.recordCount)) && (
-              <div
-                className="app-header-record-pill"
-                aria-label={`${pageContext.recordCount} records`}
-              >
-                <span>Records</span>
-                <strong>{pageContext.recordCount}</strong>
-              </div>
-            )}
+        {platform && (
+          <div className="app-header-client app-header-client--left dont-print" title={headerClient?.companyName || "No client selected"}>
+            {headerClient?.companyName || "No client selected"}
           </div>
-        ) : (
-          <div className="app-header-spacer" />
         )}
+        <PageHeaderTrail context={currentPageContext} onNavigate={navigate} />
         <div className="nav-icon">
           {isSideBarOpen && (
             <div
@@ -163,11 +157,11 @@ const Header = ({
           <div className="icon cursor dont-print" onClick={() => logout()}>
             <LogoutIcon className="grid-icon" />
           </div>
-          <div className="text-dark mt-2">
+          {canUseSite && <div className="text-dark mt-2">
             <span>
               <SearchSite />
             </span>
-          </div>
+          </div>}
         </div>
       </Toolbar>
     </AppBar>

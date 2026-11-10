@@ -1,750 +1,117 @@
-import React, { Fragment, useEffect, useState } from "react";
-import { connect } from "react-redux";
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import Header from "../../common/Header/Header";
-import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import SidebarNew from "../../common/Sidebar/SidebarNew";
-import { get, post, del, put, uploadLogo } from "../../../api";
-import CircularProgress from '@mui/material/CircularProgress';
-import { Button, DialogContent, DialogTitle, DialogActions, Dialog, Grid,
-  Box,
-  Chip,
-  Checkbox,
-  TextField, Autocomplete, MenuItem,ListItemText
-} from "@mui/material";
-import { toast } from "react-toastify";
-import {combinedMenu} from "../../../Constant/Menu"
-import moment from "moment";
+import PlatformCustomers from "../../Platform/PlatformCustomers";
+import ClientEditor from "../../ClientManagement/ClientEditor";
+import { displayClientDate, isClientId } from "../../ClientManagement/clientForm";
+import { clientManagementError, getManagedClients } from "../../../api/clientManagement";
+import { announceSessionChange, isPlatformUser, reloadTo, resetCustomerSession } from "../../../utils/sessionContext";
+import "../../ClientManagement/ClientManagement.css";
 
+function LegacyClientAdministration({ user }) {
+  const dispatch = useDispatch();
+  const mounted = useRef(false);
+  const requestVersion = useRef(0);
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState("");
+  const [editor, setEditor] = useState(null);
+  const [query, setQuery] = useState("");
 
-const OnboradClient = ({ }) => {
+  const expireSession = useCallback(() => {
+    resetCustomerSession(dispatch);
+    announceSessionChange();
+    reloadTo("/login");
+  }, [dispatch]);
 
-  // const combinedMenu = [
-  //   {key: 1, label: "Dashboard", type: "General"},
-  //   {key: 2, label: "Edit Profile", type: "General"},
-  //   {key: 3, label: "Portfolio", type: "General"},
-  //   {key: 4, label: "Reports", type: "General"},
-  //   {key: 5, label: "Users", type: "General"},
-  //   {key: 6, label: "Notifications", type: "General"},
-  //   {key: 7, label: "Actions", type: "General"},
-  //   {key: 8, label: "Create Site", type: "Site"},
-  //   {key: 9, label: "Site Details", type: "Site"},
-  //   {key: 10, label: "Site Documents", type: "Site"},
-  //   {key: 11, label: "Statutory Register", type: "Site"},
-  //   {key: 12, label: "Site Assets", type: "Site"},
-  //   {key: 13, label: "Site Contracts", type: "Site"},
-  //   {key: 14, label: "Pre-Action", type: "Site"},
-  //   {key: 15, label: "Site Checks", type: "Site"},
-  //   {key: 16, label: "Energy Cost", type: "Site"},
-  //   {key: 17, label: "Site Calendar", type: "Site"},
-
-  // ];
-
-
-  const SiteMenu = [
-    
-
-  ];
-  
-
-
-  
-
-  const [showSiteSelection, setShowSiteSelection] = useState(false);
-  const [data, setData] = useState([]);
-  const [formData, setFormData] = useState({});
-  const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [addNewDrp, setAddNewDrp] = useState(false);
+  const loadClients = useCallback(async ({ signal } = {}) => {
+    const version = ++requestVersion.current;
+    setLoading(true);
+    setMessage("");
+    try {
+      const result = await getManagedClients({ signal });
+      if (!mounted.current || version !== requestVersion.current) return;
+      if (!Array.isArray(result) || !result.every((client) => isClientId(client?.licenseId))) {
+        throw new Error("Invalid client list");
+      }
+      setClients(result);
+    } catch (error) {
+      if (!mounted.current || error?.code === "ERR_CANCELED" || version !== requestVersion.current) return;
+      if (error?.response?.status === 401) expireSession();
+      setMessage(clientManagementError(error, "Unable to load clients. Please try again."));
+    } finally {
+      if (mounted.current && version === requestVersion.current) setLoading(false);
+    }
+  }, [expireSession]);
 
   useEffect(() => {
-    getClient();
-  }, []);
+    mounted.current = true;
+    const controller = new AbortController();
+    void loadClients({ signal: controller.signal });
+    return () => { mounted.current = false; requestVersion.current += 1; controller.abort(); };
+  }, [loadClients]);
 
-  const dateFormat = (date) => {
-    return moment(date, 'YYYY-MM-DD').format('DD/MM/YYYY');
-  }
-
-  const getClient = async () => {
-    setIsLoading(true);
-    const clientData = await get("/api/user/clients");
-    setData(clientData);
-    setIsLoading(false);
-  };
-
-  const validateFields = (data) => {
-    let errors = {};
-    if (!data.companyName) {
-      errors.companyName = "Company Name is required";
-    }
-    if (!data.email) {
-      errors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(data.email)) {
-      errors.email = "Email is invalid";
-    }
-    if (!data.phone) {
-      errors.phone = "Phone is required";
-    } else if (!/^\d{11}$/.test(data.phone)) {
-      errors.phone = "Phone must be 11 digits";
-    }
-    return errors;
-  };
-
-  const editData = (idx) => {
-    const inProgress = data.findIndex(d => d.edit || d.add);
-    if (inProgress >= 0) {
-      toast.error("Please save existing data");
+  const savedClient = async (client, result) => {
+    setEditor(null);
+    setNotice(result.created ? "Client created." : "Client configuration saved.");
+    if (!result.created && client.licenseId === user?.licenseId) {
+      // Refresh the ordinary CLIENT's own menu configuration, without changing
+      // its identity or borrowing another client's licence.
+      try { localStorage.setItem("license", JSON.stringify(client)); } catch { /* A reload still rechecks the session. */ }
+      reloadTo("/onboard-client");
       return;
     }
-    const udata = [...data];
-    udata[idx].edit = true;
-    setData(udata);
+    await loadClients();
   };
 
-  const cancel = (idx) => {
-    const udata = [...data];
-    if (udata[idx].add) {
-      udata.splice(idx, 1);
-    } else {
-      udata[idx].edit = false;
-    }
-    setData(udata);
-  };
+  const search = query.trim().toLowerCase();
+  const visible = clients.filter((client) => `${client.companyName || ""} ${client.adminEmail || ""}`.toLowerCase().includes(search));
 
-  const deletData = async (idx) => {
-    setIsLoading(true);
-    const dataTSave = { ...data[idx] };
-    await del(`api/companies/${dataTSave.companyId}/delete`);
-    getClient();
-  };
-
-  // const save = async (idx) => {
-  //   const dataTSave = { ...data[idx] };
-  //   const validationErrors = validateFields(dataTSave);
-  //   if (Object.keys(validationErrors).length > 0) {
-  //     setErrors(validationErrors);
-  //     return;
-  //   }
-
-  //   setIsLoading(true);
-  //   if (dataTSave.add) {
-  //     await put("/api/companies/manage", dataTSave);
-  //   } else {
-  //     await put("/api/companies/manage", dataTSave);
-  //   }
-  //   getClient();
-  // };
-
-  const SiteSelectionDialog = ({
-    open,
-    onClose,
-    sites,
-    selectedSites,
-    onSave,
-  }) => {
-    const [tempSelectedSites, setTempSelectedSites] = useState([]);
-  
-    useEffect(() => {
-      if (open) {
-        setTempSelectedSites(selectedSites);
-      }
-    }, [open]);
-  
-    const handleToggleSite = (siteId) => {
-      console.log('tempSelectedSites', tempSelectedSites, siteId)
-      setTempSelectedSites((prev) =>
-        prev.includes(siteId)
-          ? prev.filter((id) => id !== siteId)
-          : [...prev, siteId]
-      );
-    };
-  
-    const handleSelectAll = () => {
-      if (tempSelectedSites.length === sites.length) {
-        setTempSelectedSites([]);
-      } else {
-        setTempSelectedSites(sites.map((site) => site.key));
-      }
-    };
-  
-    const handleSave = () => {
-      onSave(tempSelectedSites);
-      onClose();
-    };
-  
-    const allSelected =
-      sites.length > 0 && tempSelectedSites.length === sites.length;
-  
-    const selectedSet = new Set(tempSelectedSites);
-  
-    return (
-      <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-        <DialogTitle
-          sx={{ color: "black", textTransform: "none", fontWeight: "normal" }}
-        >
-          Select Modules
-        </DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ maxHeight: 400, overflow: "auto" }}>
-            <MenuItem onClick={handleSelectAll}>
-              <Checkbox checked={allSelected} />
-              <ListItemText
-                primary={`${allSelected ? "Deselect All" : "Select All"}`}
-              />
-            </MenuItem>
-  
-            {sites.map((site) => (
-              <MenuItem
-                key={site.key}
-                onClick={() => handleToggleSite(site.key)}
-                sx={{ pl: 4 }}
-              >
-                {/* <Checkbox checked={sites.filter(s=>s.key === site.key).length> 0} /> */}
-                <Checkbox checked={selectedSet.has(site.key)} />
-                <ListItemText primary={site.label} />
-              </MenuItem>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button onClick={handleSave} color="primary">
-            Save
-          </Button>
-        </DialogActions>
-      </Dialog>
-    );
-  };
-
-  const saveNew = async (event) => {
-    event.preventDefault();
-    const form = event.target;
-    if (!form.checkValidity()) {
-      form.reportValidity();
-    }
-
-    setIsLoading(true);
-    if (formData?.file?.name) {
-      formData.logo = await uploadLogo(formData);
-      delete data.file;
-    }
-    formData.status = 'Active'
-    formData.trialExpiry =new Date(formData.trialExpiry);
-    if(formData?.licenseId) {
-      if(formData?.logo?.includes("?sv=")){
-        formData.logo = formData?.logo?.split("?sv=")[0]
-      }
-      
-      await put("/api/user/clients/"+formData?.licenseId, formData);
-    } else {
-      formData.creationDate =new Date();
-      await post("/api/user/onboard", formData);
-    }
-    
-   
-    setAddNewDrp(false);
-    getClient();
-  };
-
-  const handleInputChange = (e, idx) => {
-    const { name, value } = e.target;
-    const uAllData = [...data];
-    const udata = {
-      ...data[idx],
-      [name]: value,
-    };
-    uAllData[idx] = udata;
-    setData(uAllData);
-  };
-
-  const handleInputChange2 = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleFileChange = (e) => {
-    const udata = {
-      ...formData,
-      file: e.target.files[0],
-    };
-    setFormData(udata);
-  };
-
-  const selectedmodules = combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key)));
-  
-  const handleSaveSelectedSites = (data) => {
-    const uformData = { ...formData }
-
-    uformData.modules = data.join(",")
-
-    setFormData(uformData);
-  }
   return (
-    <Fragment>
-      <SiteSelectionDialog
-        open={showSiteSelection}
-        onClose={() => setShowSiteSelection(false)}
-        sites={combinedMenu}
-        selectedSites={selectedmodules.map(s=>s.key)}
-        onSave={handleSaveSelectedSites}
-      />
+    <div className="client-administration-page">
       <SidebarNew />
-      
-      <Dialog open={addNewDrp} onClose={() => { setFormData({});setAddNewDrp(false); }} maxWidth="lg" fullWidth>
-      <form onSubmit={saveNew}>
-        <DialogTitle>{formData?.licenseId ? "Update Client" : "Add New Client"}</DialogTitle>
-        <DialogContent dividers>
-          <Fragment>
-            <Grid container spacing={1}>
-              <Grid sm={4}>
-                <label htmlFor="companyName">Client Name</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="text"
-                  required
-                  value={formData?.companyName}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="companyName"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              
-              <Grid sm={4}>
-                <label htmlFor="adminFirstName">Admin First Name</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="text"
-                  required
-                  value={formData?.adminFirstName}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="adminFirstName"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="adminLastName">Admin Last Name</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="text"
-                  required
-                  value={formData?.adminLastName}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="adminLastName"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="adminEmail">Admin Email</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="text"
-                  required
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  value={formData?.adminEmail}
-                  className="form-control"
-                  name="adminEmail"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="adminPassword">Admin Password</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="password"
-                  required={!formData?.licenseId}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  maxLength={11}
-                  className="form-control"
-                  name="adminPassword"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="allowedUser">Allowed Number of Users</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="number"
-                  required
-                  value={formData?.allowedUser}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="allowedUser"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="allowedSites">Allowed Number of Sites</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="number"
-                  required
-                  value={formData?.allowedSites}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="allowedSites"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="trialExpiry">License Expiry</label>
-                <input
-                  style={{ maxWidth: '300px' }}
-                  type="date"
-                  required
-                  value={String(formData?.trialExpiry)?.substring(0, 10)}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="trialExpiry"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-
-              <Grid sm={4}>
-                <label htmlFor="companyAddress">Client Address</label>
-                <textarea
-                  rows="3"
-                  style={{ maxWidth: '300px' }}
-                  required
-                  value={formData?.companyAddress}
-                  autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                  className="form-control"
-                  name="companyAddress"
-                  onChange={handleInputChange2}
-                />
-              </Grid>
-              <Grid sm={4}>
-                <label htmlFor="modules">Modules</label>
-                <div>
-                                        <Button
-                                          variant="outlined"
-                                          fullWidth
-                                          sx={{
-                                            color: "#808080",
-                                            borderColor: "#d1d1d1",
-                                            textTransform: "none",
-                                            fontWeight: 400,
-                                            fontSize: "1rem",
-                                            "&:hover": {
-                                              borderColor: "#d1d1d1",
-                                              backgroundColor: "#f9f9f9",
-                                            },
-                                          }}
-                                          onClick={()=>setShowSiteSelection(true)}
-                                        >
-                                          {selectedmodules.length > 0
-                                            ? `${selectedmodules.length} Modules(s) Selected`
-                                            : "Select Modules"}
-                                        </Button>
-                                      </div>
-                                      {selectedmodules.length > 0 && (
-                                        <Box mt={1} sx={{ maxHeight: 100, overflow: "auto" }}>
-                                          {selectedmodules.map((menu) => (
-                                            <Box
-                                              key={menu.key}
-                                              sx={{ display: "flex", alignItems: "center" }}
-                                            >
-                                              <Checkbox checked disabled size="small" />
-                                              <span>{menu.label}</span>
-                                            </Box>
-                                          ))}
-                                        </Box>
-                                      )}
-                {/* <Autocomplete
-                          multiple
-                          value={combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key))).map((option) => option.key)}
-                          
-                        onChange={(event, newValue) => {
-                          const uformData = { ...formData }
-                          
-                          if (
-                            newValue.length === combinedMenu.length ||
-                            (newValue.length === 1 &&
-                              newValue[0] === "Select All")
-                          ) {
-                            
-                            uformData.modules = combinedMenu.filter(s => !uformData.modules?.split(",")?.includes(s.key.toString())).map(i => i.key).join(",")
-                          } else if (
-                            newValue.length === 0 ||
-                            (newValue.includes("Select All"))
-                          ) {
-                            uformData.modules = ""
-                          } else {                 
-                            uformData.modules = newValue.filter((value) => value !== "Select All").join(",")                            
-                          }
-                          setFormData(uformData);
-                        }}
-                        options={[ "Select All", ...combinedMenu
-                          .map((option) => option.key)]}
-                       
-                        getOptionLabel={(option) =>
-                          option === "Select All"
-                            ? "Select All"
-                            : combinedMenu.filter((a) => a.key === option)
-                            .map(option =>  option.label )[0]
-                        }
-                        renderInput={(params) => (
-                          <TextField
-                            {...params}
-                           label="Assets"
-                           size="small"
-                          />
-                        )}
-                        renderOption={(props, option, { selected }) => (
-                          <li {...props}>
-                            <Checkbox checked={selected} />
-                            {option === "Select All"
-                            ? "Select All"
-                            : combinedMenu.filter((a) => a.key === option).map(option =>  option.label )[0]}
-                          </li>
-                        )}
-                        renderTags={(value, getTagProps) => (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: 0.5,
-                              maxHeight: 120, 
-                              overflowY: 'auto', 
-                              alignItems: 'flex-start',
-                              alignContent: 'flex-start', 
-                              padding: '4px 0',
-                            }}
-                          >
-                            {value.map((option, index) => (
-                              <Chip
-                                key={index}
-                                label={combinedMenu.filter((a) => a.key === option).map(option =>  option.label)[0]}
-                                {...getTagProps({ index })}
-                              />
-                            ))}
-                          </Box>
-                        )}
-                      /> */}
-                            {/* <Autocomplete
-                              multiple
-                              onChange={(event, newValue) => {
-                                const keys = newValue
-                                  ?.map((itm) => itm?.key)
-                                  ?.join(",");
-                                setFormData({
-                                  ...formData,
-                                  modules: keys,
-                                });
-                              }}
-                              value={combinedMenu.filter(o=>formData?.modules?.split(",")?.includes(String(o.key)))}
-                              
-                              options={combinedMenu.filter(o=>!formData?.modules?.split(",")?.includes(String(o.key)))}
-                              getOptionLabel={(option) => option.label}
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                 // label="Modules"
-                                  //placeholder="Select Module"
-                                />
-                              )}
-                            /> */}
-                {/* <select
-                style={{ maxWidth: '300px' }}
-                          required
-                          name="modules"
-                          className="form-control form-select"
-                          id="modules"
-                          onChange={(e) => handleInputChange2}
-                        >
-                          <option value="">Select Modules</option>
-                          {GeneralMenu.map(m=><option value={{value: m, type: "General"}}>{m}</option>)}
-                          <option value={1}>1</option>
-                          <option value={2}>2</option>
-                          <option value={3}>3</option>
-                          <option value={4}>4</option>
-                          <option value={5}>5</option>
-                        </select> */}
-              </Grid>
-
-              <Grid sm={4}>
-                <label htmlFor="file" style={{ maxWidth: '300px', marginLeft: '20px' }}>Logo</label>
-                <input
-                style={{ maxWidth: '300px', marginLeft: '20px' }}
-                  type="file"
-                  name="file"
-                  className="form-control"
-                            id="file"
-                            required={!formData?.licenseId}
-                            onChange={(e) => handleFileChange(e)}
-                          />
-              </Grid>
-              
-
-
-             
-            </Grid>
-          </Fragment>
-        </DialogContent>
-        <DialogActions>
-          <Button type="button" onClick={() =>  {setFormData({});setAddNewDrp(false)}} className="bg-light text-primary">
-            Cancel
-          </Button>
-          <Button type="submit" className="bg-primary text-white">
-            Save
-          </Button>
-        </DialogActions>
-        </form>
-      </Dialog>
-
       <div className="content">
         <Header />
-        <div className="container-fluid">
-          <BreadCrumHeader header={"Onboard Client"} page={"Manage"} />
-
-          <Grid container>
-            <Grid sm={12}>
-              <button
-                style={{ width: "250px", margin: '20px' }}
-                className="btn btn-primary"
-                onClick={() => setAddNewDrp(true)}
-              >
-                <i className="fas fa-plus" /> Add new client
-              </button>
-            </Grid>
-          </Grid>
-
-          <div className="row p-2"></div>
-          <div className="col-md-12 table-responsive">
-            <table className="table" style={{ border: "1px solid" }}>
-              <thead className="table-dark">
-                <tr>
-                  <th scope="col" style={{ border: "2px groove" }}>Client Name</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Address</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Admin Name</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Admin Email</th>
-                  <th scope="col" style={{ border: "2px groove" }}>License Expiry</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Users</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Number Of Allowed Sites</th>
-                  <th scope="col" style={{ border: "2px groove" }}>Action</th>
-                </tr>
-              </thead>
+        <main className="client-administration-main">
+          <div className="client-administration-heading">
+            <p className="mb-0">Create a client or update its existing configuration.</p>
+            <button type="button" className="btn btn-primary" disabled={loading} onClick={() => { setNotice(""); setEditor({ clientId: null }); }}>Add Client</button>
+          </div>
+          {message && <div className="alert alert-danger" role="alert">{message}</div>}
+          {notice && <div className="alert alert-success" role="status">{notice}</div>}
+          <div className="client-administration-heading">
+            <label>Search clients<input type="search" className="form-control" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or administrator email" /></label>
+            <button type="button" className="btn btn-outline-secondary" disabled={loading} onClick={() => loadClients()}>Refresh</button>
+          </div>
+          {loading && <p role="status">Loading clients...</p>}
+          <div className="table-responsive">
+            <table className="table align-middle">
+              <thead><tr><th scope="col">Client</th><th scope="col">Administrator</th><th scope="col">Status</th><th scope="col">Licence expiry</th><th scope="col">Allowed users / sites</th><th scope="col"><span className="visually-hidden">Actions</span></th></tr></thead>
               <tbody>
-                {isLoading && (
-                  <tr>
-                    <td colSpan={5} align="center"><CircularProgress /></td>
-                  </tr>
-                )}
-
-                {!isLoading && data?.length === 0 && (
-                  <tr>
-                    <td colSpan={4} align="center">No result found!!</td>
-                  </tr>
-                )}
-                {!isLoading && data?.sort((a, b) => new Date(b.creationDate) - new Date(a.creationDate))?.map((d, rowIndex) => (
-                  <tr key={rowIndex} style={{ border: "2px groove", fontWeight: '500', fontSize: '14px' }}>
-                   <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                    <img src={d.logo} height={50}
-              width={140} /> {d.companyName} 
-                    </td>
-                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.companyAddress}</td>
-                    
-                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminFirstName} {d.adminLastName}</td>
-                    
-                    
-                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.adminEmail}</td>
-                    
-
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{dateFormat(d?.trialExpiry?.split("T")?.[0])}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="text"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        value={d.trialExpiry}
-                        name="trialExpiry"
-                        className="form-control"
-                        id="trialExpiry"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
-                    </td>}
-
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.allowedUser}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="number"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        value={d.allowedUser}
-                        name="allowedUser"
-                        className="form-control"
-                        id="allowedUser"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
-                    </td>}
-
-                    {!d.add && !d.edit && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>{d.allowedSites}</td>}
-                    {(d.add || d.edit) && <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <input
-                        type="number"
-autoComplete="off"
-          readOnly
-          onFocus={(e) => e.target.removeAttribute("readonly")}
-                        value={d.allowedSites}
-                        name="allowedSites"
-                        className="form-control"
-                        id="allowedSites"
-                        onChange={(e) => handleInputChange(e, rowIndex)}
-                      />
-                      {errors.phone && <span className="text-danger">{errors.phone}</span>}
-                    </td>}
-
-                    <td style={{ border: "2px groove", verticalAlign: 'middle' }}>
-                      <button
-                        className="btn btn-sm btn-light"
-                        onClick={() => {
-                          delete d.adminPassword;
-                          setFormData(d);
-                          setAddNewDrp(true); 
-                        }}
-                      >
-                        <i className="fas fa-edit"></i>
-                      </button>{" "}
-                     
-                    </td>
-                   
-                  </tr>
-                ))}
+                {visible.map((client) => <tr key={client.licenseId}>
+                  <th scope="row">{client.companyName || "Unnamed client"}</th>
+                  <td>{client.adminEmail || "Not configured"}</td>
+                  <td>{client.status || "Not set"}</td>
+                  <td>{displayClientDate(client.trialExpiry)}</td>
+                  <td>{client.allowedUser} / {client.allowedSites}</td>
+                  <td><button type="button" className="btn btn-outline-secondary btn-sm" disabled={loading} onClick={() => { setNotice(""); setEditor({ clientId: client.licenseId }); }} aria-label={`Configure ${client.companyName || "client"}`}>Configure</button></td>
+                </tr>)}
+                {!loading && visible.length === 0 && <tr><td colSpan={6}>{clients.length ? "No clients match your search." : "No clients available."}</td></tr>}
               </tbody>
             </table>
           </div>
-        </div>
+        </main>
       </div>
-    </Fragment>
+      {editor && <ClientEditor key={editor.clientId || "new"} clientId={editor.clientId} onClose={() => setEditor(null)} onSaved={savedClient} onSessionExpired={expireSession} />}
+    </div>
   );
-};
+}
 
-const mapStateToProps = (state) => ({});
-
-export default connect(mapStateToProps, {})(OnboradClient);
+export default function OnboradClient() {
+  const user = useSelector((state) => state.site.loggedInUserData);
+  // Keep the existing menu/route, with one platform directory and one shared
+  // editor. Ordinary transitional Super Admins retain their existing API scope.
+  return isPlatformUser(user) ? <PlatformCustomers /> : <LegacyClientAdministration user={user} />;
+}

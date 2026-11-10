@@ -1,3 +1,4 @@
+import { fetchWorkspaceResource } from "../../../../api/workspace";
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
@@ -1052,7 +1053,7 @@ const AssessmentFireRisk = ({
     const loadImageAsDataUrl = async (url) => {
         if (!url) return null;
         try {
-            const res = await fetch(url, { mode: "cors", credentials: "omit" });
+            const res = await fetchWorkspaceResource(url, { mode: "cors", credentials: "omit" });
             if (res.ok) {
                 const blob = await res.blob();
                 const dataUrl = await new Promise((resolve) => {

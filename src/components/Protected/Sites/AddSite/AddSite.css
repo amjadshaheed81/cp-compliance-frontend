@@ -71,3 +71,7 @@ p.fs-6.mt-2.border-bottom {
 .content, label, table {
   font-size: small !important;
 }
+.cafm-site-create-main { max-width: 1250px; padding: 1.5rem 1.5rem 3rem; }
+.cafm-site-create-main h1 { font-size: 1.65rem; margin: 0 0 .5rem; }
+.cafm-site-create-main > p { color: #526172; margin-bottom: 1.5rem; }
+.cafm-site-create-main form { background: white; border-radius: .6rem; }

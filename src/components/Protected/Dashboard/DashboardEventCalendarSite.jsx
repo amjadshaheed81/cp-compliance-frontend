@@ -8,6 +8,8 @@ import Tooltip from "@mui/material/Tooltip";
 import { useNavigate } from "react-router-dom";
 import { connect } from "react-redux";
 import { get } from "../../../api";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { platformWorkspacePathAllowed } from "../../../utils/platformWorkspace";
 const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
 
   const [openInvite, setOpenInvite] = useState(false);
@@ -16,6 +18,7 @@ const DashboardEventCalendar = ({loggedInUserData, siteSelectedForGlobal}) => {
   
   const navigate = useNavigate();
   const navigateTo = (link) => {
+    if (isPlatformUser(loggedInUserData) && !platformWorkspacePathAllowed(String(link || "").split("?")[0])) return;
     navigate(link);
   };
 

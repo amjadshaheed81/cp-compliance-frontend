@@ -2,6 +2,7 @@ import { CPCOM_STATE_STORE } from "../Constant/Session";
 import { USER_LOGIN, USER_LOGOUT } from "../store/actionTypes";
 
 export const SESSION_CHANGE_KEY = "cafm.session.change";
+export const CUSTOMER_SESSION_RESET_EVENT = "cafm:customer-session-reset";
 
 const CUSTOMER_KEYS = new Set([
   CPCOM_STATE_STORE,
@@ -38,6 +39,7 @@ export function clearCustomerStorage() {
 }
 
 export function resetCustomerSession(dispatch) {
+  window.dispatchEvent(new Event(CUSTOMER_SESSION_RESET_EVENT));
   dispatch({ type: USER_LOGOUT, payload: {} });
   clearCustomerStorage();
 }

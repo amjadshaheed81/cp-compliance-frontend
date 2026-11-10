@@ -24,6 +24,7 @@ const CreateFolder = ({
   refresh,
   siteId,
   loggedInUserData,
+  adminTemplate = false,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isShared, setIsShared] = useState(false);
@@ -54,14 +55,14 @@ const CreateFolder = ({
     const folderData = {
       folderName: data.folderName,
       parentFolderId: folderId,
-      siteId: siteId,
+      siteId: adminTemplate ? null : siteId,
       sharedFolder: isShared, // No need for Boolean() conversion
       isStatutoryRegister: folder2?.name === "Statutory Documents",
     };
 
     setIsLoading(true);
 
-    post("/api/document/folder", folderData)
+    post(adminTemplate ? "/api/document/admin-folder" : "/api/document/folder", folderData)
       .then(() => {
         toast.success("Folder created successfully!");
         handleClose();

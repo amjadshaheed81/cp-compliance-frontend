@@ -1,26 +1,18 @@
-import React, { Fragment } from "react";
+import React from "react";
 import "./BreadCrumHeader.css";
-import { Chip } from "@mui/material";
 
-const BreadCrumHeader = ({ header, page, style, chipColor, chipLabel }) => {
-  return (
-    <Fragment>
-      <div className="d-flex bd-highlight ">
-        <div className="pt-2 bd-highlight" style={{display: 'flex'}}>
-          <h4 style={style}>{header}
-            
-          </h4>
-          {chipLabel && <Chip
-            color={chipColor}
-            label={chipLabel}
-            style={{ marginLeft: '10px' }}
-          />}
-        </div>
-        <div className="ms-auto p-2 bd-highlight dont-print">
-          <span><a href="/#/dashboard">Dashboard</a> / {page}</span>
-        </div>
-      </div>
-    </Fragment>
-  );
-};
+/**
+ * Legacy print-only page title. The onscreen route breadcrumb is now rendered
+ * centrally in the compact Header; do not duplicate it in the page body.
+ * Folder-navigation trails and in-form certificate headings are separate.
+ */
+const BreadCrumHeader = ({ header, chipLabel }) => (
+  header ? (
+    <div className="cafm-print-page-title">
+      <h4>{header}</h4>
+      {chipLabel && <span className="cafm-print-page-status">{chipLabel}</span>}
+    </div>
+  ) : null
+);
+
 export default BreadCrumHeader;

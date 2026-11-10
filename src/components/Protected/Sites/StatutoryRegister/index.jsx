@@ -301,6 +301,7 @@ const StatutoryRegister = ({
   } = useForm({});
   const [searchTerm, setSearchTerm] = useState({});
   useEffect(() => {
+    if (loggedInUserData?.accountScope === "PLATFORM" && !searchTerm?.id) return;
     updateResidence();
   }, [searchTerm]);
   const updateResidence = async () => {

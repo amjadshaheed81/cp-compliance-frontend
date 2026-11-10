@@ -1,0 +1,196 @@
+.client-editor {
+  color: var(--brand-text, #223648);
+}
+
+.client-editor .MuiDialogTitle-root {
+  color: var(--brand-text, #223648);
+  font-size: 1.35rem;
+  font-weight: 650;
+  text-transform: none;
+}
+
+.client-editor-section + .client-editor-section {
+  border-top: 1px solid var(--brand-border, #d8e3eb);
+  margin-top: 24px;
+  padding-top: 24px;
+}
+
+.client-editor-section h3 {
+  margin: 0 0 16px;
+  font-size: 1rem;
+  font-weight: 650;
+  color: var(--brand-text, #223648);
+}
+
+.client-editor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.client-editor-field {
+  min-width: 0;
+}
+
+.client-editor-field-wide {
+  grid-column: 1 / -1;
+}
+
+.client-editor-field > label {
+  display: block;
+  margin: 0 0 6px;
+  font-size: .88rem;
+  font-weight: 550;
+}
+
+.client-editor .form-control,
+.client-editor .form-select {
+  min-height: 40px;
+  width: 100%;
+}
+
+.client-editor-error {
+  display: block;
+  margin-top: 5px;
+  color: #b42318;
+  font-size: .85rem;
+}
+
+.client-editor-help {
+  margin: 12px 0 0;
+  color: #566777;
+  font-size: .86rem;
+}
+
+.client-editor-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.client-editor-logo img {
+  width: 110px;
+  height: 56px;
+  object-fit: contain;
+  border: 1px solid var(--brand-border, #d8e3eb);
+  border-radius: 6px;
+  padding: 4px;
+  background: white;
+}
+
+.client-editor-logo input {
+  max-width: 100%;
+}
+
+.client-editor-modules {
+  margin-top: 18px;
+  border: 1px solid var(--brand-border, #d8e3eb);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.client-editor-modules summary {
+  cursor: pointer;
+  font-weight: 550;
+}
+
+.client-editor-module-actions {
+  display: flex;
+  gap: 10px;
+  margin: 8px 0;
+}
+
+.client-editor-module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.client-editor-module-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: .88rem;
+  font-weight: 400;
+}
+
+.client-editor-module-grid input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--brand-primary, #384bd3);
+}
+
+.client-editor-actions.MuiDialogActions-root {
+  padding: 16px 24px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.client-editor .btn-primary,
+.client-administration-page .btn-primary {
+  background: var(--brand-primary, #384bd3);
+  border-color: var(--brand-primary, #384bd3);
+  color: var(--brand-primary-contrast, #fff);
+}
+
+.client-editor .btn-outline-primary,
+.client-editor .btn-link,
+.client-administration-page .btn-link {
+  color: var(--brand-primary, #384bd3);
+}
+
+.client-editor .btn-outline-primary {
+  border-color: var(--brand-primary, #384bd3);
+}
+
+.client-editor .btn-outline-primary:hover {
+  color: var(--brand-primary-contrast, #fff);
+  background: var(--brand-primary, #384bd3);
+}
+
+.client-administration-main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+}
+
+.client-administration-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.client-administration-heading h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.client-administration-heading p {
+  margin: 8px 0 0;
+  color: #566777;
+}
+
+.client-administration-main .table-responsive {
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .client-editor-grid,
+  .client-editor-module-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .client-editor-actions.MuiDialogActions-root {
+    padding: 16px;
+  }
+  .client-administration-main {
+    padding: 24px 16px;
+  }
+  .client-administration-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

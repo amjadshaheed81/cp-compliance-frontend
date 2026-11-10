@@ -17,6 +17,8 @@ import {
 import { toast } from "react-toastify";
 import SortableOrderControl from "../../common/SortableOrderControl";
 import { ROLE } from "../../../Constant/Role";
+import { workingLicenseId } from "../../../utils/platformWorkspace";
+import { isPlatformUser } from "../../../utils/sessionContext";
 
 const AdminDropdowns = ({ loggedInUserData }) => {
   const [data, setData] = useState([]);
@@ -178,7 +180,9 @@ const AdminDropdowns = ({ loggedInUserData }) => {
   const save = async (idx) => {
     let licenseId = undefined;
     const isadmin = loggedInUserData?.superAdmin;
-    if (!isadmin) {
+    if (isPlatformUser(loggedInUserData)) {
+      licenseId = workingLicenseId(loggedInUserData);
+    } else if (!isadmin) {
       const license = JSON.parse(localStorage.getItem("license"));
       licenseId = license?.licenseId;
     }
@@ -192,9 +196,17 @@ const AdminDropdowns = ({ loggedInUserData }) => {
 
     setIsLoading(true);
     if (dataTSave.add) {
+      dataTSave.licenseId = licenseId;
       await post("/api/lov/", dataTSave);
     } else {
-      dataTSave.licenseId = licenseId;
+      if (isPlatformUser(loggedInUserData)) {
+        // Preserve the record's existing customer/global owner on edit.
+        // The server checks ownership before saving; never promote a shared
+        // default to a selected-customer value through this form.
+        delete dataTSave.licenseId;
+      } else {
+        dataTSave.licenseId = licenseId;
+      }
       await put("/api/lov/id/" + dataTSave.id, dataTSave);
     }
     getLovType(selectedLovType);
@@ -210,7 +222,9 @@ const AdminDropdowns = ({ loggedInUserData }) => {
     setIsLoading(true);
     let licenseId = undefined;
     const isadmin = loggedInUserData?.superAdmin;
-    if (!isadmin) {
+    if (isPlatformUser(loggedInUserData)) {
+      licenseId = workingLicenseId(loggedInUserData);
+    } else if (!isadmin) {
       const license = JSON.parse(localStorage.getItem("license"));
       licenseId = license?.licenseId;
     }

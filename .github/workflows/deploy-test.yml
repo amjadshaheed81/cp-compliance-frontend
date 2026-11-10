@@ -1,9 +1,12 @@
+
 name: Deploy CAFM Test - Frontend
 
 on:
   push:
     branches:
       - main
+      - feature/cafm-platform-multitenancy
+
   workflow_dispatch:
 
 permissions:
@@ -19,6 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
+    # Only approved branches may deploy to TEST.
+    if: |
+      github.ref == 'refs/heads/main' ||
+      github.ref == 'refs/heads/feature/cafm-platform-multitenancy'
+
     steps:
       - name: Configure restricted SSH key
         shell: bash
@@ -27,13 +35,19 @@ jobs:
           SSH_KNOWN_HOSTS: ${{ secrets.CAFM_TEST_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
+
+          : "${SSH_PRIVATE_KEY:?Missing SSH private key}"
+          : "${SSH_KNOWN_HOSTS:?Missing known hosts}"
+
           install -d -m 700 ~/.ssh
+
           printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/cafm-test
           chmod 600 ~/.ssh/cafm-test
+
           printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy exact main commit
+      - name: Deploy exact triggering commit to TEST edge
         shell: bash
         env:
           TEST_HOST: ${{ vars.CAFM_TEST_HOST }}
@@ -41,14 +55,22 @@ jobs:
           TEST_PORT: ${{ vars.CAFM_TEST_PORT }}
         run: |
           set -euo pipefail
-          : "${TEST_HOST:?Set the CAFM_TEST_HOST repository variable}"
+
+          : "${TEST_HOST:?Set CAFM_TEST_HOST repository variable}"
+
           TEST_USER="${TEST_USER:-ubuntu}"
           TEST_PORT="${TEST_PORT:-22}"
+
+          echo "Deploying frontend branch: $GITHUB_REF_NAME"
+          echo "Deploying frontend commit: $GITHUB_SHA"
+          echo "Target: CAFM TEST edge only"
+
           ssh \
             -i ~/.ssh/cafm-test \
             -p "$TEST_PORT" \
             -o BatchMode=yes \
             -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=30 \
             -o ServerAliveInterval=30 \
             -o ServerAliveCountMax=10 \

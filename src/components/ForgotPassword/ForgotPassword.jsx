@@ -2,8 +2,7 @@
 import React, { Fragment, useEffect, useState } from "react";
 import { connect } from "react-redux";
 import { login } from "../../store/thunks";
-import logoImage from "../../images/login-left.png";
-import logo from "../../images/logo.png";
+import { useActiveBrand } from "../../branding";
 import { useNavigate } from "react-router-dom";
 import "./ForgotPassword.css";
 import { post } from "../../api";
@@ -11,6 +10,7 @@ import { toast } from "react-toastify";
 import CircularProgress from "@mui/material/CircularProgress";
 
 const ForgotPassword = ({ login }) => {
+  const brand = useActiveBrand();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [otpSend, setotpSend] = useState(false);
@@ -61,10 +61,10 @@ const ForgotPassword = ({ login }) => {
 
   return (
     <Fragment>
-      <div className="container-fluid container-fluid-login">
+      <div className="container-fluid container-fluid-login cafm-auth-page cafm-forgot-password-page">
         <div className="row">
           <div className="col-md-6 left-panel text-center">
-            <img src={logoImage} alt="login left panel logo" />
+            <img src={brand.loginIllustration} alt="" />
           </div>
           <div className="col-md-6 right-panel bg-white">
             <button
@@ -78,7 +78,7 @@ const ForgotPassword = ({ login }) => {
             </button>
             <form onSubmit={handleSubmit}>
               <div className="text-center mb-4">
-                <img src={logo} alt="main cpc portal logo" />
+                <img src={brand.logo} className="cafm-auth-logo" alt={`${brand.name} logo`} />
               </div>
               <h2 className="mb-2">Reset Password</h2>
               <small>

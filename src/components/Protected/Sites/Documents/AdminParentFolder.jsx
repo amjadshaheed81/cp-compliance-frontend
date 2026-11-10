@@ -60,6 +60,7 @@ const AdminParentFolder = ({
   subfolderFiles,
 }) => {
   const navigate = useNavigate();
+  const platform = loggedInUserData?.accountScope === "PLATFORM";
 
   // State Management
   const [showRootFolderModal, setShowRootFolderModal] = useState(false);
@@ -86,31 +87,46 @@ const AdminParentFolder = ({
     files: [],
   });
   const [currentFolderData, setCurrentFolderData] = useState(null);
+  const [templateSearch, setTemplateSearch] = useState("");
   // Helper Functions
   const getFolderEndpoint = (folderId) => {
+    if (platform) return folderId === "root" ? "/api/platform/workspace/document/admin/folders"
+      : `/api/platform/workspace/document/admin/folders/${folderId}`;
     if (folderId === "root") {
       return `/api/document/site/${473}/parent/admin-folders`;
     }
     return `/api/document/parent/${folderId}/admin-folders?siteId=${473}`;
   };
 
-  // Initial Load
-  useEffect(() => {
-    if (473) {
-      setLoader(true);
-      getDocumentsRootFolder(473, true);
-    } else {
-      Swal.fire({
-        icon: "error",
-        title: "Oops...",
-        text: "Please select site from site search and try again.",
-      });
+  // PLATFORM manages global folder templates, not the old hard-coded site 473.
+  // The workspace guard verifies PLATFORM and selected customer before this API runs.
+  const reloadAdminRoot = async () => {
+    if (!platform) return getDocumentsRootFolder(473, true);
+    setLoader(true);
+    try {
+      const response = await get("/api/document/admin/folders");
+      const folders = Array.isArray(response?.parentFolders) ? response.parentFolders : [];
+      setColumns([{ id: "root", data: folders, name: "Root", isParent: true, files: [] }]);
+      setCurrentFolder({ id: "root", name: "Root", childFolders: folders, files: [] });
+      setCurrentFolderData(null);
+      return true;
+    } catch (error) {
+      console.error("Failed to load folder templates:", error);
+      toast.error("Failed to load folder templates");
+      return false;
+    } finally {
+      setLoader(false);
     }
-  }, [siteSelectedForGlobal]);
+  };
 
-  // Initialize Columns
   useEffect(() => {
-    if (rootFolder?.parentFolders?.length > 0) {
+    reloadAdminRoot();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platform, siteSelectedForGlobal?.siteId]);
+
+  // Legacy CLIENT Admin folder tree still uses its original thunk and site 473.
+  useEffect(() => {
+    if (!platform && rootFolder?.parentFolders?.length > 0) {
       setColumns([
         {
           id: "root",
@@ -120,7 +136,15 @@ const AdminParentFolder = ({
         },
       ]);
     }
-  }, [rootFolder]);
+  }, [rootFolder, platform]);
+
+  const templateResults = platform && templateSearch.trim()
+    ? columns.flatMap((column, parentIndex) =>
+        (column.data || []).filter((folder) =>
+          String(folder.name || "").toLowerCase().includes(templateSearch.trim().toLowerCase())
+        ).map((folder) => ({ ...folder, parentIndex }))
+      )
+    : [];
 
   // Core Folder Navigation
   const handleFolderClick = async (folder, colIndex, isReferesh) => {
@@ -130,6 +154,7 @@ const AdminParentFolder = ({
     setLoader(true);
 
     try {
+      if (platform && folder.id === "root") return await reloadAdminRoot();
       const endpoint = getFolderEndpoint(folder.id);
       const response = await get(endpoint);
 
@@ -215,7 +240,7 @@ const AdminParentFolder = ({
 
     try {
       if (colIndex === 0) {
-        await getDocumentsRootFolder(473,true);
+        await reloadAdminRoot();
       } else {
         const newColumns = columns.slice(0, colIndex);
         setColumns(newColumns);
@@ -283,7 +308,9 @@ const AdminParentFolder = ({
   const deleteFolderHandler = async (folderId, folderName) => {
     const result = await Swal.fire({
       title: `Delete folder "${folderName}"?`,
-      text: "All contents will be permanently removed!",
+      text: platform
+        ? "This hides the GLOBAL default folder template for all customers. Existing site documents are preserved."
+        : "All contents will be permanently removed!",
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#d33",
@@ -302,15 +329,16 @@ const AdminParentFolder = ({
 
       if (res?.status === 200) {
         const parentColumnIndex = columns.length - 1;
-        if (parentColumnIndex > 0) {
+        if (platform) {
+          await reloadAdminRoot();
+        } else if (parentColumnIndex > 0) {
           const parentColumn = columns[parentColumnIndex];
           await handleFolderClick(
             { id: parentColumn.id, name: parentColumn.name },
             parentColumnIndex
           );
         } else {
-              setLoader(true);
-              getDocumentsRootFolder(473, true);
+              await reloadAdminRoot();
             }
         toast.success(`Folder "${folderName}" deleted successfully`);
       } else {
@@ -348,13 +376,15 @@ const AdminParentFolder = ({
         await put(url, { folderName: newName });
 
         const lastColumn = columns[columns.length - 1];
-        if (lastColumn && columns.length - 1 > 0) {
+        if (platform) {
+          await reloadAdminRoot();
+        } else if (lastColumn && columns.length - 1 > 0) {
           await handleFolderClick(
             { id: lastColumn.id, name: newName },
             columns.length - 1
           );
         } else {
-              getDocumentsRootFolder(473, true);
+              await reloadAdminRoot();
             }
         
         toast.success(`Folder renamed to "${newName}"`);
@@ -418,12 +448,14 @@ const AdminParentFolder = ({
         <CreateParentFolder
           showFolderModal={showRootFolderModal}
           setShowFolderModal={setShowRootFolderModal}
-          refresh={() => getDocumentsRootFolder(473, true)}
+          refresh={reloadAdminRoot}
         />
       )}
 
       {showSubFolderModal && (
         <CreateFolder
+          adminTemplate={platform}
+          loggedInUserData={loggedInUserData}
           showFolderModal={showSubFolderModal}
           setShowFolderModal={setShowSubFolderModal}
           folderId={columns[columns.length - 1]?.id}
@@ -439,8 +471,7 @@ const AdminParentFolder = ({
                 );
               }
             } else {
-              setLoader(true);
-              getDocumentsRootFolder(473, true);
+              await reloadAdminRoot();
             }
           }}
         />
@@ -583,7 +614,39 @@ const AdminParentFolder = ({
         </Breadcrumbs>
 
         <div className="row mt-4 mb-4">
-          <div className="col-md-6 col-sm-12">
+          {platform && (
+            <div className="col-md-6 col-sm-12">
+              <div className="position-relative">
+                <i className="fas fa-search position-absolute top-50 start-0 translate-middle-y ps-3 text-muted" />
+                <input
+                  type="search"
+                  className="form-control ps-5"
+                  placeholder="Search visible folder templates..."
+                  value={templateSearch}
+                  onChange={(event) => setTemplateSearch(event.target.value)}
+                  aria-label="Search visible folder templates"
+                />
+                {templateSearch.trim() && (
+                  <div className="file-search-results mt-2">
+                    {templateResults.length ? templateResults.map((folder) => (
+                      <div
+                        key={`${folder.parentIndex}-${folder.id}`}
+                        className="search-result-item p-2 mb-1 bg-light rounded"
+                        onClick={() => {
+                          setTemplateSearch("");
+                          handleFolderClick(folder, folder.parentIndex, true);
+                        }}
+                      >
+                        <i className="fas fa-folder text-primary me-2" />
+                        {folder.name}
+                      </div>
+                    )) : <div className="text-muted p-2">No folder names match in the opened columns.</div>}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          {!platform && <div className="col-md-6 col-sm-12">
             <div className="position-relative">
               <i className="fas fa-search position-absolute top-50 start-0 translate-middle-y ps-3 text-muted" />
               <input
@@ -610,6 +673,7 @@ const AdminParentFolder = ({
             </div>
           </div>
 
+          }
           <div className="col-md-6 col-sm-12 text-end">
             {isManagerAdminLogin(loggedInUserData) && (
               <>
@@ -625,7 +689,7 @@ const AdminParentFolder = ({
                   </Button>
                 )}
 
-                {columns.length > 0 && (
+                {columns.length > (platform ? 1 : 0) && (
                   <>
                     <Button
                       variant="contained"
@@ -686,7 +750,7 @@ const AdminParentFolder = ({
                     />
                     <span className="ms-2">{column.name}</span>
 
-                    {isAdminLogin(loggedInUserData) && (
+                    {isAdminLogin(loggedInUserData) && column.id !== "root" && (
                       <div className="finder-column-actions">
                         <Tooltip title="Edit Folder Name">
                           <EditIcon

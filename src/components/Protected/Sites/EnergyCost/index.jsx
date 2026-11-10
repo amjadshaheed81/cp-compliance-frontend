@@ -1,4 +1,4 @@
-import React, { Fragment, useEffect, useState } from "react";
+import React, { Fragment, useEffect, useRef, useState } from "react";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import moment from "moment";
@@ -9,7 +9,7 @@ import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { get, post, del, put } from "../../../../api";
 import Cost from "./Cost";
 import Reading from "./Reading";
@@ -29,6 +29,8 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { formatToCurrency } from "../../../../utils/formatToCurrency";
 
 const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
+    const [searchParams] = useSearchParams();
+    const openedReportSurvey = useRef(false);
     const [isLoading, setIsLoading] = useState(false);
     const [openCost, setOpenCost] = useState(false);
     const [isViewMode, setIsViewMode] = useState(false);
@@ -535,6 +537,16 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal }) => {
 
         setFilteredEnergyCost(energyCost);
         setEnergyCost(energyCost);
+        if (loggedInUserData?.accountScope === "PLATFORM" && !openedReportSurvey.current && searchParams.has("energyId")) {
+            const requested = energyCost.find((survey) => survey.energyId === Number(searchParams.get("energyId")));
+            if (requested) {
+                openedReportSurvey.current = true;
+                setActionSurvey(requested);
+                setIsViewMode(!isManagerAdminLogin(loggedInUserData));
+                if (searchParams.get("panel") === "reading") setOpenReading(true);
+                else setOpenCost(true);
+            }
+        }
         setIsLoading(false);
         return energyCost;
     };

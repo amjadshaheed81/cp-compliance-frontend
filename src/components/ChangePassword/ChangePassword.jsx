@@ -1,12 +1,12 @@
 // components/Login/LoginForm.js
 import React, { Fragment, useState } from "react";
 import { connect } from "react-redux";
-import logoImage from "../../images/login-left.png";
-import logo from "../../images/logo.png";
+import { useActiveBrand } from "../../branding";
 import { useNavigate } from "react-router-dom";
 import "./ChangePassword.css";
 
 const ChangePassword = ({}) => {
+  const brand = useActiveBrand();
   const navigate = useNavigate();
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -15,10 +15,10 @@ const ChangePassword = ({}) => {
 
   return (
     <Fragment>
-      <div className="container-fluid container-fluid-login">
+      <div className="container-fluid container-fluid-login cafm-auth-page cafm-change-password-page">
         <div className="row">
           <div className="col-md-6 left-panel text-center">
-            <img src={logoImage} alt="login left panel logo" />
+            <img src={brand.loginIllustration} alt="" />
           </div>
           <div className="col-md-6 right-panel bg-white">
             <button
@@ -32,15 +32,14 @@ const ChangePassword = ({}) => {
             </button>
             <form onSubmit={handleSubmit}>
               <div className="text-center mb-4">
-                <img src={logo} alt="main cpc portal logo" />
+                <img src={brand.logo} className="cafm-auth-logo" alt={`${brand.name} logo`} />
               </div>
               <h2 className="mb-2">Change Password</h2>
               <small>
-                Change the password for your account ending with
-                xxxx06@gmail.com
+                Change the password for your account.
               </small>
               <div className="form-group mt-2">
-                <label for="email">Password</label>
+                <label htmlFor="password">Password</label>
                 <input
                   type="password"
                   className="form-control"
@@ -49,7 +48,7 @@ const ChangePassword = ({}) => {
                 />
               </div>
               <div className="form-group mt-2">
-                <label for="email">Re-enter Password</label>
+                <label htmlFor="rePassword">Re-enter Password</label>
                 <input
                   type="password"
                   className="form-control"

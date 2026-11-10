@@ -6,7 +6,7 @@ import {
   isBuildNumberVisible,
 } from "../../../utils/buildInfo";
 
-const BuildNumber = ({ sx = {} }) => {
+const BuildNumber = ({ sx = {}, label = "Build" }) => {
   if (!isBuildNumberVisible()) {
     return null;
   }
@@ -27,7 +27,7 @@ const BuildNumber = ({ sx = {} }) => {
         ...sx,
       }}
     >
-      Build {buildInfo.buildNumber}
+      {label}: {buildInfo.buildNumber}
     </Box>
   );
 };

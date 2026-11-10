@@ -1,0 +1,19 @@
+/* Preserve Unite's existing login colour and dark navigation. */
+html[data-brand="unite"] {
+  --brand-primary: #384bd3;
+  --brand-primary-hover: #293bae;
+  --brand-primary-rgb: 56, 75, 211;
+  --brand-primary-contrast: #ffffff;
+  --brand-border: #d8e3eb;
+  --brand-text: #223648;
+  --brand-accent: #087f8c;
+  --brand-sidebar-background: #000000;
+  --brand-sidebar-text: #ffffff;
+  --brand-login-background: #384bd3;
+  --brand-page-background: #f1f5f9;
+}
+
+html[data-brand="unite"] .cafm-auth-page .cafm-auth-logo {
+  width: 98px;
+  height: 120px;
+}

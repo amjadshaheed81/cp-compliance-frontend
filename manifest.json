@@ -1,0 +1,67 @@
+{
+  "title": "CAFM PLATFORM Ultimate Super Admin parity phase",
+  "created_date": "2026-11-08",
+  "scope": "Changed production files only; local source baseline from Phase 2G plus applied Site Check parity + site-header fixes",
+  "files": [
+    {
+      "path": "backend/src/main/java/com/tdkglobal/api/controller/JobExecutionLogController.java",
+      "expected_sha256": "81F29324976B7A76AE48CE9E05684611435D4CA54CDC1AB2086D85C653BEAD2A",
+      "new_sha256": "B349F56DEA1C07024CC93A9A7312E4E0E9D8B401E4263DB15D8253E17B9F244C"
+    },
+    {
+      "path": "backend/src/main/java/com/tdkglobal/api/controller/SiteCheckSchedulerDevController.java",
+      "expected_sha256": "B79166D17CEA7B756D0B66BDA016F6E2AD67AEC262739DAF4E1A31737F563994",
+      "new_sha256": "D1F96C857072B71149D13EDBDE843BBD90DFDBF11B12FD874480F75118E402BD"
+    },
+    {
+      "path": "backend/src/main/java/com/tdkglobal/api/security/JwtTokenFilter.java",
+      "expected_sha256": "3470B22C133F21379307A4F0ED464ACEFF83000E569F40D71E6C335B2368CD4B",
+      "new_sha256": "C3BF78CEA4F8646E3994F6AEC721C716CF89402437528606FB3FB87BB8993E04"
+    },
+    {
+      "path": "backend/src/main/java/com/tdkglobal/api/service/LOVServiceImpl.java",
+      "expected_sha256": "B6459C2849BA3ABF98C6F62DB1203E7E6E454E92EF5F5C01BD5D81910F6F8EC4",
+      "new_sha256": "9C5C9D0E0589ADBB960A975910204009C27C1F1710A30B68C9E16A7C6BF5C9A2"
+    },
+    {
+      "path": "frontend/src/utils/platformWorkspace.js",
+      "expected_sha256": "3102B6884A7CC84443C3B8B4E087B2F2683D493A6969B57ADECCE7632BAC471E",
+      "new_sha256": "E2CA6A12E9596EE74B90B0009F31159824FFF499435D5F8F79F4CDAB311F6FBB"
+    },
+    {
+      "path": "frontend/src/components/Protected/Sites/SiteChecks/index.jsx",
+      "expected_sha256": "54010525D4453924CAE6D3B04672AE0A5DA1B6760685247B0DD78ECE7A18924B",
+      "new_sha256": "0B0ECAE97F0F288EF5A9A84037A0BF59E0071132FA347EFD21B2F2755C1D2332"
+    },
+    {
+      "path": "frontend/src/components/Protected/Sites/SiteChecks/SiteCheckSchedulerLogs.jsx",
+      "expected_sha256": "AD64CC50FDBC598048E7B5699BDAACC3C317DCB0A8B7B77467441284C44E7C00",
+      "new_sha256": "25591545D1B02747980F4DC49382CCC0C64B2E89865235857654B4A084260068"
+    },
+    {
+      "path": "frontend/src/components/Protected/Admin/AdminDropdowns.jsx",
+      "expected_sha256": "B4ABB96F95A5FD0FE56919BA51CC6CF20F577F12B059F084463817CC408F8CBB",
+      "new_sha256": "8306266DC5A6986814730EB6D5C0D1EEDA26A3778ABF4CFD0DA13E08760F8CB7"
+    },
+    {
+      "path": "frontend/src/components/Protected/Admin/AdminCategoriesAdd.jsx",
+      "expected_sha256": "78C2414A27CD411851B51B6E12D7F2CD6106BEA35E842425EA8B8E3D5E5D8286",
+      "new_sha256": "642C056639044A5019E593B02484555553E62917EC7EC8D400671F0EC60E1238"
+    },
+    {
+      "path": "frontend/src/components/Protected/Admin/AdminCategoriesEdit.jsx",
+      "expected_sha256": "EA2CBC0594D3B2798EE61CDF55CA3B09ECAACF9374AF5E38FBD34E24D7B5A155",
+      "new_sha256": "D9E9D9620D3EC43C35E5F96B4A9EDB5688AD9351153EF31D4D84F0DCEEA2B759"
+    },
+    {
+      "path": "frontend/src/components/Protected/Sites/Documents/AdminParentFolder.jsx",
+      "expected_sha256": "92C29878187322418C812497E4771B1F9EBF2FCC5110ABCD22DB7D8C2A2D5671",
+      "new_sha256": "2A84F0E12DC9216BFC3B61E59DC0710E09CE6C8D205FDF5DAF28732B2EBAD57D"
+    },
+    {
+      "path": "frontend/src/components/Protected/Users/EditProfile.jsx",
+      "expected_sha256": "B28A5CD38329A6854484E3E60E5362FC914767295A8113D457D07559FD07A316",
+      "new_sha256": "A167A54BC1A491FC66083ED2F22BB52746E24A1E3EBD190F58ABF436B5F1E398"
+    }
+  ]
+}

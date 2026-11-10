@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 474 495" role="img" aria-label="Connected buildings">
+  <circle cx="238" cy="245" r="180" fill="#fff" opacity=".08"/>
+  <path d="M32 432h410M57 431V240h115v191M160 431V109h153v322M300 431V200h116v231" fill="none" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M187 109V76h99v33" fill="none" stroke="#fff" stroke-width="5"/>
+  <g fill="#fff" opacity=".9">
+    <rect x="186" y="143" width="36" height="36" rx="3"/><rect x="250" y="143" width="36" height="36" rx="3"/>
+    <rect x="186" y="208" width="36" height="36" rx="3"/><rect x="250" y="208" width="36" height="36" rx="3"/>
+    <rect x="186" y="273" width="36" height="36" rx="3"/><rect x="250" y="273" width="36" height="36" rx="3"/>
+    <rect x="80" y="269" width="27" height="29" rx="3"/><rect x="122" y="269" width="27" height="29" rx="3"/>
+    <rect x="80" y="323" width="27" height="29" rx="3"/><rect x="122" y="323" width="27" height="29" rx="3"/>
+    <rect x="325" y="231" width="27" height="29" rx="3"/><rect x="367" y="231" width="27" height="29" rx="3"/>
+    <rect x="325" y="285" width="27" height="29" rx="3"/><rect x="367" y="285" width="27" height="29" rx="3"/>
+  </g>
+  <path d="M209 431v-76h56v76" fill="#fff" opacity=".22" stroke="#fff" stroke-width="4"/>
+  <circle cx="373" cy="115" r="30" fill="#8ed6cc"/>
+  <path d="m359 115 10 10 18-21" fill="none" stroke="#14354c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

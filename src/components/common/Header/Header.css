@@ -49,11 +49,16 @@
     overflow: hidden;
 }
 
+.app-header-page-context__icon {
+    flex: 0 0 auto;
+    color: var(--brand-primary, #176c9e);
+}
+
 .app-header-page-context__link {
     padding: 0;
     border: 0;
     background: transparent;
-    color: #176c9e;
+    color: var(--brand-primary, #176c9e);
     font: inherit;
     font-weight: 700;
     cursor: pointer;
@@ -61,7 +66,7 @@
 
 .app-header-page-context__link:hover,
 .app-header-page-context__link:focus-visible {
-    color: #0f4f76;
+    color: var(--brand-primary-hover, #0f4f76);
     text-decoration: underline;
 }
 
@@ -138,4 +143,93 @@
         margin-left: 6px;
         margin-right: 6px;
     }
+}
+
+.app-header-client {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+@media (max-width: 767.98px) {
+    .app-header-toolbar .nav-icon {
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: flex-end;
+    }
+    .app-header-client {
+        max-width: 210px;
+    }
+}
+
+
+.app-header-client--left {
+    flex: 0 1 260px;
+    margin-right: 12px;
+    color: #263238;
+    font-size: 1rem;
+    font-weight: 700;
+    max-width: 280px;
+}
+
+@media (max-width: 767.98px) {
+    .app-header-client--left {
+        flex-basis: 150px;
+        max-width: 170px;
+        font-size: 0.88rem;
+    }
+}
+
+/* Single compact page-heading row for all workspace routes. */
+.app-header-toolbar {
+    min-height: 62px;
+    gap: 10px;
+    padding-block: 5px;
+}
+.app-header-page-context {
+    justify-content: flex-start;
+    padding-right: 10px;
+    gap: 12px;
+    overflow: hidden;
+}
+.app-header-page-context__breadcrumb {
+    flex: 0 1 auto;
+    color: var(--brand-text, #34495a);
+    font-size: 0.91rem;
+}
+.app-header-page-context__parent { color: #62798b; }
+.app-header-page-context__current { color: #253e51; font-weight: 700; }
+.app-header-page-context__link { font-weight: 600; }
+.app-header-page-detail {
+    min-width: 0;
+    flex: 0 1 auto;
+    font-size: 0.78rem;
+    color: #617487;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.app-header-status {
+    flex: 0 0 auto;
+    background: #fff6da;
+    color: #805c00;
+    padding: 3px 9px;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 650;
+}
+.app-header-status.is-done { background: #e4f5e8; color: #176e35; }
+.app-header-record-pill { margin-left: auto; }
+@media (max-width: 1199.98px) {
+    .app-header-page-detail { display: none; }
+    .app-header-page-context { gap: 8px; }
+    .app-header-client--left { flex-basis: 130px; max-width: 160px; }
+}
+@media (max-width: 767.98px) {
+    .app-header-page-context__breadcrumb { font-size: 0.78rem; }
+    .app-header-client--left { flex-basis: 110px; max-width: 135px; }
+    .app-header-toolbar { min-height: 58px; }
+    .app-header-record-pill { padding: 4px 7px; }
 }

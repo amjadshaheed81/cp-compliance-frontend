@@ -1,0 +1,148 @@
+/* Palette and assets follow https://www.corecafm.com/.
+   Keep these rules scoped to Core; Unite retains its own presentation. */
+html[data-brand="core"] {
+  --core-green: #82c13f;
+  --core-mint: #e2f3ea;
+  --brand-primary: #333333;
+  --brand-primary-hover: #192225;
+  --brand-primary-rgb: 51, 51, 51;
+  --brand-primary-contrast: #ffffff;
+  --brand-border: #d7e2db;
+  --brand-text: #333333;
+  --brand-accent: #82c13f;
+  --brand-sidebar-background: #192225;
+  --brand-sidebar-text: #ffffff;
+  --brand-login-background: #e2f3ea;
+  --brand-page-background: #ffffff;
+}
+
+html[data-brand="core"] body {
+  color: var(--brand-text);
+}
+
+html[data-brand="core"] .cafm-auth-page .left-panel {
+  padding: clamp(32px, 5vw, 80px);
+  background-color: var(--core-mint);
+}
+
+html[data-brand="core"] .cafm-auth-page .left-panel img {
+  width: 100%;
+  max-width: 625px;
+  max-height: none;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(25, 34, 37, 0.12);
+}
+
+html[data-brand="core"] .cafm-auth-page .right-panel {
+  padding: clamp(32px, 5vw, 80px);
+  border-top: 6px solid var(--core-green);
+}
+
+html[data-brand="core"] .cafm-auth-page .right-panel form {
+  max-width: 440px;
+}
+
+html[data-brand="core"] .cafm-auth-page .cafm-auth-logo {
+  width: 215px;
+  height: 96px;
+}
+
+html[data-brand="core"] .cafm-auth-page h2 {
+  color: var(--brand-text);
+  font-size: clamp(1.4rem, 2.1vw, 1.85rem);
+  font-weight: 600;
+  line-height: 1.35;
+  margin-bottom: 24px !important;
+}
+
+html[data-brand="core"] .cafm-auth-page .form-control {
+  min-height: 44px;
+  border-color: var(--brand-border);
+  border-radius: 4px;
+}
+
+html[data-brand="core"] .form-control:focus,
+html[data-brand="core"] .form-select:focus {
+  border-color: var(--core-green);
+  box-shadow: 0 0 0 3px rgba(130, 193, 63, 0.2);
+}
+
+html[data-brand="core"] body .btn {
+  border-radius: 4px !important;
+}
+
+/* The site's lime accent needs dark labels on secondary Material actions. */
+html[data-brand="core"] .MuiButton-containedSecondary:not(.Mui-disabled) {
+  color: #192225;
+}
+
+html[data-brand="core"] .MuiButton-outlinedSecondary:not(.Mui-disabled),
+html[data-brand="core"] .MuiButton-textSecondary:not(.Mui-disabled) {
+  color: var(--brand-text);
+  border-color: var(--core-green);
+}
+
+html[data-brand="core"] .MuiButton-containedSecondary:not(.Mui-disabled):hover,
+html[data-brand="core"] .MuiButton-outlinedSecondary:not(.Mui-disabled):hover,
+html[data-brand="core"] .MuiButton-textSecondary:not(.Mui-disabled):hover {
+  color: #192225;
+  background-color: var(--core-mint);
+  border-color: var(--core-green);
+}
+
+html[data-brand="core"] .cafm-auth-page .login-submit {
+  min-height: 46px;
+  font-weight: 600;
+}
+
+/* The official grey wordmark needs its original white background. */
+html[data-brand="core"] .cafm-sidebar-brand {
+  padding: 10px 8px;
+  margin-bottom: 12px;
+  background: #ffffff;
+  border-bottom: 3px solid var(--core-green);
+}
+
+html[data-brand="core"] .cafm-sidebar-brand img {
+  height: auto;
+  max-height: 76px;
+}
+
+html[data-brand="core"] .cafm-sidebar-brand button {
+  color: var(--brand-text);
+}
+
+html[data-brand="core"] .cafm-sidebar .MuiListItemButton-root.active {
+  background-color: rgba(130, 193, 63, 0.16);
+  box-shadow: inset 3px 0 var(--core-green);
+}
+
+html[data-brand="core"] header.MuiAppBar-root,
+html[data-brand="core"] .platform-customers-header {
+  border-bottom: 3px solid var(--core-green);
+}
+
+html[data-brand="core"] .table-dark {
+  --bs-table-bg: #333333;
+  --bs-table-border-color: #4a5150;
+  --bs-table-striped-bg: #38413e;
+  --bs-table-hover-bg: #192225;
+}
+
+@media (max-width: 767.98px) {
+  html[data-brand="core"] .cafm-auth-page .left-panel {
+    min-height: 0;
+    padding: 24px;
+  }
+
+  html[data-brand="core"] .cafm-auth-page .left-panel img {
+    max-width: 320px;
+    max-height: 220px;
+    width: auto;
+  }
+
+  html[data-brand="core"] .cafm-auth-page .right-panel {
+    padding: 36px 24px;
+  }
+}

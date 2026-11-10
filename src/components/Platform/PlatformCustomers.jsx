@@ -1,40 +1,37 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  clearPlatformClient,
-  getPlatformClients,
-  getPlatformSession,
-  selectPlatformClient,
-} from "../../api/platform";
+import { clearPlatformClient, getPlatformClients, getPlatformSession, selectPlatformClient } from "../../api/platform";
 import { logoutUser } from "../../store/thunk/site";
+import { USER_LOGIN } from "../../store/actionTypes";
 import {
-  announceSessionChange,
-  assertPlatformSession,
-  getStoredSessionUser,
-  isPlatformUser,
-  reloadTo,
-  replaceSessionIdentity,
-  resetCustomerSession,
+  announceSessionChange, assertPlatformSession, isPlatformUser, reloadTo,
+  replaceSessionIdentity, resetCustomerSession,
 } from "../../utils/sessionContext";
+import {
+  getPlatformWorkspace, invalidatePlatformWorkspace, markPlatformIdentity, setPlatformSessionClient,
+} from "../../utils/platformWorkspace";
+import SidebarNew from "../common/Sidebar/SidebarNew";
+import PageHeaderTrail from "../common/Header/PageHeaderTrail";
+import { getPageHeaderContext } from "../../utils/pageHeaderContext";
+import ClientEditor from "../ClientManagement/ClientEditor";
+import { displayClientDate, isClientId } from "../ClientManagement/clientForm";
 import "./PlatformCustomers.css";
-import PlatformSites from "./PlatformSites";
 
 function selectionError(error) {
   switch (error?.response?.status) {
-    case 400: return "That selection could not be accepted. Please choose a customer from the list.";
-    case 403: return "You cannot select that customer. Choose an available customer from the refreshed list.";
-    case 404: return "That customer is no longer available. Please choose another customer.";
-    case 409: return "That customer is currently unavailable. Please choose another customer.";
-    default: return "The customer selection could not be confirmed. Please try again.";
+    case 400: return "That selection could not be accepted. Choose a client from the list.";
+    case 403: return "You cannot open that client. Choose an available client from the refreshed list.";
+    case 404: return "That client is no longer available. Choose another client.";
+    case 409: return "That client is currently unavailable. You can review its configuration below.";
+    default: return "The client selection could not be confirmed. Please try again.";
   }
 }
 
-function displayDate(value) {
-  if (!value) return "Not set";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime())
-    ? "Not set"
-    : new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric" }).format(date);
+function availability(client) {
+  if (client.selectable === true) return "Available";
+  if (client.status && client.status !== "Active") return client.status;
+  if (client.trialExpiry && new Date(client.trialExpiry).getTime() < Date.now()) return "Expired";
+  return "Unavailable";
 }
 
 export default function PlatformCustomers() {
@@ -45,12 +42,17 @@ export default function PlatformCustomers() {
   const mounted = useRef(false);
   const requestVersion = useRef(0);
   const operationInFlight = useRef(false);
+  const editorRef = useRef(false);
   const [session, setSession] = useState(null);
   const [clients, setClients] = useState([]);
   const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(null);
   const [message, setMessage] = useState("");
+  const [notice, setNotice] = useState("");
+  const [editor, setEditor] = useState(null);
+  editorRef.current = editor !== null;
 
   const expireSession = useCallback(() => {
     resetCustomerSession(dispatch);
@@ -61,37 +63,47 @@ export default function PlatformCustomers() {
   const loadSession = useCallback(async ({ preserveMessage = false } = {}) => {
     const version = ++requestVersion.current;
     setLoading(true);
-    setSession(null);
-    setClients([]);
     if (!preserveMessage) setMessage("");
     try {
       const [response, customers] = await Promise.all([getPlatformSession(), getPlatformClients()]);
       const verified = assertPlatformSession(response);
-      if (!Array.isArray(customers)) throw new Error("Invalid customer list");
+      if (!Array.isArray(customers) || !customers.every((client) => isClientId(client?.licenseId))) {
+        throw new Error("Invalid client list");
+      }
       if (!mounted.current || version !== requestVersion.current) return;
-
       const previous = cachedUserRef.current;
       const identityChanged = Boolean(previous?.id) &&
-        (!isPlatformUser(previous) || String(previous.id) !== String(verified.user.id));
-      replaceSessionIdentity(dispatch, verified.user);
+        (!isPlatformUser(previous) || previous.id !== verified.user.id);
+      if (!previous?.id || identityChanged) replaceSessionIdentity(dispatch, verified.user);
+      else dispatch({ type: USER_LOGIN, payload: verified.user });
+      const workspace = getPlatformWorkspace();
+      if (workspace && (workspace.user.id !== verified.user.id || workspace.selectedLicenseId !== verified.selectedLicenseId)) {
+        invalidatePlatformWorkspace();
+      }
+      markPlatformIdentity(true);
+      setPlatformSessionClient(verified.selectedClient);
       setSession(verified);
       setClients(customers);
       if (identityChanged) {
-        // The cookie may belong to a different account from the browser's saved state.
+        setEditor(null);
         announceSessionChange();
-        const storedUser = getStoredSessionUser();
-        if (isPlatformUser(storedUser) && String(storedUser.id) === String(verified.user.id)) {
-          reloadTo("/platform");
-        }
+        reloadTo("/platform");
       }
     } catch (error) {
       if (!mounted.current || version !== requestVersion.current) return;
-      if (error?.response?.status === 401) {
-        expireSession();
-      } else {
+      if (error?.response?.status === 401) expireSession();
+      else {
+        if (error?.response?.status === 403) {
+          invalidatePlatformWorkspace();
+          setPlatformSessionClient(null);
+          setSession(null);
+          setClients([]);
+          setEditor(null);
+        }
+        // Keep a temporary failure separate from the explicit Clear action.
         setMessage(error?.response?.status === 403
           ? "Platform access is unavailable for this account. Sign out to use another account."
-          : "Unable to verify your customer workspace. Please refresh or sign in again.");
+          : "Unable to refresh Client List. Check your connection and try again.");
       }
     } finally {
       if (mounted.current && version === requestVersion.current) setLoading(false);
@@ -102,7 +114,7 @@ export default function PlatformCustomers() {
     mounted.current = true;
     void loadSession();
     const refreshOnFocus = () => {
-      if (!operationInFlight.current && document.visibilityState !== "hidden") void loadSession();
+      if (!operationInFlight.current && !editorRef.current && document.visibilityState !== "hidden") void loadSession();
     };
     window.addEventListener("focus", refreshOnFocus);
     document.addEventListener("visibilitychange", refreshOnFocus);
@@ -114,36 +126,51 @@ export default function PlatformCustomers() {
     };
   }, [loadSession]);
 
-  const changeSelection = async (licenseId) => {
+  const changeSelection = async (licenseId, destination = "/dashboard") => {
     if (operationInFlight.current || loading) return;
     operationInFlight.current = true;
     requestVersion.current += 1;
     setPending(licenseId == null ? "clear" : licenseId);
     setMessage("");
     try {
-      const response = licenseId == null
-        ? await clearPlatformClient()
-        : await selectPlatformClient(licenseId);
+      const response = licenseId == null ? await clearPlatformClient() : await selectPlatformClient(licenseId);
       const verified = assertPlatformSession(response);
       if (!mounted.current) return;
-      // Install only the returned context; never turn the chosen licence into user.licenseId.
-      setSession(verified);
+      if (verified.selectedLicenseId !== licenseId || verified.user.id !== session?.user?.id) {
+        throw new Error("The client selection changed before it could be confirmed.");
+      }
+      invalidatePlatformWorkspace();
       replaceSessionIdentity(dispatch, verified.user);
+      markPlatformIdentity(true);
+      setPlatformSessionClient(verified.selectedClient);
+      setSession(verified);
       announceSessionChange();
-      reloadTo("/platform");
+      reloadTo(verified.selectionRequired ? "/platform" : destination);
     } catch (error) {
       if (!mounted.current) return;
-      if (error?.response?.status === 401) {
-        expireSession();
-      } else {
+      if (error?.response?.status === 401) expireSession();
+      else {
         setMessage(selectionError(error));
-        // A timeout or rejection must not leave an assumed customer on screen.
         await loadSession({ preserveMessage: true });
       }
     } finally {
       operationInFlight.current = false;
       if (mounted.current) setPending(null);
     }
+  };
+
+  const openClient = (client) => {
+    const destination = client.siteCount === 0 ? "/add-site" : "/dashboard";
+    if (session?.selectedLicenseId === client.licenseId) reloadTo(destination);
+    else void changeSelection(client.licenseId, destination);
+  };
+
+  const savedClient = async (client, result) => {
+    setEditor(null);
+    if (!result.created && session?.selectedLicenseId === client.licenseId) invalidatePlatformWorkspace();
+    setNotice(result.administratorCreated ? "Client administrator created." : result.created ? "Client created." : "Client configuration saved.");
+    if (result.created && result.openWorkspace) await changeSelection(client.licenseId, "/add-site");
+    else await loadSession();
   };
 
   const signOut = async () => {
@@ -153,7 +180,7 @@ export default function PlatformCustomers() {
     setPending("logout");
     const result = await dispatch(logoutUser());
     if (mounted.current && !result?.success) {
-      setMessage("Unable to sign out. Please check your connection and try again.");
+      setMessage("Unable to sign out. Check your connection and try again.");
       setPending(null);
       setLoading(false);
     }
@@ -164,106 +191,89 @@ export default function PlatformCustomers() {
   const busy = loading || pending != null;
   const search = query.trim().toLowerCase();
   const visibleClients = clients.filter((client) =>
-    `${client.companyName || ""} ${client.companyAddress || ""}`.toLowerCase().includes(search)
+    `${client.companyName || ""} ${client.companyAddress || ""}`.toLowerCase().includes(search) &&
+    (statusFilter === "all" || (statusFilter === "available" ? client.selectable === true : client.selectable !== true))
   );
 
   return (
     <div className="platform-customers-page">
-      <header className="platform-customers-header">
-        <div className="platform-customers-brand">CAFM <span>Customer workspace</span></div>
-        <div className="platform-customers-account">
-          {session?.user?.name && <span>{session.user.name}</span>}
-          <button type="button" className="btn btn-outline-secondary" onClick={signOut} disabled={pending != null}>
-            {pending === "logout" ? "Signing out..." : "Sign out"}
-          </button>
-        </div>
-      </header>
-
-      <main className="platform-customers-main">
-        <div className="platform-customers-heading">
-          <div>
-            <h1>Customers</h1>
-            <p>Select a customer to view its account details and sites.</p>
+      {session && <SidebarNew workspaceAvailable={Boolean(getPlatformWorkspace())} />}
+      <div className="content">
+        <header className="platform-customers-header">
+          <div className="platform-customers-brand">{selected?.companyName || "No client selected"}</div>
+          <PageHeaderTrail context={getPageHeaderContext("/platform")} />
+          <div className="platform-customers-account">
+            {session?.user?.name && <span>{session.user.name}</span>}
+            <button type="button" className="btn btn-outline-secondary" onClick={signOut} disabled={pending != null}>
+              {pending === "logout" ? "Signing out..." : "Sign out"}
+            </button>
           </div>
-          <button type="button" className="btn btn-outline-primary" onClick={() => loadSession()} disabled={busy}>
-            Refresh
-          </button>
-        </div>
-
-        {message && <div className="alert alert-danger" role="alert">{message}</div>}
-        {loading && <div className="platform-customers-loading" role="status">Loading customers...</div>}
-
-        {!loading && session && (
-          <>
-            <section className="platform-customers-selection" aria-labelledby="selected-customer-title">
-              <div className="platform-customers-selection-heading">
-                <div>
-                  <p className="platform-customers-eyebrow" id="selected-customer-title">Selected customer</p>
-                  <h2>{selected?.companyName || "No customer selected"}</h2>
-                </div>
-                {selected && (
-                  <button type="button" className="btn btn-outline-secondary" disabled={busy} onClick={() => changeSelection(null)}>
-                    {pending === "clear" ? "Clearing..." : "Clear selection"}
-                  </button>
-                )}
-              </div>
-              {selected ? (
-                <dl className="platform-customers-details">
-                  <div><dt>Address</dt><dd>{selected.companyAddress || "Not provided"}</dd></div>
-                  <div><dt>Allowed users</dt><dd>{selected.allowedUser ?? "Not set"}</dd></div>
-                  <div><dt>Allowed sites</dt><dd>{selected.allowedSites ?? "Not set"}</dd></div>
-                  <div><dt>Licence expiry</dt><dd>{displayDate(selected.trialExpiry)}</dd></div>
-                </dl>
-              ) : <p className="platform-customers-empty-selection">Choose an available customer below.</p>}
-            </section>
-
-            {selected && !busy && (
-              <PlatformSites
-                key={`${session.user.id}:${session.selectedLicenseId}`}
-                selectedLicenseId={session.selectedLicenseId}
-                customerName={selected.companyName || "selected customer"}
-                onSessionExpired={expireSession}
-                onContextChanged={loadSession}
-              />
-            )}
-
-            <section className="platform-customers-list" aria-labelledby="customer-list-title">
-              <div className="platform-customers-list-heading">
-                <div>
-                  <h2 id="customer-list-title">Select a customer</h2>
-                  <p>Inactive or expired customers cannot be selected.</p>
-                </div>
-                <label className="platform-customers-search">
-                  <span>Search customers</span>
-                  <input type="search" className="form-control" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or address" />
-                </label>
-              </div>
-              <div className="table-responsive">
-                <table className="table platform-customers-table">
-                  <thead><tr><th scope="col">Customer</th><th scope="col">Availability</th><th scope="col">Licence expiry</th><th scope="col"><span className="visually-hidden">Selection</span></th></tr></thead>
-                  <tbody>
-                    {visibleClients.map((client) => {
-                      const isSelected = session.selectedLicenseId === client.licenseId;
-                      const canSelect = client.selectable === true && Number.isSafeInteger(client.licenseId) && client.licenseId > 0;
-                      return (
-                        <tr key={client.licenseId} className={isSelected ? "platform-customers-current-row" : undefined}>
-                          <th scope="row"><strong>{client.companyName || "Unnamed customer"}</strong><span className="platform-customers-address">{client.companyAddress || "Address not provided"}</span></th>
-                          <td><span className={`platform-customers-status ${canSelect ? "is-available" : "is-unavailable"}`}>{canSelect ? "Available" : "Unavailable"}</span></td>
-                          <td>{displayDate(client.trialExpiry)}</td>
-                          <td className="platform-customers-action"><button type="button" className={`btn ${isSelected ? "btn-outline-secondary" : "btn-primary"}`} disabled={busy || !canSelect || isSelected} onClick={() => changeSelection(client.licenseId)} aria-label={`${isSelected ? "Selected" : "Select"} ${client.companyName || "customer"}`}>
-                            {pending === client.licenseId ? "Selecting..." : isSelected ? "Selected" : "Select customer"}
-                          </button></td>
-                        </tr>
-                      );
-                    })}
-                    {visibleClients.length === 0 && <tr><td colSpan={4} className="platform-customers-empty-list">{clients.length === 0 ? "No customers are available for this platform account." : "No customers match your search."}</td></tr>}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          </>
-        )}
-      </main>
+        </header>
+        <main className="platform-customers-main">
+          <div className="platform-customers-heading">
+            <div><h1 className="visually-hidden">Client List</h1><p>Open a client workspace, or manage its configuration.</p></div>
+            <div className="platform-customers-buttons">
+              <button type="button" className="btn btn-outline-secondary" onClick={() => loadSession()} disabled={busy}>Refresh</button>
+              <button type="button" className="btn btn-primary" onClick={() => { setNotice(""); setEditor({ clientId: null }); }} disabled={busy || !session}>Add Client</button>
+            </div>
+          </div>
+          {message && <div className="alert alert-danger" role="alert">{message}</div>}
+          {notice && <div className="alert alert-success" role="status">{notice}</div>}
+          {selected && <div className="platform-customers-current" aria-label="Selected client">
+            <span>Working client: <strong>{selected.companyName || "Unnamed client"}</strong></span>
+            <div className="platform-customers-buttons">
+              <button type="button" className="btn btn-outline-primary btn-sm" disabled={busy} onClick={() => openClient(selected)}>{selected.siteCount === 0 ? "Add first site" : "Return to workspace"}</button>
+              <button type="button" className="btn btn-outline-secondary btn-sm" disabled={busy} onClick={() => changeSelection(null)}>{pending === "clear" ? "Clearing..." : "Clear selection"}</button>
+            </div>
+          </div>}
+          <section className="platform-customers-list" aria-label="Clients">
+            <div className="platform-customers-list-heading">
+              <label className="platform-customers-search">
+                <span>Search clients</span>
+                <input type="search" className="form-control" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name or address" />
+              </label>
+              <label className="platform-customers-filter">
+                <span>Availability</span>
+                <select className="form-select" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+                  <option value="all">All clients</option><option value="available">Available</option><option value="unavailable">Unavailable</option>
+                </select>
+              </label>
+              <span className="platform-customers-count">{visibleClients.length} of {clients.length} clients</span>
+            </div>
+            {loading && <div className="platform-customers-loading" role="status">Refreshing clients...</div>}
+            <div className="table-responsive">
+              <table className="table platform-customers-table">
+                <thead><tr><th scope="col">Client</th><th scope="col">Status</th><th scope="col">Sites</th><th scope="col">Licence expiry</th><th scope="col"><span className="visually-hidden">Actions</span></th></tr></thead>
+                <tbody>
+                  {visibleClients.map((client) => {
+                    const isSelected = session?.selectedLicenseId === client.licenseId;
+                    const canSelect = client.selectable === true;
+                    const name = client.companyName || "Unnamed client";
+                    const count = Number.isSafeInteger(client.siteCount) && client.siteCount >= 0 ? client.siteCount : null;
+                    return <tr key={client.licenseId} className={isSelected ? "platform-customers-current-row" : undefined}>
+                      <th scope="row"><strong>{name}</strong>{isSelected && <span className="platform-customers-selected-label">Selected</span>}<span className="platform-customers-address">{client.companyAddress || "Address not provided"}</span></th>
+                      <td><span className={`platform-customers-status ${canSelect ? "is-available" : "is-unavailable"}`}>{availability(client)}</span></td>
+                      <td>{count == null ? "—" : `${count} / ${client.allowedSites}`}</td>
+                      <td>{displayClientDate(client.trialExpiry)}</td>
+                      <td className="platform-customers-action">
+                        <div className="platform-customers-buttons">
+                          <button type="button" className="btn btn-outline-secondary btn-sm" disabled={busy} onClick={() => { setNotice(""); setEditor({ clientId: client.licenseId }); }} aria-label={`Configure ${name}`}>Configure</button>
+                          <button type="button" className="btn btn-primary btn-sm" disabled={busy || !canSelect} onClick={() => openClient(client)} aria-label={`${count === 0 ? "Add first site for" : "Open"} ${name}`}>
+                            {pending === client.licenseId ? "Opening..." : count === 0 ? "Add first site" : "Open client"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>;
+                  })}
+                  {!loading && visibleClients.length === 0 && <tr><td colSpan={5} className="platform-customers-empty-list">{clients.length === 0 ? "No clients yet. Add a client to get started." : "No clients match your search or availability filter."}</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <p className="platform-customers-list-note">Sites shows the number used and the licence allowance. You can configure inactive or expired clients before opening their workspace.</p>
+          </section>
+        </main>
+      </div>
+      {editor && <ClientEditor key={editor.clientId || "new"} clientId={editor.clientId} platform onClose={() => setEditor(null)} onSaved={savedClient} onSessionExpired={expireSession} />}
     </div>
   );
 }

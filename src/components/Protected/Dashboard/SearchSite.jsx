@@ -21,6 +21,8 @@ import {
 } from "../../../store/thunk/site";
 import { ROLE } from "../../../Constant/Role";
 import { toast } from "react-toastify";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { getPlatformWorkspace } from "../../../utils/platformWorkspace";
 
 function SearchSite({
   getSites,
@@ -41,6 +43,12 @@ function SearchSite({
     right: false,
   });
   const navigate = useNavigate();
+  const platform = isPlatformUser(loggedInUserData);
+  const workspaceFavoritesKey = () => `cafm.platform.favorites.${loggedInUserData?.id}.${getPlatformWorkspace()?.selectedLicenseId}`;
+  const saveWorkspaceFavorites = (next) => {
+    setfavorites(next);
+    try { localStorage.setItem(workspaceFavoritesKey(), JSON.stringify(next)); } catch { /* Optional preference. */ }
+  };
   const goTo = (link) => {
     navigate(link);
   };
@@ -50,6 +58,10 @@ function SearchSite({
   }, []);
 
   const setfavorite = async (id) => {
+    if (platform) {
+      saveWorkspaceFavorites(removeDuplicates([...favorites, String(id.siteId)]));
+      return;
+    }
     const userData = await get(`/api/user/${loggedInUserData?.id}/details`);
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
     favorite.push(id?.siteId);
@@ -65,6 +77,10 @@ function SearchSite({
   };
 
   const removefavorite = async (id) => {
+    if (platform) {
+      saveWorkspaceFavorites(favorites.filter((value) => value !== String(id.siteId)));
+      return;
+    }
     const userData = await get(`/api/user/${loggedInUserData?.id}/details`);
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
 
@@ -89,10 +105,18 @@ function SearchSite({
 
   useEffect(() => {
     setSites2(sites || []);
+    if (platform) setSites(sites || []);
     getFav();
   }, [sites]);
 
   const getFav = async () => {
+    if (platform) {
+      try {
+        const saved = JSON.parse(localStorage.getItem(workspaceFavoritesKey()) || "[]");
+        setfavorites(Array.isArray(saved) ? saved.filter((id) => sites?.some((site) => String(site.siteId) === id)) : []);
+      } catch { setfavorites([]); }
+      return;
+    }
     const userData = await get(`/api/user/${loggedInUserData?.id}/details`);
     let favorite = userData?.favorite ? userData?.favorite?.split(",") : [];
     favorite = removeDuplicates(favorite);

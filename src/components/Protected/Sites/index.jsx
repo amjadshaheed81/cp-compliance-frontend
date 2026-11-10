@@ -19,6 +19,9 @@ import Tooltip from "@mui/material/Tooltip";
 import { toast } from "react-toastify";
 import Pagination from "../../common/Pagination/Pagination";
 import { ROLE } from "../../../Constant/Role";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { reloadTo } from "../../../utils/sessionContext";
+import { invalidatePlatformWorkspace, selectPlatformWorkspaceSite } from "../../../utils/platformWorkspace";
 import { get } from "../../../api";
 import { calculateLastPageIndex } from "../../../utils/calculateSearchedPageNumber";
 import { SiteArea } from "../../../Constant/SiteArea";
@@ -65,21 +68,24 @@ const Sites = ({
   };
 
   useEffect(() => {
+    if (!isPlatformUser(loggedInUserData)) getSites(loggedInUserData);
+    getRisks();
+  }, [loggedInUserData?.id]);
+  useEffect(() => {
     if (sites?.length > 0) {
       setSelectedItem("open");
       searchSitesWithStatus({ target: { value: "open" } });
-    } else {
-      getSites(loggedInUserData);
     }
-    getRisks();
   }, [sites]);
   useEffect(() => {
     applyFilters();
   }, [searchTerm, selectedStatus, selectedArea]);
 
   const getRisks = async () => {
-    const risksdata = await get("/api/site-check/risks");
-    setrisks(risksdata);
+    try {
+      const risksdata = await get("/api/site-check/risks");
+      setrisks(risksdata);
+    } catch { setrisks({}); }
   };
   const deleteSiteById = (itm) => {
     Swal.fire({
@@ -92,6 +98,11 @@ const Sites = ({
         const res = await deleteSite(itm?.siteId);
         if (res === "Success") {
           toast.success(`${itm?.siteName} site has been deleted successully`);
+          if (isPlatformUser(loggedInUserData)) {
+            invalidatePlatformWorkspace();
+            reloadTo("/sites");
+            return;
+          }
           getSites(loggedInUserData);
         } else {
           toast.error(
@@ -345,6 +356,10 @@ const Sites = ({
                         <button
                           className="btn btn-sm btn-light"
                           onClick={() => {
+                            if (isPlatformUser(loggedInUserData)) {
+                              selectPlatformWorkspaceSite(itm, `/update-site?siteId=${itm.siteId}&isViewMode=view`);
+                              return;
+                            }
                             setTimeout(() => {
                               goTo("/update-site");
                             }, 1000);
@@ -361,6 +376,10 @@ const Sites = ({
                             <button
                               className="btn btn-sm btn-light"
                               onClick={() => {
+                                if (isPlatformUser(loggedInUserData)) {
+                                  selectPlatformWorkspaceSite(itm, `/update-site?siteId=${itm.siteId}&isViewMode=edit`);
+                                  return;
+                                }
                                 setTimeout(() => {
                                   goTo(
                                     `/update-site?siteId=${itm?.siteId}&isViewMode=edit`

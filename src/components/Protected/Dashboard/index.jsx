@@ -1,7 +1,6 @@
 import React, { Fragment, useEffect } from "react";
 import { connect } from "react-redux";
 import Header from "../../common/Header/Header";
-import BreadCrumHeader from "../../common/BreadCrumHeader/BreadCrumHeader";
 import DashboardActions from "./DashboardActions";
 import "./Dashboard.css";
 import DashboardNotification from "./DashboardNotification";
@@ -39,30 +38,13 @@ const Dashboard = ({
     <Fragment>
       <SidebarNew />
       <div className="content">
-        <Header />
+        <Header pageContext={{
+          parentLabel: "Dashboard",
+          parentPath: "/dashboard",
+          label: "Home",
+          icon: "dashboard",
+        }} />
         <div className="container-fluid" style={{backgroundColor:'#F1F5F9'}}>
-          <BreadCrumHeader header={"Welcome"} page={"Home"} />
-          <div className="d-flex bd-highlight p-0">
-            <div className="bd-highlight">
-              <b><p className="display-8">{loggedInUserData?.name??"User"}</p></b>
-            </div>
-            {/* <div className="ms-auto bd-highlight">
-              <div className="form-check form-switch">
-                <label
-                  className="form-check-label"
-                  for="flexSwitchCheckChecked"
-                >
-                  All Sites
-                </label>
-                <input
-                  className="form-check-input"
-                  type="checkbox"
-                  id="flexSwitchCheckChecked"
-                  checked
-                />
-              </div>
-            </div> */}
-          </div>
           <div className="row">
             <div className="col">
               <DashboardRiskScore />

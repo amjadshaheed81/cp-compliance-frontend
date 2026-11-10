@@ -4,7 +4,6 @@ import Accordion from "@mui/material/Accordion";
 import AccordionSummary from "@mui/material/AccordionSummary";
 import AccordionDetails from "@mui/material/AccordionDetails";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import SidebarNew from "../../../common/Sidebar/SidebarNew";
 import { yearOptions } from "../../../../utils/yearOptions";
 import { yesNoOptions } from "../../../../utils/yesNoOptions";
 import { useForm } from "react-hook-form";
@@ -48,7 +47,7 @@ const SiteInformation = ({
   };
   return (
     <div>
-      <SidebarNew />
+
       <form className="row" onSubmit={handleSubmit(saveSiteInformation)}>
         <div className="col-md-2">
           <div className="pt-2 pb-4">

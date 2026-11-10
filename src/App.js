@@ -13,8 +13,9 @@ import Notification from './Notification';
 import { selectGlobalSite } from './store/thunk/site';
 import ClientScopeGate from './components/common/ClientScopeGate/ClientScopeGate';
 import { getStoredSessionUser, isPlatformUser, reloadTo, SESSION_CHANGE_KEY } from './utils/sessionContext';
+import { invalidatePlatformWorkspace } from './utils/platformWorkspace';
 
-const standalonePaths = new Set(['/', '/login', '/forgot-password', '/change-password', '/platform']);
+const standalonePaths = new Set(['/', '/login', '/forgot-password', '/change-password', '/platform', '/platform/continue']);
 const routesConfig = getRoutes().map((route) => {
   const element = route.allowedRoles
     ? <ProtectedRoute element={route.element} allowedRoles={route.allowedRoles} />
@@ -54,8 +55,9 @@ const AppContent = () => {
   useEffect(() => {
     const handleSessionChange = (event) => {
       if (event.key !== SESSION_CHANGE_KEY) return;
+      invalidatePlatformWorkspace();
       const currentUser = getStoredSessionUser();
-      reloadTo(isPlatformUser(currentUser) ? '/platform' : currentUser?.id ? '/dashboard' : '/login');
+      reloadTo(isPlatformUser(currentUser) ? '/platform/continue' : currentUser?.id ? '/dashboard' : '/login');
     };
     window.addEventListener('storage', handleSessionChange);
     return () => window.removeEventListener('storage', handleSessionChange);

@@ -9,6 +9,7 @@ import { isManagerAdminLogin } from "../../../../utils/isManagerAdminLogin";
 import { getCategoryLabelValue } from "../../../../utils/getCategoryLabelValue";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 import { get } from "../../../../api";
+import { openPlatformSitePath } from "../../../../utils/platformWorkspace";
 
 const Summary = ({
   siteAssets,
@@ -382,7 +383,8 @@ autoComplete="off"
                       <button
                         className="btn btn-sm btn-light"
                         onClick={() => {
-                          goTo(`/view-asset?assetId=${asset?.assetId}`);
+                          const path = `/view-asset?assetId=${asset?.assetId}`;
+                          if (!openPlatformSitePath(asset?.siteId || asset?.siteEntity?.siteId || siteSelectedForGlobal?.siteId, path)) goTo(path);
                         }}
                       >
                         <i className="fas fa-eye"></i>

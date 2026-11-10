@@ -6,3 +6,36 @@
 .breadcrumb-item + .breadcrumb-item::before{
     content: var(--bs-breadcrumb-divider, "/");
 }
+.cafm-page-heading {
+    padding-top: 2px;
+}
+.cafm-page-heading h4 {
+    margin-bottom: 2px;
+}
+.cafm-page-breadcrumb {
+    font-size: 0.86rem;
+    color: #677b8b;
+}
+.cafm-page-breadcrumb a {
+    font-weight: 600;
+}
+
+.cafm-print-page-title { display: none; }
+@media print {
+  .cafm-print-page-title {
+    display: block;
+    margin: 4px 0 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+}
+
+@media print {
+  .cafm-print-page-title h4 { display: inline-block; margin: 4px 0 8px; }
+  .cafm-print-page-status { margin-left: 10px; font-size: 0.88rem; }
+}
+
+/* html2pdf captures screen media, so retain the legacy title in PDF exports. */
+.cafm-exporting-pdf .cafm-print-page-title { display: block; }
+.cafm-exporting-pdf .cafm-print-page-title h4 { display: inline-block; margin: 4px 0 8px; }
+.cafm-exporting-pdf .cafm-print-page-status { margin-left: 10px; font-size: 0.88rem; }

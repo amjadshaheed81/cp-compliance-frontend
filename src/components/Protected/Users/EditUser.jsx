@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
+import { workingLicenseId } from "../../../utils/platformWorkspace";
 import {
   Button,
   Box,
@@ -196,7 +197,7 @@ const ViewUsers = ({
       trade: formJson?.userType === "External" ? formJson?.trade : "",
       status: formJson?.status || "",
       gasSafetyRegNo: formJson?.gasSafetyRegNo || "",
-      licenseId: loggedInUserData?.licenseId,
+      licenseId: workingLicenseId(loggedInUserData),
     };
     setIsLoading(true);
     try {

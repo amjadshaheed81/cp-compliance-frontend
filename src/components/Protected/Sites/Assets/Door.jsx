@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState, useRef } from "react";
+import { hasPlatformIdentity } from "../../../../utils/platformWorkspace";
 import { connect } from "react-redux";
 import { CSVLink } from "react-csv";
 import Tooltip from "@mui/material/Tooltip";
@@ -733,7 +734,7 @@ const Door = ({
           }
 
           try {
-            const response = await put("/api/site/296/assets/mutiples", { assets });
+            const response = await put(`/api/site/${hasPlatformIdentity() ? siteSelectedForGlobal?.siteId : 296}/assets/mutiples`, { assets });
 
             if (response.status === 200 || response.status === 201) {
               toast.success("Assets updated successfully!");

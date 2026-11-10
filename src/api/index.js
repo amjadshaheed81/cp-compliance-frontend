@@ -1,4 +1,7 @@
 import axios from "axios";
+import { installWorkspaceInterceptors } from "./workspace";
+import { getWorkspaceSnapshot } from "../utils/platformWorkspace";
+import { clearCustomerStorage, CUSTOMER_SESSION_RESET_EVENT, reloadTo } from "../utils/sessionContext";
 
 let axiosInstance = axios.create({
   baseURL: window?.location?.origin, //window?.location?.origin,
@@ -9,28 +12,28 @@ export const SITE_CHECK_DATA_CHANGED_EVENT = "cafm:site-check-data-changed";
 export const API_REQUEST_FAILED_EVENT = "cafm:api-request-failed";
 
 export function notifyApiRequestFailed(error) {
-  if (!error || error.__cafmApiFailureNotified) return;
+  if (!error || axios.isCancel(error) || error.__cafmApiFailureNotified) return;
   error.__cafmApiFailureNotified = true;
 
   const method = String(error?.config?.method || "GET").toUpperCase();
   const rawUrl = String(error?.config?.url || "");
   const status = Number(error?.response?.status || 0);
-  let path = rawUrl;
+  let path = "";
+  let internal = false;
   try {
-    path = new URL(rawUrl, window.location.origin).pathname +
-      new URL(rawUrl, window.location.origin).search;
-  } catch {
-    // Relative paths are already suitable for diagnostics.
-  }
+    const parsed = new URL(rawUrl, error?.config?.baseURL || window.location.origin);
+    path = parsed.pathname;
+    internal = parsed.origin === window.location.origin && path.startsWith("/api/");
+  } catch { /* Invalid request details are not exposed. */ }
 
   window.dispatchEvent(
     new CustomEvent(API_REQUEST_FAILED_EVENT, {
       detail: {
         method,
-        url: rawUrl,
+        url: path,
         path,
         status,
-        responseData: error?.response?.data ?? null,
+        responseData: internal ? error?.response?.data ?? null : null,
       },
     })
   );
@@ -44,7 +47,7 @@ export function notifySiteCheckDataChanged(url, method) {
   } catch {
     // Relative API paths are already usable as-is.
   }
-  if (!path.startsWith("/api/site-check")) return;
+  if (!path.startsWith("/api/site-check") && !path.startsWith("/api/platform/workspace/site-check")) return;
   window.dispatchEvent(
     new CustomEvent(SITE_CHECK_DATA_CHANGED_EVENT, {
       detail: { url: rawUrl, method },
@@ -64,6 +67,7 @@ function configAxios() {
     baseURL: window?.location?.origin, //,
     timeout: 2000000,
   });
+  installWorkspaceInterceptors(axiosInstance);
   axiosInstance.interceptors.response.use(
     (response) => response,
     (error) => handleError(error)
@@ -71,49 +75,28 @@ function configAxios() {
 }
 
 function handleError(error) {
+  if (axios.isCancel(error) || error?.__cafmErrorHandled) return Promise.reject(error);
+  error.__cafmErrorHandled = true;
   const method = String(error?.config?.method || "GET").toUpperCase();
-  const url = String(error?.config?.url || "");
   const status = Number(error?.response?.status || 0);
-
-  console.error("API Error:", {
-    method,
-    url,
-    status,
-    responseData: error?.response?.data,
-    error,
-  });
+  let path = "";
+  let cafmRequest = false;
+  try {
+    const request = new URL(error?.config?.url || "", error?.config?.baseURL || window.location.origin);
+    path = request.pathname;
+    cafmRequest = request.origin === window.location.origin && path.startsWith("/api/");
+  } catch { /* A malformed/external request cannot expire our session. */ }
+  console.error("API request failed:", { method, path, status });
   notifyApiRequestFailed(error);
-
-  if (error.response) {
-    const { status } = error.response;
-    const requestUrl = String(error?.config?.url || "");
-    const isLoginRequest = requestUrl.includes("/api/user/login");
-    const suppressAuthRedirect = Boolean(error?.config?.suppressAuthRedirect);
-
-    // A rejected login must be handled by the login screen so the user sees
-    // the real error. Optional background work must never log the user out.
-    if (
-      (status === 401 || status === 403) &&
-      !isLoginRequest &&
-      !suppressAuthRedirect
-    ) {
-      localStorage.clear();
-      window.location.href = "/#/login";
-    }
-
-    if (status === 500) {
-      const errorMessage = String(error?.response?.data?.message || "");
-      if (
-        !suppressAuthRedirect &&
-        (errorMessage.includes("JWT expired at") ||
-          errorMessage.includes("JWT String argument cannot be null or empty."))
-      ) {
-        localStorage.clear();
-        window.location.href = "/#/login";
-      }
-    }
+  const isLoginRequest = path === "/api/user/login";
+  const suppressed = Boolean(error?.config?.suppressAuthRedirect);
+  const expiredLegacySession = status === 500 && /JWT expired at|JWT String argument cannot be null or empty\./.test(String(error?.response?.data?.message || ""));
+  // Forbidden means the operation is denied; only our own expired/unauthenticated session signs out.
+  if (cafmRequest && !isLoginRequest && !suppressed && (status === 401 || expiredLegacySession)) {
+    window.dispatchEvent(new Event(CUSTOMER_SESSION_RESET_EVENT));
+    clearCustomerStorage();
+    reloadTo("/login");
   }
-
   return Promise.reject(error);
 }
 
@@ -158,7 +141,7 @@ export function postWithTimeout(url, userData, timeoutMs = 20000) {
   );
 }
 
-export async function getWithTimeout(url, timeoutMs = 15000) {
+export async function getWithTimeout(url, timeoutMs = 15000, { signal, suppressAuthRedirect = false } = {}) {
   configAxios();
   try {
     const res = await axiosInstance({
@@ -166,6 +149,8 @@ export async function getWithTimeout(url, timeoutMs = 15000) {
       url,
       headers: getHeaders(),
       timeout: timeoutMs,
+      signal,
+      suppressAuthRedirect,
     });
     return res?.data ?? null;
   } catch (error) {
@@ -369,8 +354,17 @@ const SAS_TOKEN_CACHE_MS = 30 * 60 * 1000;
 let cachedSasToken = null;
 let cachedSasTokenLoadedAt = 0;
 let sasTokenRequestInFlight = null;
+let sasTokenContext = "client";
 
 export async function getSasToken(forceRefresh = false) {
+  const workspace = getWorkspaceSnapshot();
+  const contextKey = workspace ? `${workspace.selectedLicenseId}:${workspace.siteId}:${workspace.generation}` : "client";
+  if (sasTokenContext !== contextKey) {
+    sasTokenContext = contextKey;
+    cachedSasToken = null;
+    cachedSasTokenLoadedAt = 0;
+    sasTokenRequestInFlight = null;
+  }
   const cacheAge = Date.now() - cachedSasTokenLoadedAt;
   if (
     !forceRefresh &&
@@ -392,12 +386,13 @@ export async function getSasToken(forceRefresh = false) {
     headers: getHeaders(),
   })
     .then(({ data }) => {
+      if (sasTokenContext !== contextKey) throw new axios.CanceledError("The workspace changed.");
       cachedSasToken = data;
       cachedSasTokenLoadedAt = Date.now();
       return data;
     })
     .finally(() => {
-      sasTokenRequestInFlight = null;
+      if (sasTokenContext === contextKey) sasTokenRequestInFlight = null;
     });
 
   return sasTokenRequestInFlight;

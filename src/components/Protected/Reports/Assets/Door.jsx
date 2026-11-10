@@ -5,6 +5,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { getSiteDoorAssets, getSiteLayout } from "../../../../store/thunk/site";
 import { useNavigate } from "react-router-dom";
 import { get } from "../../../../api";
+import { openPlatformSitePath } from "../../../../utils/platformWorkspace";
 import Pagination from "../../../common/Pagination/Pagination";
 import { calculateLastPageIndex } from "../../../../utils/calculateSearchedPageNumber";
 
@@ -359,7 +360,8 @@ autoComplete="off"
                       <button
                         className="btn btn-sm btn-light"
                         onClick={() => {
-                          goTo(`/view-asset?assetId=${asset?.assetId}`);
+                          const path = `/view-asset?assetId=${asset?.assetId}`;
+                          if (!openPlatformSitePath(asset?.siteId || asset?.siteEntity?.siteId || siteSelectedForGlobal?.siteId, path)) goTo(path);
                         }}
                       >
                         <i className="fas fa-eye"></i>

@@ -8,6 +8,8 @@ import React, { Fragment, useEffect, useState } from "react";
 import Tooltip from "@mui/material/Tooltip";
 import { connect, useDispatch } from "react-redux";
 import { del, get, put } from "../../../api";
+import { isPlatformUser } from "../../../utils/sessionContext";
+import { platformWorkspacePathAllowed } from "../../../utils/platformWorkspace";
 import {
   Dialog,
   DialogTitle,
@@ -244,6 +246,7 @@ const DashboardEventCalendar = ({ loggedInUserData, sites, siteSelectedForGlobal
   }
 
   const handleEventClick = async (section, siteId) => {
+    if (isPlatformUser(loggedInUserData) && !platformWorkspacePathAllowed(String(section || "").split("?")[0])) return;
     try {
       const newSite = sites.find(s => s.siteId === siteId);
       if (!newSite) {

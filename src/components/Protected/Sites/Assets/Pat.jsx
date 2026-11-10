@@ -24,6 +24,7 @@ import { useLocation } from "react-router-dom";
 import moment from "moment";
 import Papa from "papaparse";
 import MultiEditModal from './MultiEdit';
+import { hasPlatformIdentity } from "../../../../utils/platformWorkspace";
 
 export const findAssetWithNearestPatNextDate = (asset) => {
   let nearestAsset = null;
@@ -575,7 +576,7 @@ const Pat = ({
             }
     
             try {
-              const response = await put("/api/site/296/assets/mutiples", { assets });
+              const response = await put(`/api/site/${hasPlatformIdentity() ? siteSelectedForGlobal?.siteId : 296}/assets/mutiples`, { assets });
     
               if (response.status === 200 || response.status === 201) {
                 toast.success("Assets updated successfully!");

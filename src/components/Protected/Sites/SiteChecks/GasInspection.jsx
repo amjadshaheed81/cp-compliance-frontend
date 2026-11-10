@@ -1,3 +1,4 @@
+import { fetchWorkspaceResource } from "../../../../api/workspace";
 import React, { useState, useEffect } from "react";
 import { connect, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -49,7 +50,7 @@ if (typeof window !== 'undefined') {
 
 const fetchPdfTemplate = async () => {
     try {
-        const response = await fetch(pdfTemplate);
+        const response = await fetchWorkspaceResource(pdfTemplate);
         if (!response.ok) {
             throw new Error('Failed to load PDF template: ' + response.statusText);
         }
@@ -1079,7 +1080,7 @@ const GasSafetyRecord = ({
                             const ctx = canvas.getContext('2d');
                             ctx.drawImage(img, 0, 0);
                             const pngDataUrl = canvas.toDataURL('image/png');
-                            const pngResponse = await fetch(pngDataUrl);
+                            const pngResponse = await fetchWorkspaceResource(pngDataUrl);
                             const pngBytes = await pngResponse.arrayBuffer();
                             return await pdfDoc.embedPng(pngBytes);
                         } catch (finalError) {
@@ -1204,7 +1205,7 @@ const GasSafetyRecord = ({
             if (effectiveEngineer?.signature) {
                 try {
                     const signatureUrl = `${effectiveEngineer.signature}?${sasToken}`;
-                    const signatureResponse = await fetch(signatureUrl);
+                    const signatureResponse = await fetchWorkspaceResource(signatureUrl);
                     const signatureImageBytes = await signatureResponse.arrayBuffer();
 
                     let signatureImage;
@@ -1254,7 +1255,7 @@ const GasSafetyRecord = ({
                     const controller = new AbortController();
                     const timeout = setTimeout(() => controller.abort(), 10000);
                     try {
-                        const imageResponse = await fetch(`${cleanUrl}?${token}`, {
+                        const imageResponse = await fetchWorkspaceResource(`${cleanUrl}?${token}`, {
                             signal: controller.signal,
                             mode: 'cors',
                             credentials: 'omit',

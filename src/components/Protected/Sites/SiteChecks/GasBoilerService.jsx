@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { connect } from "react-redux";
 import { toast } from "react-toastify";
 import { post, put, get, uploadSiteCheckDoc, getSasToken } from "../../../../api";
+import { saveGasBoilerActionLink } from "./shared/gasBoilerRequests";
 import {
     getSiteCheckAssets,
     getUsers,
@@ -1063,7 +1064,7 @@ const GasBoilerService = ({
             };
 
             if (formData.id) {
-                await put(`/api/site-check/gas-boiler-inspection/${formData.id}`, inspectionPayload);
+                await saveGasBoilerActionLink(formData.id, currentCheckId, inspectionPayload, loggedInUserData);
             } else if (currentCheckId) {
                 await post("/api/site-check/gas-boiler-inspection", inspectionPayload);
             }

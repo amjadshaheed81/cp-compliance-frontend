@@ -1,4 +1,5 @@
 import React, { Fragment, useEffect, useState } from "react";
+import { hasPlatformIdentity, openPlatformSitePath } from "../../../../utils/platformWorkspace";
 import { connect } from "react-redux";
 import moment from "moment";
 import Pagination from "../../../common/Pagination/Pagination";
@@ -882,6 +883,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                             <button
                               className="btn btn-sm btn-light"
                               onClick={() => {
+                                if (hasPlatformIdentity() && action.siteId !== siteSelectedForGlobal?.siteId) {
+                                  openPlatformSitePath(action.siteId, `/energy-cost?energyId=${action.energyId}&panel=cost`);
+                                  return;
+                                }
                                 setActionSurvey(action);
                                 setOpenCost(true);
                                 if (!isManagerAdminLogin(loggedInUserData)) {
@@ -898,6 +903,10 @@ const EnergyCost = ({ loggedInUserData, siteSelectedForGlobal, sites }) => {
                             <button
                               className="btn btn-sm btn-light"
                               onClick={() => {
+                                if (hasPlatformIdentity() && action.siteId !== siteSelectedForGlobal?.siteId) {
+                                  openPlatformSitePath(action.siteId, `/energy-cost?energyId=${action.energyId}&panel=reading`);
+                                  return;
+                                }
                                 setActionSurvey(action);
                                 setOpenReading(true);
                                 if (!isManagerAdminLogin(loggedInUserData)) {
